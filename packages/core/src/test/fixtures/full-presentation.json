@@ -1,0 +1,194 @@
+{
+  "looma": 1,
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+  "format": "presentation",
+  "theme": {
+    "preset": "clean",
+    "overrides": {
+      "colorPrimary": "#2f6b3a",
+      "colorAccent": "#d4a017",
+      "fontBody": "serif"
+    }
+  },
+  "assets": {
+    "img_leaf": {
+      "kind": "image",
+      "src": "https://example.com/photosynthesis/leaf.png",
+      "width": 1200,
+      "height": 800,
+      "alt": "A green leaf held up to the sun"
+    }
+  },
+  "cards": [
+    {
+      "id": "c_title",
+      "accent": { "position": "right", "assetId": "img_leaf" },
+      "notes": "Open by asking what a plant eats. Pause after the quote.",
+      "body": [
+        {
+          "id": "b_title",
+          "type": "heading",
+          "level": 1,
+          "text": "Introduction to Photosynthesis"
+        },
+        {
+          "id": "b_lead",
+          "type": "paragraph",
+          "align": "left",
+          "text": "Plants turn **sunlight**, water, and air into {color:primary}chemical energy{/color}."
+        },
+        {
+          "id": "b_quote",
+          "type": "quote",
+          "text": "A leaf is a quiet factory that runs on light.",
+          "cite": "Classroom notes"
+        }
+      ]
+    },
+    {
+      "id": "c_process",
+      "background": {
+        "kind": "gradient",
+        "from": "#e7f5ea",
+        "to": "#fff6d8",
+        "angle": 135
+      },
+      "notes": "Walk the two columns from left to right.",
+      "body": [
+        {
+          "id": "b_process_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "The short version"
+        },
+        {
+          "id": "n_process_stack",
+          "type": "stack",
+          "gap": "md",
+          "children": [
+            {
+              "id": "n_process_columns",
+              "type": "columns",
+              "widths": [1.2, 1],
+              "gap": "md",
+              "align": "start",
+              "children": [
+                [
+                  {
+                    "id": "b_overview",
+                    "type": "paragraph",
+                    "text": "Carbon dioxide and water, plus light, become glucose and oxygen."
+                  },
+                  {
+                    "id": "b_steps",
+                    "type": "list",
+                    "style": "number",
+                    "items": [
+                      "Capture light",
+                      {
+                        "text": "Split water",
+                        "children": ["Release oxygen", "Keep the electrons"]
+                      },
+                      "Build sugar"
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "id": "b_leaf",
+                    "type": "image",
+                    "assetId": "img_leaf",
+                    "fit": "cover",
+                    "width": "full",
+                    "caption": "See a [diagram of a leaf](https://example.com/leaf)."
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c_inside",
+      "body": [
+        {
+          "id": "b_where",
+          "type": "heading",
+          "level": 3,
+          "text": "Where it happens"
+        },
+        {
+          "id": "b_chlorophyll",
+          "type": "callout",
+          "tone": "info",
+          "text": "Chlorophyll lives in **chloroplasts**, mostly in the mesophyll of the leaf."
+        },
+        {
+          "id": "n_organelles",
+          "type": "grid",
+          "columns": 2,
+          "gap": "sm",
+          "children": [
+            {
+              "id": "b_light_reactions",
+              "type": "paragraph",
+              "text": "Light reactions sit in the thylakoid membrane."
+            },
+            {
+              "id": "b_checklist",
+              "type": "list",
+              "style": "check",
+              "items": [
+                { "text": "Thylakoids", "checked": true },
+                { "text": "Stroma", "checked": false }
+              ]
+            }
+          ]
+        },
+        { "id": "b_rule", "type": "divider" },
+        {
+          "id": "b_stages",
+          "type": "table",
+          "header": true,
+          "rows": [
+            ["Stage", "Location", "Output"],
+            ["Light reactions", "Thylakoid", "ATP and oxygen"],
+            ["Calvin cycle", "Stroma", "Sugar"]
+          ]
+        },
+        {
+          "id": "b_equation",
+          "type": "code",
+          "language": "text",
+          "code": "6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2"
+        }
+      ]
+    },
+    {
+      "id": "c_review",
+      "notes": "End with one question and wait.",
+      "body": [
+        {
+          "id": "b_review_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "Check your understanding"
+        },
+        {
+          "id": "b_question",
+          "type": "paragraph",
+          "align": "center",
+          "text": "Why do leaves look {color:green}green{/color} if they use other colors of light?"
+        },
+        {
+          "id": "b_answers",
+          "type": "list",
+          "style": "bullet",
+          "items": ["Green light is reflected", "Other colors are absorbed"]
+        }
+      ]
+    }
+  ]
+}
