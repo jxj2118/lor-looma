@@ -1,0 +1,31 @@
+{
+  "title": "Messy photosynthesis notes",
+  "foo": 1,
+  "cards": [
+    {
+      "notes": "This card is missing an id.",
+      "body": [
+        { "type": "heading", "level": 1 },
+        { "id": "1bad", "type": "paragraph", "text": "Keep me", "foo": 1 },
+        { "id": "b_dup", "type": "paragraph", "text": "First copy" },
+        { "id": "b_dup", "type": "divider" },
+        { "type": "video", "url": "https://example.com/photosynthesis.mp4" },
+        {
+          "id": "n_cols",
+          "type": "columns",
+          "children": [
+            [{ "id": "b_left", "type": "paragraph", "text": "Left column" }],
+            [{ "id": "b_right", "type": "list" }]
+          ]
+        },
+        {
+          "id": "b_table",
+          "type": "table",
+          "rows": [["Stage", "Output"], ["Light"]]
+        },
+        { "id": "b_callout", "type": "callout" },
+        { "id": "b_code", "type": "code" }
+      ]
+    }
+  ]
+}
