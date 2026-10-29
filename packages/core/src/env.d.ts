@@ -3,3 +3,8 @@ interface LoomaCrypto {
 }
 
 declare const crypto: LoomaCrypto;
+
+declare class URL {
+  constructor(url: string);
+  readonly protocol: string;
+}
