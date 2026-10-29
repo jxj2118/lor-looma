@@ -1,0 +1,26 @@
+{
+  "name": "@lor-looma/core",
+  "version": "0.0.0",
+  "description": "Looma document model, validation, commands and undo/redo. No UI dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
