@@ -9,6 +9,12 @@ export interface ParseIssue {
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
+/** One line for a model: `path: message`, or just `message` at the document root. */
+export function formatIssue(issue: ParseIssue): string {
+  if (issue.path === '$') return issue.message;
+  return `${issue.path}: ${issue.message}`;
+}
+
 export function formatPath(path: readonly PropertyKey[]): string {
   if (path.length === 0) return '$';
   let out = '';
@@ -82,7 +88,7 @@ function unionValues(issue: z.core.$ZodIssue & { code: 'invalid_union' }): unkno
   return values;
 }
 
-function formatIssue(issue: z.core.$ZodIssue, input: unknown, hasInput: boolean): string {
+function messageFromZodIssue(issue: z.core.$ZodIssue, input: unknown, hasInput: boolean): string {
   const located = hasInput ? readPath(input, issue.path) : undefined;
   const missing = hasInput && (!located?.found || located.value === undefined);
 
@@ -142,7 +148,7 @@ export function zodIssuesToParseIssues(
   const out: ParseIssue[] = [];
   for (const issue of issues) {
     const path = formatPath(issue.path);
-    const message = formatIssue(issue, input, hasInput);
+    const message = messageFromZodIssue(issue, input, hasInput);
     const fingerprint = `${path}\0${message}`;
     if (seen.has(fingerprint)) continue;
     seen.add(fingerprint);

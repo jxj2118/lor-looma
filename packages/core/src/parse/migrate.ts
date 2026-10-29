@@ -39,24 +39,24 @@ export function migrateDocument(
 ): ParseIssue | undefined {
   const missing = !Object.prototype.hasOwnProperty.call(doc, 'looma') || doc.looma === undefined;
   if (missing) {
-    if (!repair) return { path: 'looma', message: 'looma: is required (expected 1)' };
+    if (!repair) return { path: 'looma', message: 'is required (expected 1)' };
     doc.looma = 1;
-    warnings.push({ path: 'looma', message: 'looma: missing schema version, assumed 1' });
+    warnings.push({ path: 'looma', message: 'missing schema version, assumed 1' });
   } else if (!isPositiveInteger(doc.looma)) {
     return {
       path: 'looma',
-      message: `looma: must be a positive integer; received ${formatReceived(doc.looma)}`,
+      message: `must be a positive integer; received ${formatReceived(doc.looma)}`,
     };
   } else if (doc.looma > LOOMA_SCHEMA_VERSION) {
     return {
       path: 'looma',
-      message: `looma: document uses schema version ${doc.looma}, but this library only supports up to ${LOOMA_SCHEMA_VERSION}`,
+      message: `document uses schema version ${doc.looma}, but this library only supports up to ${LOOMA_SCHEMA_VERSION}`,
     };
   }
 
   const version = doc.looma;
   if (!isPositiveInteger(version)) {
-    return { path: 'looma', message: 'looma: must be a positive integer; received undefined' };
+    return { path: 'looma', message: 'must be a positive integer; received undefined' };
   }
   const migrated = runMigrations(doc, version, MIGRATIONS);
   if (migrated !== doc) {

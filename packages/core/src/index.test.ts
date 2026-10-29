@@ -22,6 +22,7 @@ const RUNTIME_EXPORTS = [
   'LoomaThemeSchema',
   'ThemeOverridesSchema',
   'validateDocumentSemantics',
+  'formatIssue',
   'BLOCK_TYPES',
   'CONTAINER_TYPES',
   'THEME_PRESETS',

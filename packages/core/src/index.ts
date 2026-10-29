@@ -17,7 +17,7 @@ export {
   serializeInline,
 } from './inline';
 export type { InlineNode } from './inline';
-export { parseDocument, validateDocumentSemantics } from './parse';
+export { formatIssue, parseDocument, validateDocumentSemantics } from './parse';
 export type { ParseIssue, ParseOptions, ParseResult } from './parse';
 export {
   LoomaAssetSchema,

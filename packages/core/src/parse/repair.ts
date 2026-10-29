@@ -77,15 +77,16 @@ function ensureId(value: unknown, kind: IdKind, path: string, ctx: RepairContext
   const fresh = createId(kind, ctx.reserved);
   ctx.reserved.add(fresh);
   ctx.seen.add(fresh);
+  const fieldPath = path.length === 0 ? 'id' : `${path}.id`;
   if (typeof value === 'string' && isValidId(value)) {
     ctx.warnings.push({
-      path: `${path}.id`,
-      message: `${path}.id: duplicate id "${value}", renamed to "${fresh}"`,
+      path: fieldPath,
+      message: `duplicate id "${value}", renamed to "${fresh}"`,
     });
   } else {
     ctx.warnings.push({
-      path: `${path}.id`,
-      message: `${path}.id: missing or invalid id, generated "${fresh}"`,
+      path: fieldPath,
+      message: `missing or invalid id, generated "${fresh}"`,
     });
   }
   return fresh;
@@ -106,7 +107,7 @@ function padTable(node: Record<string, unknown>, path: string, warnings: ParseIs
   });
   if (!padded) return;
   node.rows = next;
-  warnings.push({ path, message: `${path}: padded shorter rows with empty cells` });
+  warnings.push({ path, message: 'padded shorter rows with empty cells' });
 }
 
 function repairNode(node: unknown, path: string, ctx: RepairContext): unknown {
@@ -123,7 +124,7 @@ function repairNode(node: unknown, path: string, ctx: RepairContext): unknown {
   if (wrap) {
     ctx.warnings.push({
       path,
-      message: `${path}: unknown block type ${formatType(type)}, kept as an unsupported block`,
+      message: `unknown block type ${formatType(type)}, kept as an unsupported block`,
     });
     return { id: node.id, type: 'unknown', raw };
   }
@@ -138,7 +139,7 @@ function repairNode(node: unknown, path: string, ctx: RepairContext): unknown {
     node.widths = widths;
     ctx.warnings.push({
       path,
-      message: `${path}: missing widths, filled with ${widths.join(', ')}`,
+      message: `missing widths, filled with ${widths.join(', ')}`,
     });
   }
 
@@ -171,7 +172,7 @@ export function preprocessDocument(
     reserved: repair ? collectDocumentIds(doc) : new Set<string>(),
     seen: new Set<string>(),
   };
-  if (repair) doc.id = ensureId(doc.id, 'document', '$', ctx);
+  if (repair) doc.id = ensureId(doc.id, 'document', '', ctx);
   if (!Array.isArray(doc.cards)) return;
   doc.cards = doc.cards.map((card, index) => {
     if (!isPlainObject(card)) return card;

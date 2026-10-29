@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LoomaDocumentSchema } from '../schema/document';
-import { formatPath, zodIssuesToParseIssues } from './issues';
+import { formatIssue, formatPath, zodIssuesToParseIssues } from './issues';
 
 function issuesFor(input: unknown) {
   const result = LoomaDocumentSchema.safeParse(input);
@@ -8,6 +8,20 @@ function issuesFor(input: unknown) {
   if (result.success) return [];
   return zodIssuesToParseIssues(result.error.issues, input);
 }
+
+describe('formatIssue', () => {
+  it('prints path and message on one line, except at the root', () => {
+    expect(formatIssue({ path: 'id', message: 'missing or invalid id, generated "doc_x"' })).toBe(
+      'id: missing or invalid id, generated "doc_x"',
+    );
+    expect(formatIssue({ path: 'looma', message: 'missing schema version, assumed 1' })).toBe(
+      'looma: missing schema version, assumed 1',
+    );
+    expect(formatIssue({ path: '$', message: 'document must be a JSON object' })).toBe(
+      'document must be a JSON object',
+    );
+  });
+});
 
 describe('formatPath', () => {
   it('formats root, indexes, identifiers, and quoted keys', () => {

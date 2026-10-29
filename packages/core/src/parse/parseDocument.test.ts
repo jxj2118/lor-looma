@@ -40,10 +40,12 @@ describe('parseDocument', () => {
     expect(repaired.ok).toBe(true);
     if (!repaired.ok) return;
 
+    expect(repaired.warnings).toContainEqual({
+      path: 'looma',
+      message: 'missing schema version, assumed 1',
+    });
+    expect(repaired.warnings.some((warning) => warning.path === 'id')).toBe(true);
     const messages = repaired.warnings.map((warning) => warning.message);
-    expect(messages.some((message) => message.startsWith('looma: missing schema version'))).toBe(
-      true,
-    );
     expect(messages.some((message) => message.includes('missing or invalid id, generated'))).toBe(
       true,
     );
@@ -78,9 +80,10 @@ describe('parseDocument', () => {
     const result = parseDocument(messy, { repair: false });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.map((error) => error.message)).toContain(
-      'looma: is required (expected 1)',
-    );
+    expect(result.errors).toContainEqual({
+      path: 'looma',
+      message: 'is required (expected 1)',
+    });
   });
 
   it('rejects invalid JSON, non-objects, and unsupported versions', () => {
@@ -104,7 +107,7 @@ describe('parseDocument', () => {
       errors: [
         {
           path: 'looma',
-          message: 'looma: document uses schema version 2, but this library only supports up to 1',
+          message: 'document uses schema version 2, but this library only supports up to 1',
         },
       ],
     });
@@ -113,7 +116,7 @@ describe('parseDocument', () => {
       errors: [
         {
           path: 'looma',
-          message: 'looma: must be a positive integer; received 0.5',
+          message: 'must be a positive integer; received 0.5',
         },
       ],
     });
@@ -161,14 +164,32 @@ describe('parseDocument', () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.warnings.map((warning) => warning.message)).toEqual([
-      'cards[0].body[0]: unknown block type "video", kept as an unsupported block',
+    expect(result.warnings).toEqual([
+      {
+        path: 'cards[0].body[0]',
+        message: 'unknown block type "video", kept as an unsupported block',
+      },
     ]);
     expect(result.doc.cards[0]?.body[0]).toMatchObject({
       id: 'b_video',
       type: 'unknown',
       raw: { id: 'b_video', type: 'video', url: 'https://example.com/v.mp4' },
     });
+  });
+});
+
+describe('issue paths', () => {
+  it('keeps paths out of messy-input warnings and errors', () => {
+    const repaired = parseDocument(messy);
+    const strict = parseDocument(messy, { repair: false });
+    const issues = [
+      ...(repaired.ok ? repaired.warnings : repaired.errors),
+      ...(strict.ok ? strict.warnings : strict.errors),
+    ];
+    expect(issues.length).toBeGreaterThan(0);
+    for (const issue of issues) {
+      expect(issue.message.startsWith(issue.path)).toBe(false);
+    }
   });
 });
 
