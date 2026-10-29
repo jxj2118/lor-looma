@@ -20,6 +20,22 @@
         "vitest": "^5.0.5",
       },
     },
+    "apps/playground": {
+      "name": "@lor-looma/playground",
+      "version": "0.0.0",
+      "dependencies": {
+        "@lor-looma/core": "workspace:*",
+        "@lor-looma/editor": "workspace:*",
+        "@lor-looma/viewer": "workspace:*",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "@vitejs/plugin-react": "^6.1.2",
+      },
+    },
     "packages/core": {
       "name": "@lor-looma/core",
       "version": "0.0.0",
@@ -208,6 +224,8 @@
     "@lor-looma/core": ["@lor-looma/core@workspace:packages/core"],
 
     "@lor-looma/editor": ["@lor-looma/editor@workspace:packages/editor"],
+
+    "@lor-looma/playground": ["@lor-looma/playground@workspace:apps/playground"],
 
     "@lor-looma/viewer": ["@lor-looma/viewer@workspace:packages/viewer"],
 
