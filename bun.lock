@@ -39,6 +39,9 @@
     "packages/core": {
       "name": "@lor-looma/core",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.6.7",
+      },
     },
     "packages/editor": {
       "name": "@lor-looma/editor",
