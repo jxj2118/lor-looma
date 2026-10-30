@@ -10,3 +10,51 @@
 .link {
   color: var(--lm-color-primary, #2563eb);
 }
+
+.editor {
+  display: inline;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
+.surface {
+  display: inline;
+  outline: none;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+}
+
+.empty {
+  display: block;
+  position: relative;
+  min-height: 1.2em;
+  min-width: 1ch;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  color: var(--lm-color-muted, #656d76);
+  pointer-events: none;
+  user-select: none;
+}
+
+.code {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  resize: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  outline: none;
+  white-space: pre;
+}

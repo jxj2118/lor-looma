@@ -1,3 +1,4 @@
+import { findNode } from '@lor-looma/core';
 import type { LoomaCard, LoomaDocument } from '@lor-looma/core';
 import {
   LOGICAL_SIZE,
@@ -6,21 +7,30 @@ import {
   useCardOverflow,
   useLoomaDocument,
 } from '@lor-looma/viewer';
-import type { RenderNode } from '@lor-looma/viewer';
+import type { RenderNode, RenderSlot } from '@lor-looma/viewer';
+import { parseSlotKey } from '@lor-looma/viewer';
 import { useCallback, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react';
 import { selectCard, selectNode } from '../state/selection';
 import { useEditorContext, useViewState } from '../state/viewState';
+import { defaultSlot, isTextNodeType } from '../text/slots';
 import { EditableNode } from './EditableNode';
+import { EditableSlot } from './EditableSlot';
 import styles from './Canvas.module.css';
 
 export function Canvas() {
-  const { store, messages, readOnly, viewState } = useEditorContext();
+  const { store, messages, readOnly, viewState, finishEditing } = useEditorContext();
   const doc = useLoomaDocument({ store });
   const canvasRef = useRef<HTMLDivElement>(null);
   const renderNode = useCallback<RenderNode>(
     (node, renderDefault, info) => (
       <EditableNode node={node} info={info} renderDefault={renderDefault} />
+    ),
+    [],
+  );
+  const renderSlot = useCallback<RenderSlot>(
+    (nodeId, slot, renderDefault) => (
+      <EditableSlot nodeId={nodeId} slot={slot} renderDefault={renderDefault} />
     ),
     [],
   );
@@ -67,6 +77,24 @@ export function Canvas() {
     viewState.set({ selection: { cardId: null, nodeIds: [] } });
   };
 
+  const onDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (readOnly) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const nodeId = target.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
+    if (!nodeId) return;
+    const found = findNode(store.getDocument(), nodeId);
+    if (!found || !isTextNodeType(found.node.type)) return;
+    const raw = target.closest('[data-lm-slot]')?.getAttribute('data-lm-slot');
+    const slot = raw && parseSlotKey(raw) ? raw : defaultSlot(found.node);
+    if (!slot) return;
+    finishEditing();
+    viewState.set({
+      selection: { cardId: found.cardId, nodeIds: [nodeId] },
+      editing: { nodeId, slot, caret: 'end' },
+    });
+  };
+
   return (
     <div
       ref={canvasRef}
@@ -76,6 +104,7 @@ export function Canvas() {
         if (viewState.get().hoverId !== null) viewState.set({ hoverId: null });
       }}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
     >
       {doc.cards.length === 0 ? (
         <div className={styles.empty}>
@@ -93,6 +122,7 @@ export function Canvas() {
               logicalWidth={logicalWidth}
               logicalHeight={logicalHeight}
               renderNode={renderNode}
+              renderSlot={renderSlot}
             />
           ))}
           {readOnly ? null : <AddCard />}
@@ -109,6 +139,7 @@ function EditorCard({
   logicalWidth,
   logicalHeight,
   renderNode,
+  renderSlot,
 }: {
   card: LoomaCard;
   doc: LoomaDocument;
@@ -116,6 +147,7 @@ function EditorCard({
   logicalWidth: number;
   logicalHeight: number | undefined;
   renderNode: RenderNode;
+  renderSlot: RenderSlot;
 }) {
   const { messages, resolveAsset } = useEditorContext();
   const selected = useViewState(
@@ -136,6 +168,7 @@ function EditorCard({
           document={doc}
           resolveAsset={resolveAsset}
           renderNode={renderNode}
+          renderSlot={renderSlot}
         />
       </ScaledFrame>
       {overflow ? (
@@ -169,7 +202,15 @@ function AddCard() {
         );
         if (!result.ok) return;
         const created = result.doc.cards.find((card) => !before.has(card.id));
-        if (created) viewState.set({ selection: selectCard(created.id) });
+        if (created) {
+          const heading = created.body.find((item) => item.type === 'heading');
+          viewState.set({
+            selection: heading
+              ? { cardId: created.id, nodeIds: [heading.id] }
+              : selectCard(created.id),
+            editing: heading ? { nodeId: heading.id, slot: 'text', caret: 'start' } : null,
+          });
+        }
       }}
     >
       {messages.addCard}

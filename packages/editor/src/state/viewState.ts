@@ -99,6 +99,9 @@ export interface EditorContextValue {
   layerElement?: HTMLDivElement | null;
   highlightExternalChanges?: boolean;
   finishEditing?: () => void;
+  bindFinishEditing?: (fn: (() => void) | null) => void;
+  editEpoch?: number;
+  suppressCommit?: { current: boolean };
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
 }
 
@@ -123,6 +126,9 @@ export function useEditorContext(): EditorContextValue & {
   layerRef: RefObject<HTMLDivElement | null>;
   readOnly: boolean;
   finishEditing: () => void;
+  bindFinishEditing: (fn: (() => void) | null) => void;
+  editEpoch: number;
+  suppressCommit: { current: boolean };
 } {
   const context = useContext(EditorContext);
   if (!context?.store || !context.messages || !context.rootRef || !context.layerRef) {
@@ -137,5 +143,8 @@ export function useEditorContext(): EditorContextValue & {
     readOnly: context.readOnly ?? false,
     highlightExternalChanges: context.highlightExternalChanges ?? true,
     finishEditing: context.finishEditing ?? (() => {}),
+    bindFinishEditing: context.bindFinishEditing ?? (() => {}),
+    editEpoch: context.editEpoch ?? 0,
+    suppressCommit: context.suppressCommit ?? { current: false },
   };
 }

@@ -1,13 +1,15 @@
 import { createLoomaStore, findCard, findNode } from '@lor-looma/core';
-import type {
-  LoomaAsset,
-  LoomaDocument,
-  LoomaNode,
-  LoomaStore,
-  StoreChange,
-} from '@lor-looma/core';
+import type { LoomaAsset, LoomaDocument, LoomaStore, StoreChange } from '@lor-looma/core';
 import { LoomaRoot, useLoomaDocument } from '@lor-looma/viewer';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Canvas } from './canvas/Canvas';
 import { armFlash, clearFlash } from './canvas/flash';
@@ -22,6 +24,7 @@ import {
   selectionAfterDelete,
 } from './state/selection';
 import { EditorContext, createViewState } from './state/viewState';
+import { defaultSlot, readSlot } from './text/slots';
 import type { EditorSelection, ViewStateStore } from './state/viewState';
 import styles from './LoomaEditor.module.css';
 
@@ -88,9 +91,18 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   const sourceDocument = useRef(documentProp);
   const highlightRef = useRef(highlightExternalChanges);
   const flashTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const suppressCommit = useMemo(() => ({ current: false }), []);
+  const noticeId = useRef(0);
   const doc = useLoomaDocument({ store });
   const [playing, setPlaying] = useState(false);
   const [playPage, setPlayPage] = useState(0);
+  const [editEpoch, setEditEpoch] = useState(0);
+  const bindFinishEditing = useCallback(
+    (fn: (() => void) | null) => {
+      finishEditingRef.current = fn ?? (() => viewState.set({ editing: null }));
+    },
+    [viewState],
+  );
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -101,6 +113,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     return store.subscribe((next, change) => {
       onChangeRef.current?.(next, change);
       if (change.kind === 'load') {
+        suppressCommit.current = true;
         clearFlash(viewState, flashTimers.current);
         viewState.set({
           selection: { cardId: null, nodeIds: [] },
@@ -108,6 +121,21 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
           editing: null,
         });
         return;
+      }
+      const editing = viewState.get().editing;
+      if (editing) {
+        const live = findNode(next, editing.nodeId)?.node;
+        const slotGone = !live || readSlot(live, editing.slot) === undefined;
+        if (slotGone) {
+          suppressCommit.current = true;
+          viewState.set({ editing: null });
+        } else if (change.origin !== 'user' && change.touchedIds.includes(editing.nodeId)) {
+          noticeId.current += 1;
+          setEditEpoch((epoch) => epoch + 1);
+          viewState.set({
+            notice: { id: noticeId.current, message: messages.externalChange },
+          });
+        }
       }
       const pruned = pruneSelection(next, viewState.get().selection);
       if (pruned !== viewState.get().selection) viewState.set({ selection: pruned });
@@ -118,7 +146,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         armFlash(viewState, ids, flashTimers.current);
       }
     });
-  }, [store, viewState]);
+  }, [messages.externalChange, store, suppressCommit, viewState]);
 
   useEffect(() => () => clearFlash(viewState, flashTimers.current), [viewState]);
 
@@ -172,6 +200,9 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         layerElement,
         highlightExternalChanges,
         finishEditing,
+        bindFinishEditing,
+        editEpoch,
+        suppressCommit,
         resolveAsset,
       }}
     >
@@ -199,24 +230,6 @@ function isFieldTarget(target: EventTarget | null): boolean {
     target instanceof Element &&
     target.closest('input, textarea, select, [contenteditable="true"]') !== null
   );
-}
-
-function textSlot(node: LoomaNode): string | null {
-  switch (node.type) {
-    case 'heading':
-    case 'paragraph':
-    case 'callout':
-    case 'quote':
-      return 'text';
-    case 'list':
-      return node.items.length > 0 ? 'item:0' : null;
-    case 'table':
-      return node.rows.length > 0 && (node.rows[0]?.length ?? 0) > 0 ? 'cell:0:0' : null;
-    case 'code':
-      return 'code';
-    default:
-      return null;
-  }
 }
 
 function onEditorKeyDown(
@@ -279,7 +292,7 @@ function onEditorKeyDown(
     const nodeId = selection.nodeIds[0];
     if (!nodeId) return;
     const found = findNode(store.getDocument(), nodeId);
-    const slot = found ? textSlot(found.node) : null;
+    const slot = found ? defaultSlot(found.node) : null;
     if (!found || !slot) return;
     event.preventDefault();
     viewState.set({ editing: { nodeId: found.node.id, slot, caret: 'end' } });

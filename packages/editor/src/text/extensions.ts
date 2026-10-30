@@ -101,7 +101,8 @@ const LmHighlight = Mark.create({
 export function createExtensions(options: { mode: EditorMode; placeholder?: string }): Extensions {
   const paragraph = Paragraph.extend({
     renderHTML({ HTMLAttributes }) {
-      return [options.mode === 'single' ? 'div' : 'p', HTMLAttributes, 0];
+      // Span stays valid inside h1/p/li/td. A div would be moved out of headings and paragraphs.
+      return [options.mode === 'single' ? 'span' : 'p', HTMLAttributes, 0];
     },
   });
   const link = Link.extend({
@@ -128,7 +129,12 @@ export function createExtensions(options: { mode: EditorMode; placeholder?: stri
   });
 
   return [
-    Document.extend({ content: options.mode === 'single' ? 'paragraph' : 'paragraph+' }),
+    Document.extend({
+      content: options.mode === 'single' ? 'paragraph' : 'paragraph+',
+      renderHTML() {
+        return [options.mode === 'single' ? 'span' : 'div', 0];
+      },
+    }),
     paragraph,
     Text,
     HardBreak,
