@@ -24,6 +24,7 @@
     "access": "public"
   },
   "dependencies": {
+    "immer": "^11.2.9",
     "zod": "^4.6.7"
   }
 }
