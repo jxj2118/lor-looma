@@ -1,0 +1,56 @@
+.root {
+  height: 100%;
+  overflow: auto;
+  background: var(--lm-color-bg);
+  color: var(--lm-color-fg);
+}
+
+.scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 24px;
+  background: var(--lm-color-bg);
+}
+
+.slide {
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--lm-color-danger, #dc2626);
+  color: #ffffff;
+  font-family: var(--lm-font-body);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  height: 72px;
+  background: linear-gradient(to bottom, transparent, var(--lm-color-bg, #f6f7f9));
+  pointer-events: none;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--lm-color-muted);
+  font-family: var(--lm-font-body);
+  text-align: center;
+}

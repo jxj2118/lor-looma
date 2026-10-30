@@ -1,5 +1,6 @@
 import { LOOMA_SCHEMA_VERSION } from '@lor-looma/core';
 import type { LoomaTheme } from '@lor-looma/core';
+import { forwardRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { themeToCssVariables } from '../theme/themeToCssVariables';
 import styles from './LoomaRoot.module.css';
@@ -11,10 +12,14 @@ export interface LoomaRootProps {
   theme?: LoomaTheme;
 }
 
-export function LoomaRoot({ children, className, style, theme }: LoomaRootProps) {
+export const LoomaRoot = forwardRef<HTMLDivElement, LoomaRootProps>(function LoomaRoot(
+  { children, className, style, theme },
+  ref,
+) {
   const themeStyle = theme ? themeToCssVariables(theme) : undefined;
   return (
     <div
+      ref={ref}
       data-looma-root=""
       data-looma-schema={LOOMA_SCHEMA_VERSION}
       data-looma-theme={theme?.preset}
@@ -24,4 +29,4 @@ export function LoomaRoot({ children, className, style, theme }: LoomaRootProps)
       {children}
     </div>
   );
-}
+});
