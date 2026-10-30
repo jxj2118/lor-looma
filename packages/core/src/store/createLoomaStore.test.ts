@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatIssue, parseDocument } from '../parse';
 import type { LoomaDocument } from '../schema';
+import fixture from '../test/fixtures/full-presentation.json' with { type: 'json' };
 import { createLoomaStore } from './createLoomaStore';
 
 function document(): LoomaDocument {
@@ -273,5 +274,37 @@ describe('createLoomaStore', () => {
     expect(Object.isFrozen(store.getDocument())).toBe(true);
     expect(Object.isFrozen(store.getDocument().cards)).toBe(true);
     expect(Object.isFrozen(store.getDocument().cards[0])).toBe(true);
+  });
+
+  it('keeps untouched cards identical across apply, undo, and redo', () => {
+    const parsed = parseDocument(fixture);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+    const store = createLoomaStore(parsed.doc);
+    const before = store.getDocument();
+    const lastIndex = before.cards.length - 1;
+    const lastCard = before.cards[lastIndex];
+    const target = lastCard?.body[0];
+    if (!lastCard || !target) throw new Error('fixture is missing a card');
+
+    store.apply([{ op: 'updateNode', id: target.id, patch: { text: 'changed' } }]);
+    const applied = store.getDocument();
+    for (let index = 0; index < lastIndex; index += 1) {
+      expect(applied.cards[index]).toBe(before.cards[index]);
+    }
+    expect(applied.cards[lastIndex]?.body[1]).toBe(lastCard.body[1]);
+
+    expect(store.undo()).toBe(true);
+    const undone = store.getDocument();
+    for (let index = 0; index < lastIndex; index += 1) {
+      expect(undone.cards[index]).toBe(applied.cards[index]);
+    }
+    expect(undone.cards[lastIndex]?.body[1]).toBe(applied.cards[lastIndex]?.body[1]);
+
+    expect(store.redo()).toBe(true);
+    const redone = store.getDocument();
+    for (let index = 0; index < lastIndex; index += 1) {
+      expect(redone.cards[index]).toBe(undone.cards[index]);
+    }
+    expect(redone.cards[lastIndex]?.body[1]).toBe(undone.cards[lastIndex]?.body[1]);
   });
 });

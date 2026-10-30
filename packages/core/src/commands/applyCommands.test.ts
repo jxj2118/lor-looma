@@ -1,8 +1,9 @@
-import { applyPatches } from 'immer';
+import { applyPatches, freeze } from 'immer';
 import { describe, expect, it } from 'vitest';
 import { parseDocument } from '../parse';
 import { cloneJson } from '../parse/repair';
 import type { LoomaDocument } from '../schema';
+import fixture from '../test/fixtures/full-presentation.json' with { type: 'json' };
 import { applyCommands } from './applyCommands';
 
 function document(): LoomaDocument {
@@ -132,6 +133,56 @@ describe('applyCommands', () => {
     expect(result.removedIds).toEqual(['b_3']);
     expect(result.touchedIds).toEqual(['c_2']);
     expect(result.createdIds).toEqual(['c_2', 'b_new']);
+  });
+
+  it('shares untouched cards, assets, and theme when the input is frozen', () => {
+    const parsed = parseDocument(fixture);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+    const frozen = freeze(parsed.doc, true);
+    const lastIndex = frozen.cards.length - 1;
+    const lastCard = frozen.cards[lastIndex];
+    const target = lastCard?.body[0];
+    if (!lastCard || !target) throw new Error('fixture is missing a card');
+
+    const edited = applyCommands(frozen, [
+      { op: 'updateNode', id: target.id, patch: { text: 'changed' } },
+    ]);
+    expect(edited.ok).toBe(true);
+    if (!edited.ok) return;
+    expect(edited.doc.assets).toBe(frozen.assets);
+    expect(edited.doc.theme).toBe(frozen.theme);
+    for (let index = 0; index < lastIndex; index += 1) {
+      expect(edited.doc.cards[index]).toBe(frozen.cards[index]);
+    }
+    const nextCard = edited.doc.cards[lastIndex];
+    expect(nextCard).not.toBe(lastCard);
+    expect(nextCard?.body[0]).not.toBe(target);
+    expect(nextCard?.body[0]).toMatchObject({ id: target.id, text: 'changed' });
+    for (let index = 1; index < lastCard.body.length; index += 1) {
+      expect(nextCard?.body[index]).toBe(lastCard.body[index]);
+    }
+
+    const titled = applyCommands(frozen, [{ op: 'setTitle', title: 'x' }]);
+    expect(titled.ok).toBe(true);
+    if (!titled.ok) return;
+    expect(titled.doc.cards).toBe(frozen.cards);
+    expect(titled.doc.title).toBe('x');
+  });
+
+  it('returns the same frozen document when a batch changes nothing', () => {
+    const parsed = parseDocument(fixture);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+    const frozen = freeze(parsed.doc, true);
+    const empty = applyCommands(frozen, []);
+    expect(empty.ok).toBe(true);
+    if (!empty.ok) return;
+    expect(empty.doc).toBe(frozen);
+    expect(empty.patches).toEqual([]);
+
+    const sameTitle = applyCommands(frozen, [{ op: 'setTitle', title: frozen.title }]);
+    expect(sameTitle.ok).toBe(true);
+    if (!sameTitle.ok) return;
+    expect(sameTitle.doc).toBe(frozen);
   });
 
   it('returns the first command schema error and does not apply later commands', () => {

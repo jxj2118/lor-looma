@@ -122,7 +122,9 @@ export function applyCommands(doc: LoomaDocument, commands: readonly unknown[]):
   }
 
   const taken = collectIds(doc);
-  const base = cloneJson(doc);
+  // A frozen document is already safe to hand to immer. Cloning it would
+  // break structural sharing that viewers use to skip untouched cards.
+  const base = Object.isFrozen(doc) ? doc : cloneJson(doc);
   const recorded = {
     createdIds: [] as string[],
     touchedIds: [] as string[],
