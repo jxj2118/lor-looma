@@ -1,0 +1,16 @@
+.node {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.fallback {
+  margin: 0;
+  padding: 0.8em 1em;
+  border: 1px dashed var(--lm-border, color-mix(in srgb, currentColor 28%, transparent));
+  border-radius: calc(var(--lm-radius, 12px) * 0.5);
+  color: var(--lm-color-muted, currentColor);
+}
+
+.fallback p {
+  margin: 0;
+}

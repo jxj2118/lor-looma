@@ -1,0 +1,59 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-color: var(--lm-card-background, #ffffff);
+  color: var(--lm-color-fg, #1f2328);
+  border-radius: var(--lm-radius, 12px);
+}
+
+.card *,
+.card *::before,
+.card *::after {
+  box-sizing: border-box;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--lm-block-gap, 24px) * var(--lm-spacing, 1));
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--lm-pad-y, 60px) * var(--lm-spacing, 1))
+    calc(var(--lm-pad-x, 72px) * var(--lm-spacing, 1));
+}
+
+.card[data-lm-format='presentation'] .content {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.accent {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.accent img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: color-mix(in srgb, var(--lm-color-bg, #0b0f17) 42%, transparent);
+  pointer-events: none;
+}
+
+.content,
+.accent {
+  position: relative;
+  z-index: 1;
+}
