@@ -1,7 +1,8 @@
 import { act, render } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
-import { EditorContext, createViewState, useViewState } from './viewState';
+import { EditorContext, createViewState, useEditorContext, useViewState } from './viewState';
 import type { ViewState } from './viewState';
 
 describe('createViewState', () => {
@@ -97,5 +98,36 @@ describe('useViewState', () => {
     });
     expect(getByText('c_a')).toBeInTheDocument();
     expect(renders).toBeGreaterThan(before);
+  });
+
+  it('reads the same selection on the server', () => {
+    const store = createViewState({ hoverId: 'b_1' });
+    function Hover() {
+      return <span>{useViewState((state) => state.hoverId)}</span>;
+    }
+    expect(
+      renderToStaticMarkup(
+        <EditorContext.Provider value={{ viewState: store }}>
+          <Hover />
+        </EditorContext.Provider>,
+      ),
+    ).toContain('b_1');
+  });
+});
+
+describe('useEditorContext', () => {
+  it('refuses to run outside the editor', () => {
+    function Probe() {
+      useEditorContext();
+      return null;
+    }
+    const store = createViewState();
+    expect(() =>
+      render(
+        <EditorContext.Provider value={{ viewState: store }}>
+          <Probe />
+        </EditorContext.Provider>,
+      ),
+    ).toThrow(/inside LoomaEditor/);
   });
 });

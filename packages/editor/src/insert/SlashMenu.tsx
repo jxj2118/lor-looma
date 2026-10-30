@@ -141,6 +141,10 @@ export function SlashMenu() {
             if (slash.source === 'text') event.preventDefault();
           }}
           onCloseAutoFocus={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => {
+            event.preventDefault();
+            viewState.set({ slash: null });
+          }}
         >
           <input
             ref={fileRef}

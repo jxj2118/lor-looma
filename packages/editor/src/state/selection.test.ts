@@ -27,8 +27,28 @@ function document(): LoomaDocument {
             type: 'columns',
             widths: [1, 1],
             children: [
-              [{ id: 'b_left', type: 'paragraph', text: 'Left' }],
+              [
+                { id: 'b_left', type: 'paragraph', text: 'Left' },
+                { id: 'b_left_2', type: 'paragraph', text: 'Left 2' },
+              ],
               [{ id: 'b_right', type: 'paragraph', text: 'Right' }],
+            ],
+          },
+          {
+            id: 'n_stack',
+            type: 'stack',
+            children: [
+              { id: 'b_s1', type: 'paragraph', text: 'Stack 1' },
+              { id: 'b_s2', type: 'paragraph', text: 'Stack 2' },
+            ],
+          },
+          {
+            id: 'n_grid',
+            type: 'grid',
+            columns: 2,
+            children: [
+              { id: 'b_g1', type: 'paragraph', text: 'Grid 1' },
+              { id: 'b_g2', type: 'paragraph', text: 'Grid 2' },
             ],
           },
         ],
@@ -67,6 +87,31 @@ describe('selectNode', () => {
       nodeIds: ['b_right'],
     });
     expect(selectNode(doc, current, 'b_1', true)).toEqual({ cardId: 'c_a', nodeIds: ['b_1'] });
+  });
+
+  it('extends across siblings that share a column, stack, or grid', () => {
+    const doc = document();
+    const left = selectNode(doc, none, 'b_left', false);
+    expect(selectNode(doc, left, 'b_left_2', true)).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_left', 'b_left_2'],
+    });
+    const stack = selectNode(doc, none, 'b_s2', false);
+    expect(selectNode(doc, stack, 'b_s1', true)).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_s1', 'b_s2'],
+    });
+    const grid = selectNode(doc, none, 'b_g1', false);
+    expect(selectNode(doc, grid, 'b_g2', true)).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_g1', 'b_g2'],
+    });
+  });
+
+  it('keeps a single node when there is no anchor or the id is missing', () => {
+    const doc = document();
+    expect(selectNode(doc, none, 'b_2', true)).toEqual({ cardId: 'c_a', nodeIds: ['b_2'] });
+    expect(selectNode(doc, none, 'missing', false)).toBe(none);
   });
 });
 
@@ -109,11 +154,53 @@ describe('selectionAfterDelete', () => {
     });
     expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['n_cols'] })).toEqual({
       cardId: 'c_a',
-      nodeIds: ['b_3'],
+      nodeIds: ['n_stack'],
+    });
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_g2'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_g1'],
     });
     expect(
-      selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_1', 'b_2', 'b_3', 'n_cols'] }),
+      selectionAfterDelete(doc, {
+        cardId: 'c_a',
+        nodeIds: ['b_1', 'b_2', 'b_3', 'n_cols', 'n_stack', 'n_grid'],
+      }),
     ).toEqual({ cardId: 'c_a', nodeIds: [] });
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_left'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_left_2'],
+    });
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_s2'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_s1'],
+    });
+  });
+
+  it('selects a neighboring card when the selection is the card itself', () => {
+    const doc = document();
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: [] })).toEqual({
+      cardId: 'c_b',
+      nodeIds: [],
+    });
+    expect(selectionAfterDelete(doc, { cardId: 'c_b', nodeIds: [] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: [],
+    });
+    expect(selectionAfterDelete(doc, none)).toEqual(none);
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['missing'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: [],
+    });
+    expect(selectionAfterDelete(doc, { cardId: null, nodeIds: ['missing'] })).toEqual(none);
+
+    const parsed = parseDocument({
+      looma: 1,
+      id: 'doc_one',
+      title: 'One',
+      cards: [{ id: 'c_only', body: [{ id: 'b_only', type: 'paragraph', text: 'Only' }] }],
+    });
+    if (!parsed.ok) throw new Error('fixture failed to parse');
+    expect(selectionAfterDelete(parsed.doc, { cardId: 'c_only', nodeIds: [] })).toEqual(none);
   });
 });
 

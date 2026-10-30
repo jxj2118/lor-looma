@@ -1,4 +1,6 @@
 import { Editor } from '@tiptap/core';
+import type { JSONContent } from '@tiptap/core';
+import { DOMSerializer } from '@tiptap/pm/model';
 import { normalizeInline, parseInline } from '@lor-looma/core';
 import type { InlineNode } from '@lor-looma/core';
 import { describe, expect, it } from 'vitest';
@@ -233,6 +235,43 @@ describe('markdownToDoc', () => {
     expect(JSON.stringify(doc)).not.toContain('"link"');
     expect(docToMarkdown(doc, 'single')).toBe('a)');
   });
+
+  it('drops marks the schema does not keep and joins multi-mode paragraphs', () => {
+    const doc: JSONContent = {
+      type: 'doc',
+      content: [
+        { type: 'heading', content: [{ type: 'text', text: 'ignored' }] },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'a', marks: [{ type: 'bold' }, { type: 'bold' }] },
+            { type: 'text', text: 'b' },
+            { type: 'text', text: '', marks: [{ type: 'italic' }] },
+            { type: 'weird' },
+            { type: 'text', text: 'c', marks: [{ type: 'link', attrs: { href: '' } }] },
+            {
+              type: 'text',
+              text: 'd',
+              marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }],
+            },
+            { type: 'text', text: 'e', marks: [{ type: 'lmColor', attrs: { color: 'nope' } }] },
+            {
+              type: 'text',
+              text: 'f',
+              marks: [{ type: 'lmHighlight', attrs: { color: 'nope' } }],
+            },
+            { type: 'text', text: 'g', marks: [{ type: 'unknown' }, { type: '' }] },
+            { type: 'text', text: '', marks: [{ type: 'code' }] },
+            { type: 'hardBreak', marks: [{ type: 'bold' }] },
+            { type: 'text', text: 'h', marks: [{ type: 'code' }, { type: 'bold' }] },
+          ],
+        },
+        { type: 'paragraph' },
+      ],
+    };
+    expect(docToMarkdown(doc, 'multi')).toBe('**a**bcdefg``**\n**`h`\n\n');
+    expect(docToMarkdown({ type: 'doc' }, 'single')).toBe('');
+  });
 });
 
 describe('inline round-trip', () => {
@@ -268,5 +307,54 @@ describe('createExtensions', () => {
     expect(json).not.toContain('bulletList');
     expect(json).not.toContain('listItem');
     editor.destroy();
+  });
+
+  it('parses color and highlight spans and renders an unsafe link as text', () => {
+    const host = document.createElement('div');
+    const editor = new Editor({
+      element: host,
+      extensions: createExtensions({ mode: 'single', placeholder: 'Hint' }),
+      content:
+        '<p><span data-lm-color="red">R</span><span data-lm-color="nope">N</span><span data-lm-highlight="yellow">Y</span><span data-lm-highlight="nope">Z</span><a href="https://ok.example">ok</a><a href="javascript:x">bad</a></p>',
+    });
+    const html = editor.getHTML();
+    expect(html).toContain('data-lm-color="red"');
+    expect(html).not.toContain('data-lm-color="nope"');
+    expect(html).toContain('data-lm-highlight="yellow"');
+    expect(html).not.toContain('data-lm-highlight="nope"');
+    editor.commands.setContent({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'bad',
+              marks: [{ type: 'link', attrs: { href: 'javascript:x' } }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(editor.getHTML()).toContain('data-lm-unsafe-link');
+    expect(editor.getHTML()).not.toContain('href="javascript:x"');
+    editor.commands.setTextSelection({ from: 1, to: 2 });
+    editor.commands.setMark('lmColor', { color: 'nope' });
+    editor.commands.setMark('lmHighlight', { color: 'nope' });
+    expect(editor.getHTML()).not.toContain('data-lm-color="nope"');
+    editor.destroy();
+
+    const multiHost = document.createElement('div');
+    const multi = new Editor({
+      element: multiHost,
+      extensions: createExtensions({ mode: 'multi' }),
+      content: markdownToDoc('a\n\nb', 'multi'),
+    });
+    const rendered = DOMSerializer.fromSchema(multi.schema).serializeNode(multi.state.doc);
+    if (!(rendered instanceof HTMLElement)) throw new Error('expected an element');
+    expect(rendered.nodeName).toBe('DIV');
+    expect(rendered.querySelector('p')).not.toBeNull();
+    multi.destroy();
   });
 });

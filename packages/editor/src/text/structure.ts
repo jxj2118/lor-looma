@@ -10,15 +10,14 @@ export interface StructureResult {
 
 function siblingsOf(doc: LoomaDocument, nodeId: string): LoomaNode[] {
   const found = findNode(doc, nodeId);
-  if (!found) return [];
-  if (found.parentId === found.cardId) return findCard(doc, found.cardId)?.card.body ?? [];
-  const parent = findNode(doc, found.parentId);
-  if (!parent) return [];
-  if (parent.node.type === 'columns') {
-    return found.slot === null ? [] : (parent.node.children[found.slot] ?? []);
+  if (!found || found.parentId === found.cardId) {
+    return found ? (findCard(doc, found.cardId)?.card.body ?? []) : [];
   }
-  if (parent.node.type === 'stack' || parent.node.type === 'grid') return parent.node.children;
-  return [];
+  const parent = findNode(doc, found.parentId);
+  if (parent?.node.type === 'columns') {
+    return parent.node.children[found.slot ?? 0] ?? [];
+  }
+  return parent?.node.type === 'stack' || parent?.node.type === 'grid' ? parent.node.children : [];
 }
 
 function locateItem(
@@ -28,14 +27,12 @@ function locateItem(
   if (path.length === 0) return null;
   let list = items;
   for (let depth = 0; depth < path.length - 1; depth += 1) {
-    const index = path[depth];
-    if (index === undefined) return null;
+    const index = path[depth] ?? -1;
     const item = list[index];
     if (item === undefined || typeof item === 'string' || !item.children) return null;
     list = item.children;
   }
-  const index = path[path.length - 1];
-  if (index === undefined) return null;
+  const index = path[path.length - 1] ?? -1;
   const item = list[index];
   if (item === undefined) return null;
   return { list: [...list], index, item };
@@ -174,8 +171,7 @@ export function outdentListItem(
   if (!found || found.node.type !== 'list' || path.length < 2) return null;
   const located = locateItem(found.node.items, path);
   if (!located) return null;
-  const parentIndex = path[path.length - 2];
-  if (parentIndex === undefined) return null;
+  const parentIndex = path[path.length - 2] ?? 0;
   const grandPath = path.slice(0, -2);
   const parentList = locateItem(found.node.items, path.slice(0, -1));
   if (!parentList) return null;
@@ -303,8 +299,14 @@ export function moveCell(
     nextRow -= 1;
     nextCol = (rows[nextRow]?.length ?? 0) - 1;
   }
-  if (nextRow < 0 || nextRow >= rows.length || nextCol < 0) return null;
-  if (rows[nextRow]?.[nextCol] === undefined) return null;
+  if (
+    nextRow < 0 ||
+    nextRow >= rows.length ||
+    nextCol < 0 ||
+    rows[nextRow]?.[nextCol] === undefined
+  ) {
+    return null;
+  }
   return {
     commands: [],
     next: { nodeId, slot: `cell:${nextRow}:${nextCol}`, caret: 'start' },

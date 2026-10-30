@@ -64,4 +64,25 @@ describe('buildInsert', () => {
     expect(cardStore.apply(intoCard.commands, { origin: 'user' }).ok).toBe(true);
     expect(cardStore.getDocument().cards[0]?.body.at(-1)).toMatchObject({ type: 'heading' });
   });
+
+  it('has nowhere to edit after a divider or image, and walks into a grid', () => {
+    const doc = document();
+    const catalog = getCatalog(enUS);
+    const divider = catalog.find((item) => item.id === 'divider');
+    const image = catalog.find((item) => item.id === 'image');
+    const grid = catalog.find((item) => item.id === 'grid2');
+    expect(buildInsert(doc, { kind: 'after', nodeId: 'b_p' }, divider?.build()).next).toBeNull();
+    const withImage = buildInsert(doc, { kind: 'after', nodeId: 'b_p' }, image?.build('asset_1'));
+    expect(withImage.next).toBeNull();
+    expect(withImage.commands[0]).toMatchObject({
+      op: 'insertNode',
+      node: { type: 'image', assetId: 'asset_1' },
+    });
+    const inserted = buildInsert(doc, { kind: 'card', cardId: 'c_1' }, grid?.build());
+    expect(inserted.next?.slot).toBe('text');
+    expect(insertionDepth(doc, { kind: 'after', nodeId: 'missing' })).toBe(0);
+    expect(insertionDepth(doc, { kind: 'card', cardId: 'c_1' })).toBe(0);
+    const missing = buildInsert(doc, { kind: 'after', nodeId: 'missing' }, divider?.build());
+    expect(missing.commands[0]).toMatchObject({ op: 'insertNode' });
+  });
 });

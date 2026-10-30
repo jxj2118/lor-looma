@@ -6,18 +6,16 @@ const EMPTY: EditorSelection = { cardId: null, nodeIds: [] };
 
 function siblings(doc: LoomaDocument, nodeId: string): LoomaNode[] | null {
   const found = findNode(doc, nodeId);
-  if (!found) return null;
-  if (found.parentId === found.cardId) {
-    return findCard(doc, found.cardId)?.card.body ?? null;
+  if (!found || found.parentId === found.cardId) {
+    return found ? (findCard(doc, found.cardId)?.card.body ?? null) : null;
   }
   const parent = findNode(doc, found.parentId);
-  if (!parent) return null;
-  if (parent.node.type === 'columns') {
-    if (found.slot === null) return null;
-    return parent.node.children[found.slot] ?? null;
+  if (parent?.node.type === 'columns') {
+    return parent.node.children[found.slot ?? 0] ?? null;
   }
-  if (parent.node.type === 'stack' || parent.node.type === 'grid') return parent.node.children;
-  return null;
+  return parent?.node.type === 'stack' || parent?.node.type === 'grid'
+    ? parent.node.children
+    : null;
 }
 
 export function selectNode(
@@ -36,8 +34,7 @@ export function selectNode(
   const anchor = findNode(doc, anchorId);
   if (!anchor || anchor.parentId !== found.parentId || anchor.slot !== found.slot) return single;
 
-  const list = siblings(doc, nodeId);
-  if (!list) return single;
+  const list = siblings(doc, nodeId) ?? [];
   const start = Math.min(anchor.index, found.index);
   const end = Math.max(anchor.index, found.index);
   return {

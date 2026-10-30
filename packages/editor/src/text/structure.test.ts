@@ -5,9 +5,12 @@ import {
   exitList,
   indentListItem,
   moveCell,
+  outdentListItem,
   removeEmptyBlock,
+  removeListItem,
   splitBlock,
   splitListItem,
+  toggleChecked,
 } from './structure';
 import type { StructureResult } from './structure';
 
@@ -133,5 +136,233 @@ describe('structure commands', () => {
       ],
     });
     expect(splitListItem(doc, 'b_list', [0], '', '')).toBeNull();
+    expect(splitListItem(doc, 'missing', [0], 'a', 'b')).toBeNull();
+  });
+
+  it('splits a paragraph and a nested list item', () => {
+    const doc = document([
+      { id: 'b_p', type: 'paragraph', text: 'Hello' },
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: [{ text: 'Parent', children: ['Hello'] }],
+      },
+    ]);
+    const split = splitBlock(doc, 'b_p', 'Hel', 'lo');
+    const next = apply(doc, split);
+    expect(next.cards[0]?.body[0]).toMatchObject({ id: 'b_p', text: 'Hel' });
+    expect(next.cards[0]?.body[1]).toMatchObject({ type: 'paragraph', text: 'lo' });
+    expect(splitBlock(doc, 'b_list', 'a', 'b')).toBeNull();
+
+    const nested = splitListItem(doc, 'b_list', [0, 0], 'Hel', 'lo');
+    const nestedDoc = apply(doc, nested);
+    expect(findNode(nestedDoc, 'b_list')?.node).toMatchObject({
+      items: [{ text: 'Parent', children: ['Hel', 'lo'] }],
+    });
+    expect(nested?.next?.slot).toBe('item:0.1');
+    expect(splitListItem(doc, 'b_list', [4], 'a', 'b')).toBeNull();
+  });
+
+  it('outdents a nested item to sit after its parent', () => {
+    const doc = document([
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: [{ text: 'Parent', children: ['Child', 'Stay'] }],
+      },
+    ]);
+    const result = outdentListItem(doc, 'b_list', [0, 0], 'Child');
+    const next = apply(doc, result);
+    expect(findNode(next, 'b_list')?.node).toMatchObject({
+      items: [{ text: 'Parent', children: ['Stay'] }, 'Child'],
+    });
+    expect(result?.next?.slot).toBe('item:1');
+    expect(outdentListItem(doc, 'b_list', [0], 'Parent')).toBeNull();
+    expect(outdentListItem(doc, 'b_list', [3, 0], 'x')).toBeNull();
+    expect(outdentListItem(doc, 'missing', [0, 0], 'x')).toBeNull();
+  });
+
+  it('removes a list item and exits when it was the only one', () => {
+    const doc = document([{ id: 'b_list', type: 'list', style: 'bullet', items: ['A', 'B', 'C'] }]);
+    const middle = removeListItem(doc, 'b_list', [1]);
+    expect(findNode(apply(doc, middle), 'b_list')?.node).toMatchObject({ items: ['A', 'C'] });
+    expect(middle?.next).toEqual({ nodeId: 'b_list', slot: 'item:0', caret: 'end' });
+
+    const first = removeListItem(doc, 'b_list', [0]);
+    expect(findNode(apply(doc, first), 'b_list')?.node).toMatchObject({ items: ['B', 'C'] });
+    expect(first?.next).toEqual({ nodeId: 'b_list', slot: 'item:0', caret: 'start' });
+
+    const nested = document([
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: [{ text: 'Parent', children: ['A', 'B'] }],
+      },
+    ]);
+    const child = removeListItem(nested, 'b_list', [0, 1]);
+    expect(findNode(apply(nested, child), 'b_list')?.node).toMatchObject({
+      items: [{ text: 'Parent', children: ['A'] }],
+    });
+    expect(child?.next?.slot).toBe('item:0.0');
+
+    const only = document([{ id: 'b_list', type: 'list', style: 'bullet', items: ['Solo'] }]);
+    const exited = removeListItem(only, 'b_list', [0]);
+    expect(apply(only, exited).cards[0]?.body[0]).toMatchObject({ type: 'paragraph', text: '' });
+    expect(removeListItem(doc, 'b_list', [9])).toBeNull();
+    expect(removeListItem(doc, 'missing', [0])).toBeNull();
+  });
+
+  it('toggles a check on a string item and an object item', () => {
+    expect(toggleChecked(['A', { text: 'B', checked: true }], [0])).toEqual([
+      { text: 'A', checked: true },
+      { text: 'B', checked: true },
+    ]);
+    expect(toggleChecked([{ text: 'B', checked: true, children: ['C'] }], [0])).toEqual([
+      { text: 'B', checked: false, children: ['C'] },
+    ]);
+    expect(toggleChecked(['A'], [])).toBeNull();
+    expect(toggleChecked(['A'], [3])).toBeNull();
+    expect(toggleChecked([{ text: 'A' }], [0, 0])).toBeNull();
+  });
+
+  it('moves to the previous table cell and rejects a cell that is not there', () => {
+    const doc = document([
+      {
+        id: 'b_table',
+        type: 'table',
+        header: false,
+        rows: [
+          ['A', 'B'],
+          ['C', 'D'],
+        ],
+      },
+    ]);
+    expect(moveCell(doc, 'b_table', 1, 0, -1)?.next).toEqual({
+      nodeId: 'b_table',
+      slot: 'cell:0:1',
+      caret: 'start',
+    });
+    expect(moveCell(doc, 'b_table', 0, 0, -1)).toBeNull();
+    expect(moveCell(doc, 'b_table', 4, 0, 1)).toBeNull();
+    expect(moveCell(doc, 'missing', 0, 0, 1)).toBeNull();
+
+    const jagged = document([
+      {
+        id: 'b_table',
+        type: 'table',
+        header: false,
+        rows: [['A'], []],
+      },
+    ]);
+    expect(moveCell(jagged, 'b_table', 0, 0, 1)?.next?.slot).toBe('cell:1:0');
+  });
+
+  it('backs up into the previous text block inside a column, stack, or grid', () => {
+    const columns = document([
+      {
+        id: 'n_cols',
+        type: 'columns',
+        widths: [1, 1],
+        children: [
+          [
+            { id: 'b_h', type: 'heading', level: 2, text: 'Title' },
+            { id: 'b_p', type: 'paragraph', text: '' },
+          ],
+          [{ id: 'b_r', type: 'paragraph', text: 'Right' }],
+        ],
+      },
+    ]);
+    const column = removeEmptyBlock(columns, 'b_p');
+    expect(apply(columns, column).cards[0]?.body[0]).toMatchObject({
+      children: [
+        [{ id: 'b_h', type: 'heading', text: 'Title' }],
+        [{ id: 'b_r', type: 'paragraph' }],
+      ],
+    });
+    expect(column?.next).toEqual({ nodeId: 'b_h', slot: 'text', caret: 'end' });
+
+    const stack = document([
+      {
+        id: 'n_stack',
+        type: 'stack',
+        children: [
+          { id: 'b_h', type: 'heading', level: 2, text: 'Title' },
+          { id: 'b_p', type: 'paragraph', text: '' },
+        ],
+      },
+    ]);
+    expect(removeEmptyBlock(stack, 'b_p')?.next?.nodeId).toBe('b_h');
+
+    const grid = document([
+      {
+        id: 'n_grid',
+        type: 'grid',
+        columns: 2,
+        children: [
+          { id: 'b_h', type: 'heading', level: 2, text: 'Title' },
+          { id: 'b_p', type: 'paragraph', text: '' },
+        ],
+      },
+    ]);
+    expect(removeEmptyBlock(grid, 'b_p')?.next?.nodeId).toBe('b_h');
+
+    const alone = document([{ id: 'b_p', type: 'paragraph', text: '' }]);
+    const removed = removeEmptyBlock(alone, 'b_p');
+    expect(apply(alone, removed).cards[0]?.body).toEqual([]);
+    expect(removed?.next).toBeNull();
+
+    const divider = document([
+      { id: 'b_d', type: 'divider' },
+      { id: 'b_p', type: 'paragraph', text: '' },
+    ]);
+    expect(removeEmptyBlock(divider, 'b_p')?.next).toBeNull();
+    expect(removeEmptyBlock(divider, 'b_p')?.commands).toEqual([{ op: 'deleteNode', id: 'b_p' }]);
+    expect(removeEmptyBlock(columns, 'missing')).toBeNull();
+    expect(removeEmptyBlock(columns, 'b_h')).toBeNull();
+  });
+
+  it('refuses to indent an item whose children would pass the list depth limit', () => {
+    const deep = document([
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: [
+          {
+            text: 'a',
+            children: [
+              { text: 'b', children: ['c'] },
+              { text: 'move', children: ['deep'] },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(indentListItem(deep, 'b_list', [0, 1], 'move')).toBeNull();
+
+    const doc = document([
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: ['Prev', { text: 'Parent', children: ['Kid'] }],
+      },
+    ]);
+    const result = indentListItem(doc, 'b_list', [1], 'Parent');
+    const next = apply(doc, result);
+    expect(findNode(next, 'b_list')?.node).toMatchObject({
+      items: [{ text: 'Prev', children: [{ text: 'Parent', children: ['Kid'] }] }],
+    });
+    expect(result?.next?.slot).toBe('item:0.0');
+    expect(indentListItem(doc, 'missing', [1], 'Parent')).toBeNull();
+    expect(indentListItem(doc, 'b_list', [8], 'nope')).toBeNull();
+  });
+
+  it('returns null when a list exit targets a missing item', () => {
+    const doc = document([{ id: 'b_list', type: 'list', style: 'bullet', items: ['Stay', 'Go'] }]);
+    expect(exitList(doc, 'b_list', [9])).toBeNull();
   });
 });

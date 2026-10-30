@@ -274,6 +274,101 @@ describe('LoomaEditor', () => {
     expect(ref.current?.getSelection().nodeIds).not.toContain('b_1');
   });
 
+  it('toggles a check, clears hover, and starts editing with Enter', () => {
+    render(
+      <LoomaEditor
+        document={editorDocument({
+          cards: [
+            {
+              id: 'c_1',
+              body: [
+                {
+                  id: 'b_list',
+                  type: 'list',
+                  style: 'check',
+                  items: [{ text: 'Done', checked: false }],
+                },
+                { id: 'b_d', type: 'divider' },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+    const mark = document.querySelector('[data-lm-editor-node="b_list"] [aria-hidden="true"]');
+    if (!(mark instanceof Element)) throw new Error('missing check mark');
+    fireEvent.click(mark);
+    const list = document.querySelector('[data-lm-editor-node="b_list"]');
+    expect(list?.textContent).toContain('☑');
+
+    const item = screen.getByText('Done');
+    fireEvent.pointerMove(item);
+    expect(document.querySelector('[data-lm-editor-node="b_list"]')).toHaveAttribute(
+      'data-hovered',
+    );
+    const canvas = document.querySelector('.canvas');
+    if (!(canvas instanceof HTMLElement)) throw new Error('missing canvas');
+    fireEvent.pointerLeave(canvas);
+    expect(document.querySelector('[data-hovered]')).toBeNull();
+
+    fireEvent.click(item);
+    fireEvent.keyDown(editorRoot(), { key: 'Enter' });
+    expect(document.querySelector('[contenteditable="true"]')).not.toBeNull();
+
+    const field = document.querySelector('[contenteditable="true"]');
+    if (field instanceof HTMLElement) fireEvent.keyDown(field, { key: 'Escape' });
+    const divider = document.querySelector('[data-lm-editor-node="b_d"]');
+    if (!(divider instanceof HTMLElement)) throw new Error('missing divider');
+    fireEvent.pointerDown(divider);
+    fireEvent.click(divider);
+    fireEvent.keyDown(editorRoot(), { key: 'Enter' });
+    expect(document.querySelector('textarea, [contenteditable="true"]')).toBeNull();
+  });
+
+  it('deletes a selected card and restores it with redo', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={layoutDocument()} />);
+    const card = document.querySelector('[data-lm-card-id="c_1"]');
+    if (!(card instanceof HTMLElement)) throw new Error('missing card');
+    fireEvent.click(card);
+    fireEvent.keyDown(editorRoot(), { key: 'Backspace' });
+    expect(ref.current?.store.getDocument().cards.map((item) => item.id)).toEqual(['c_2']);
+    fireEvent.keyDown(editorRoot(), { key: 'z', metaKey: true });
+    expect(ref.current?.store.getDocument().cards.map((item) => item.id)).toEqual(['c_1', 'c_2']);
+    fireEvent.keyDown(editorRoot(), { key: 'y', ctrlKey: true });
+    expect(ref.current?.store.getDocument().cards.map((item) => item.id)).toEqual(['c_2']);
+
+    await user.click(screen.getByRole('button', { name: 'Presentation' }));
+    expect(ref.current?.store.getDocument().format).toBe('presentation');
+  });
+
+  it('clears an external-change notice after a few seconds', () => {
+    vi.useFakeTimers();
+    try {
+      const store = createLoomaStore(
+        editorDocument({
+          cards: [{ id: 'c_1', body: [{ id: 'b_p', type: 'paragraph', text: 'Body' }] }],
+        }),
+      );
+      render(<LoomaEditor store={store} />);
+      fireEvent.dblClick(screen.getByText('Body'));
+      expect(document.querySelector('[contenteditable="true"]')).not.toBeNull();
+      act(() => {
+        store.apply([{ op: 'updateNode', id: 'b_p', patch: { text: 'From AI' } }], {
+          origin: 'ai',
+        });
+      });
+      expect(screen.getByRole('status')).toHaveTextContent(/changed elsewhere/i);
+      act(() => {
+        vi.advanceTimersByTime(4000);
+      });
+      expect(screen.queryByRole('status')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not select or delete while read only', () => {
     const ref = createRef<LoomaEditorHandle>();
     render(<LoomaEditor ref={ref} document={layoutDocument()} readOnly />);

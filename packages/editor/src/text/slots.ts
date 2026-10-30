@@ -41,8 +41,7 @@ function itemText(item: ListItem): string {
 function readItem(items: readonly ListItem[], path: readonly number[]): string | undefined {
   let list = items;
   for (let depth = 0; depth < path.length; depth += 1) {
-    const index = path[depth];
-    if (index === undefined) return undefined;
+    const index = path[depth] ?? -1;
     const item = list[index];
     if (item === undefined) return undefined;
     if (depth === path.length - 1) return itemText(item);
@@ -57,8 +56,8 @@ function writeItem(
   path: readonly number[],
   text: string,
 ): ListItem[] | null {
-  const index = path[0];
-  if (index === undefined || items[index] === undefined) return null;
+  const index = path[0] ?? -1;
+  if (items[index] === undefined) return null;
   if (path.length === 1) {
     return items.map((item, itemIndex) => {
       if (itemIndex !== index) return item;
@@ -92,10 +91,6 @@ export function readSlot(node: LoomaNode, slot: SlotKey): string | undefined {
       return node.type === 'list' ? readItem(node.items, parsed.path) : undefined;
     case 'cell':
       return node.type === 'table' ? node.rows[parsed.row]?.[parsed.col] : undefined;
-    default: {
-      const unreachable: never = parsed;
-      return unreachable;
-    }
   }
 }
 
@@ -135,10 +130,6 @@ export function slotPatch(
             : cells,
         ),
       };
-    }
-    default: {
-      const unreachable: never = parsed;
-      return unreachable;
     }
   }
 }
