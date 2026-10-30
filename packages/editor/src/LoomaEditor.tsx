@@ -1,4 +1,5 @@
 import { LoomaRoot } from '@lor-looma/viewer';
+import styles from './LoomaEditor.module.css';
 
 export interface LoomaEditorProps {
   className?: string;
@@ -7,7 +8,9 @@ export interface LoomaEditorProps {
 export function LoomaEditor({ className }: LoomaEditorProps) {
   return (
     <LoomaRoot className={className}>
-      <div data-looma-editor="">Looma editor</div>
+      <div className={styles.root} data-looma-editor="">
+        Looma editor
+      </div>
     </LoomaRoot>
   );
 }

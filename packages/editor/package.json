@@ -16,6 +16,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -23,8 +24,27 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.8.0",
     "@lor-looma/core": "workspace:*",
-    "@lor-looma/viewer": "workspace:*"
+    "@lor-looma/viewer": "workspace:*",
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-popover": "^1.3.1",
+    "@tiptap/core": "^3.32.1",
+    "@tiptap/extension-bold": "^3.32.1",
+    "@tiptap/extension-bubble-menu": "^3.32.1",
+    "@tiptap/extension-code": "^3.32.1",
+    "@tiptap/extension-document": "^3.32.1",
+    "@tiptap/extension-floating-menu": "^3.32.1",
+    "@tiptap/extension-hard-break": "^3.32.1",
+    "@tiptap/extension-italic": "^3.32.1",
+    "@tiptap/extension-link": "^3.32.1",
+    "@tiptap/extension-paragraph": "^3.32.1",
+    "@tiptap/extension-placeholder": "^3.32.1",
+    "@tiptap/extension-strike": "^3.32.1",
+    "@tiptap/extension-text": "^3.32.1",
+    "@tiptap/extensions": "^3.32.1",
+    "@tiptap/pm": "^3.32.1",
+    "@tiptap/react": "^3.32.1"
   },
   "peerDependencies": {
     "react": "^18.2.0 || ^19.0.0",
@@ -36,6 +56,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
