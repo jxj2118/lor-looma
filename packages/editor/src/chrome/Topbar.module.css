@@ -1,0 +1,73 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--lm-editor-chrome-border);
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+}
+
+.title,
+.titleText {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-weight: 650;
+}
+
+.title {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.title:focus {
+  border-color: var(--lm-editor-chrome-border);
+  outline: 2px solid var(--lm-editor-accent);
+  outline-offset: 1px;
+}
+
+.titleText {
+  padding: 4px 8px;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.button,
+.select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 6px;
+  background: var(--lm-editor-chrome-bg);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.button:disabled {
+  opacity: 0.45;
+}
+
+.button[aria-pressed='true'] {
+  border-color: var(--lm-editor-accent);
+  color: var(--lm-editor-accent);
+}
+
+.iconButton {
+  width: 32px;
+  padding: 0;
+}

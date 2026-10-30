@@ -1,0 +1,15 @@
+.notice {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  z-index: 2;
+  max-width: min(480px, calc(100% - 32px));
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--lm-editor-chrome-fg);
+  color: var(--lm-editor-chrome-bg);
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}

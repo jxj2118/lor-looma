@@ -1,4 +1,5 @@
 export const enUS = {
+  titleLabel: 'Title',
   titlePlaceholder: 'Untitled',
   undo: 'Undo',
   redo: 'Redo',

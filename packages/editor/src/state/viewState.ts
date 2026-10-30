@@ -1,5 +1,8 @@
+import type { LoomaAsset, LoomaStore } from '@lor-looma/core';
 import type { SlotKey } from '@lor-looma/viewer';
 import { createContext, useContext, useSyncExternalStore } from 'react';
+import type { RefObject } from 'react';
+import type { Messages } from '../i18n/en-US';
 
 export interface EditorSelection {
   cardId: string | null;
@@ -81,6 +84,22 @@ export function createViewState(initial?: Partial<ViewState>): ViewStateStore {
 
 export interface EditorContextValue {
   viewState: ViewStateStore;
+  store?: LoomaStore;
+  messages?: Messages;
+  readOnly?: boolean;
+  uploadAsset?: (file: File) => Promise<{
+    src: string;
+    width?: number;
+    height?: number;
+    alt?: string;
+  }>;
+  rootRef?: RefObject<HTMLDivElement | null>;
+  layerRef?: RefObject<HTMLDivElement | null>;
+  /** Layer element, tracked in state so portals can render without reading a ref. */
+  layerElement?: HTMLDivElement | null;
+  highlightExternalChanges?: boolean;
+  finishEditing?: () => void;
+  resolveAsset?: (asset: LoomaAsset, id: string) => string;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -95,4 +114,28 @@ export function useViewState<T>(selector: (state: ViewState) => T): T {
     () => selector(store.get()),
     () => selector(store.get()),
   );
+}
+
+export function useEditorContext(): EditorContextValue & {
+  store: LoomaStore;
+  messages: Messages;
+  rootRef: RefObject<HTMLDivElement | null>;
+  layerRef: RefObject<HTMLDivElement | null>;
+  readOnly: boolean;
+  finishEditing: () => void;
+} {
+  const context = useContext(EditorContext);
+  if (!context?.store || !context.messages || !context.rootRef || !context.layerRef) {
+    throw new Error('useEditorContext must be used inside LoomaEditor');
+  }
+  return {
+    ...context,
+    store: context.store,
+    messages: context.messages,
+    rootRef: context.rootRef,
+    layerRef: context.layerRef,
+    readOnly: context.readOnly ?? false,
+    highlightExternalChanges: context.highlightExternalChanges ?? true,
+    finishEditing: context.finishEditing ?? (() => {}),
+  };
 }

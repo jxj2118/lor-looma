@@ -1,4 +1,21 @@
 .root {
+  --lm-editor-accent: #2563eb;
+  --lm-editor-chrome-bg: #ffffff;
+  --lm-editor-chrome-fg: #1f2328;
+  --lm-editor-chrome-border: #d0d7de;
+  --lm-editor-flash: #f59e0b;
+  position: relative;
   display: flex;
+  flex-direction: column;
   min-height: 0;
+  height: 100%;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
 }

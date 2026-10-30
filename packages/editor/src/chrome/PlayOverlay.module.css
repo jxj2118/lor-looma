@@ -1,0 +1,45 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 23 42 / 45%);
+  pointer-events: auto;
+}
+
+.content {
+  position: absolute;
+  inset: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 12px;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+  pointer-events: auto;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+}
+
+.close {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 6px;
+  background: var(--lm-editor-chrome-bg);
+  color: inherit;
+  font: inherit;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+}
