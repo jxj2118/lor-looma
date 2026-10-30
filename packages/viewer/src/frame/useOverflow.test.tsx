@@ -66,6 +66,30 @@ describe('useOverflow', () => {
     expect([...result.current]).toEqual([]);
   });
 
+  it('re-measures when content changes inside a fixed-height box', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+    const element = box(100, 100);
+    const child = document.createElement('p');
+    element.append(child);
+    const { result } = renderHook(() => useOverflow(['c_x'], () => element, true));
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    expect([...result.current]).toEqual([]);
+    expect(MockResizeObserver.instances[0]?.elements).toContain(child);
+
+    Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 300 });
+    const added = document.createElement('p');
+    await act(async () => {
+      element.append(added);
+      await Promise.resolve();
+      vi.advanceTimersByTime(100);
+    });
+    expect([...result.current]).toEqual(['c_x']);
+    expect(MockResizeObserver.instances[0]?.elements).toContain(added);
+  });
+
   it('stays empty when ResizeObserver is missing', () => {
     vi.stubGlobal('ResizeObserver', undefined);
     const { result } = renderHook(() => useOverflow(['c_x'], () => box(400, 100), true));

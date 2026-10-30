@@ -46,17 +46,36 @@ export function useOverflow(
       timer = setTimeout(measure, 100);
     };
 
+    // The content box has a fixed height, so growth only shows up as its children resizing.
     const observer = new Observer(() => {
       schedule();
     });
+    const observeContent = (element: HTMLElement) => {
+      observer.observe(element);
+      for (const child of Array.from(element.children)) observer.observe(child);
+    };
+    const mutations = globalThis.MutationObserver
+      ? new globalThis.MutationObserver((records) => {
+          for (const record of records) {
+            if (record.type !== 'childList') continue;
+            for (const node of Array.from(record.addedNodes)) {
+              if (node instanceof Element) observer.observe(node);
+            }
+          }
+          schedule();
+        })
+      : undefined;
     for (const id of idsRef.current) {
       const element = getRef.current(id);
-      if (element) observer.observe(element);
+      if (!element) continue;
+      observeContent(element);
+      mutations?.observe(element, { childList: true, subtree: true, characterData: true });
     }
     schedule();
     return () => {
       if (timer !== undefined) clearTimeout(timer);
       observer.disconnect();
+      mutations?.disconnect();
     };
   }, [enabled, idsKey]);
 
