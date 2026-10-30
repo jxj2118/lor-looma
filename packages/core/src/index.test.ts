@@ -49,6 +49,15 @@ describe('public API', () => {
     expect(surface[name]).toBeDefined();
   });
 
+  it('does not export the AI entry', () => {
+    expect(surface).not.toHaveProperty('getToolDefinitions');
+    expect(surface).not.toHaveProperty('createToolHandler');
+    expect(surface).not.toHaveProperty('getCommandJsonSchema');
+    expect(surface).not.toHaveProperty('getDocumentJsonSchema');
+    expect(surface).not.toHaveProperty('LOOMA_AI_GUIDE');
+    expect(surface).not.toHaveProperty('LOOMA_TOOL_NAMES');
+  });
+
   it('does not export internal helpers', () => {
     expect(surface).not.toHaveProperty('runMigrations');
     expect(surface).not.toHaveProperty('zodIssuesToParseIssues');
