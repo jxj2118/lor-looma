@@ -165,6 +165,7 @@ export const LoomaCommandSchema = z.discriminatedUnion('op', [
 ]);
 
 export type LoomaCommand = z.input<typeof LoomaCommandSchema>;
+export type ParsedLoomaCommand = z.output<typeof LoomaCommandSchema>;
 export type CommandOp = LoomaCommand['op'];
 
 export const COMMAND_OPS = [
