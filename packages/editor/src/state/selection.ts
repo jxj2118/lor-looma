@@ -60,6 +60,37 @@ export function pruneSelection(doc: LoomaDocument, selection: EditorSelection): 
   return { cardId, nodeIds };
 }
 
+/** Selection to keep after deleting the current selection. `doc` is the document before the delete. */
+export function selectionAfterDelete(
+  doc: LoomaDocument,
+  selection: EditorSelection,
+): EditorSelection {
+  if (selection.nodeIds.length === 0) {
+    if (!selection.cardId) return EMPTY;
+    const index = doc.cards.findIndex((card) => card.id === selection.cardId);
+    const neighbor = doc.cards[index + 1] ?? doc.cards[index - 1];
+    return neighbor ? selectCard(neighbor.id) : EMPTY;
+  }
+  const located = selection.nodeIds
+    .map((id) => findNode(doc, id))
+    .filter((found) => found !== null);
+  const anchor = located[0];
+  if (!anchor) return selection.cardId ? selectCard(selection.cardId) : EMPTY;
+  const list = siblings(doc, anchor.node.id) ?? [];
+  const removed = new Set(selection.nodeIds);
+  const indexes = located.map((found) => found.index);
+  const start = Math.min(...indexes);
+  const end = Math.max(...indexes);
+  const next = list.slice(end + 1).find((node) => !removed.has(node.id));
+  if (next) return { cardId: anchor.cardId, nodeIds: [next.id] };
+  const previous = list
+    .slice(0, start)
+    .reverse()
+    .find((node) => !removed.has(node.id));
+  if (previous) return { cardId: anchor.cardId, nodeIds: [previous.id] };
+  return selectCard(anchor.cardId);
+}
+
 export function normalizeSelectIds(doc: LoomaDocument, ids: string[]): EditorSelection {
   for (const id of ids) {
     if (findCard(doc, id)) return selectCard(id);

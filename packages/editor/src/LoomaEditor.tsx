@@ -1,16 +1,28 @@
-import { createLoomaStore, findCard } from '@lor-looma/core';
-import type { LoomaAsset, LoomaDocument, LoomaStore, StoreChange } from '@lor-looma/core';
+import { createLoomaStore, findCard, findNode } from '@lor-looma/core';
+import type {
+  LoomaAsset,
+  LoomaDocument,
+  LoomaNode,
+  LoomaStore,
+  StoreChange,
+} from '@lor-looma/core';
 import { LoomaRoot, useLoomaDocument } from '@lor-looma/viewer';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { Canvas } from './canvas/Canvas';
+import { armFlash, clearFlash } from './canvas/flash';
 import { Notice } from './chrome/Notice';
 import { PlayOverlay } from './chrome/PlayOverlay';
 import { Topbar } from './chrome/Topbar';
 import { useMessages } from './i18n/useMessages';
-import { normalizeSelectIds } from './state/selection';
+import {
+  normalizeSelectIds,
+  pruneSelection,
+  selectCard,
+  selectionAfterDelete,
+} from './state/selection';
 import { EditorContext, createViewState } from './state/viewState';
-import type { EditorSelection } from './state/viewState';
+import type { EditorSelection, ViewStateStore } from './state/viewState';
 import styles from './LoomaEditor.module.css';
 
 export type UploadAsset = (file: File) => Promise<{
@@ -74,15 +86,41 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   }, []);
   const onChangeRef = useRef(onChange);
   const sourceDocument = useRef(documentProp);
+  const highlightRef = useRef(highlightExternalChanges);
+  const flashTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const doc = useLoomaDocument({ store });
   const [playing, setPlaying] = useState(false);
   const [playPage, setPlayPage] = useState(0);
 
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    highlightRef.current = highlightExternalChanges;
+  }, [onChange, highlightExternalChanges]);
 
-  useEffect(() => store.subscribe((next, change) => onChangeRef.current?.(next, change)), [store]);
+  useEffect(() => {
+    return store.subscribe((next, change) => {
+      onChangeRef.current?.(next, change);
+      if (change.kind === 'load') {
+        clearFlash(viewState, flashTimers.current);
+        viewState.set({
+          selection: { cardId: null, nodeIds: [] },
+          hoverId: null,
+          editing: null,
+        });
+        return;
+      }
+      const pruned = pruneSelection(next, viewState.get().selection);
+      if (pruned !== viewState.get().selection) viewState.set({ selection: pruned });
+      if (highlightRef.current && change.kind === 'apply' && change.origin !== 'user') {
+        const ids = change.touchedIds.filter(
+          (id) => findCard(next, id) !== null || findNode(next, id) !== null,
+        );
+        armFlash(viewState, ids, flashTimers.current);
+      }
+    });
+  }, [store, viewState]);
+
+  useEffect(() => () => clearFlash(viewState, flashTimers.current), [viewState]);
 
   useEffect(() => {
     if (storeProp || !documentProp || documentProp === sourceDocument.current) return;
@@ -143,6 +181,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         tabIndex={-1}
         className={className ? `${styles.root} ${className}` : styles.root}
         style={style}
+        onKeyDown={(event) => onEditorKeyDown(event, { readOnly, store, viewState })}
       >
         <Topbar onPlay={openPlay} />
         <Canvas />
@@ -154,3 +193,95 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     </EditorContext.Provider>
   );
 });
+
+function isFieldTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('input, textarea, select, [contenteditable="true"]') !== null
+  );
+}
+
+function textSlot(node: LoomaNode): string | null {
+  switch (node.type) {
+    case 'heading':
+    case 'paragraph':
+    case 'callout':
+    case 'quote':
+      return 'text';
+    case 'list':
+      return node.items.length > 0 ? 'item:0' : null;
+    case 'table':
+      return node.rows.length > 0 && (node.rows[0]?.length ?? 0) > 0 ? 'cell:0:0' : null;
+    case 'code':
+      return 'code';
+    default:
+      return null;
+  }
+}
+
+function onEditorKeyDown(
+  event: KeyboardEvent<HTMLDivElement>,
+  {
+    readOnly,
+    store,
+    viewState,
+  }: { readOnly: boolean; store: LoomaStore; viewState: ViewStateStore },
+): void {
+  if (readOnly || viewState.get().editing || isFieldTarget(event.target)) return;
+  if (event.target instanceof Element && event.target.closest('[role="dialog"]')) return;
+  const key = event.key.toLowerCase();
+  const meta = event.metaKey || event.ctrlKey;
+  if (meta && key === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) store.redo();
+    else store.undo();
+    return;
+  }
+  if (event.ctrlKey && key === 'y') {
+    event.preventDefault();
+    store.redo();
+    return;
+  }
+
+  const selection = viewState.get().selection;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    const nodeId = selection.nodeIds[0];
+    if (nodeId) {
+      const found = findNode(store.getDocument(), nodeId);
+      if (!found) {
+        viewState.set({ selection: { cardId: null, nodeIds: [] } });
+        return;
+      }
+      if (found.parentId === found.cardId) viewState.set({ selection: selectCard(found.cardId) });
+      else viewState.set({ selection: { cardId: found.cardId, nodeIds: [found.parentId] } });
+      return;
+    }
+    if (selection.cardId) viewState.set({ selection: { cardId: null, nodeIds: [] } });
+    return;
+  }
+
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    if (selection.nodeIds.length === 0 && !selection.cardId) return;
+    event.preventDefault();
+    const doc = store.getDocument();
+    const next = selectionAfterDelete(doc, selection);
+    const commands =
+      selection.nodeIds.length > 0
+        ? selection.nodeIds.map((id) => ({ op: 'deleteNode' as const, id }))
+        : [{ op: 'deleteCard' as const, id: selection.cardId ?? '' }];
+    const result = store.apply(commands, { origin: 'user', label: 'Delete' });
+    if (result.ok) viewState.set({ selection: next });
+    return;
+  }
+
+  if (event.key === 'Enter' && !event.shiftKey && selection.nodeIds.length === 1) {
+    const nodeId = selection.nodeIds[0];
+    if (!nodeId) return;
+    const found = findNode(store.getDocument(), nodeId);
+    const slot = found ? textSlot(found.node) : null;
+    if (!found || !slot) return;
+    event.preventDefault();
+    viewState.set({ editing: { nodeId: found.node.id, slot, caret: 'end' } });
+  }
+}

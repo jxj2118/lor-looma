@@ -18,6 +18,24 @@
   position: relative;
 }
 
+.card[data-selected] {
+  outline: 2px solid var(--lm-editor-accent);
+  outline-offset: 6px;
+}
+
+.card[data-flash] {
+  animation: flash 1.5s ease;
+}
+
+@keyframes flash {
+  from {
+    box-shadow: 0 0 0 3px var(--lm-editor-flash);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
 .badge {
   position: absolute;
   top: 8px;

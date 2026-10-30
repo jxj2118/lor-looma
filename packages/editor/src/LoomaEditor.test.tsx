@@ -1,11 +1,48 @@
 import { createLoomaStore } from '@lor-looma/core';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { LoomaEditor } from './index';
 import type { LoomaEditorHandle } from './index';
 import { editorDocument } from './test/fixture';
+
+function layoutDocument() {
+  return editorDocument({
+    cards: [
+      {
+        id: 'c_1',
+        body: [
+          { id: 'b_1', type: 'paragraph', text: 'One' },
+          { id: 'b_2', type: 'paragraph', text: 'Two' },
+          { id: 'b_3', type: 'paragraph', text: 'Three' },
+          {
+            id: 'n_cols',
+            type: 'columns',
+            widths: [1, 1],
+            children: [
+              [{ id: 'b_left', type: 'paragraph', text: 'Left' }],
+              [{ id: 'b_right', type: 'paragraph', text: 'Right' }],
+            ],
+          },
+        ],
+      },
+      { id: 'c_2', body: [{ id: 'b_other', type: 'paragraph', text: 'Other' }] },
+    ],
+  });
+}
+
+function selectedNodes(): string[] {
+  return [...document.querySelectorAll('[data-lm-editor-node][data-selected]')].map(
+    (element) => element.getAttribute('data-lm-editor-node') ?? '',
+  );
+}
+
+function editorRoot(): HTMLElement {
+  const root = document.querySelector('[data-looma-root]');
+  if (!(root instanceof HTMLElement)) throw new Error('missing editor root');
+  return root;
+}
 
 describe('LoomaEditor', () => {
   it('edits the title on blur as a single undo step', async () => {
@@ -124,5 +161,125 @@ describe('LoomaEditor', () => {
     expect(ref.current?.store.getDocument().id).toBe('doc_edit');
     ref.current?.scrollTo('c_2');
     expect(scroll).toHaveBeenCalledWith({ block: 'center' });
+  });
+
+  it('selects a node, extends to siblings, and falls back across columns', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={layoutDocument()} />);
+    fireEvent.click(screen.getByText('One'));
+    expect(selectedNodes()).toEqual(['b_1']);
+    fireEvent.click(screen.getByText('Three'), { shiftKey: true });
+    expect(selectedNodes()).toEqual(['b_1', 'b_2', 'b_3']);
+    fireEvent.click(screen.getByText('Left'));
+    fireEvent.click(screen.getByText('Right'), { shiftKey: true });
+    expect(selectedNodes()).toEqual(['b_right']);
+  });
+
+  it('selects a card from its padding and clears the selection from the canvas', () => {
+    render(<LoomaEditor document={layoutDocument()} />);
+    fireEvent.click(screen.getByText('One'));
+    const card = document.querySelector('[data-lm-card-id="c_1"]');
+    if (!(card instanceof HTMLElement)) throw new Error('missing card');
+    fireEvent.click(card);
+    expect(document.querySelector('[data-lm-editor-card="c_1"]')).toHaveAttribute('data-selected');
+    expect(selectedNodes()).toEqual([]);
+    const canvas = document.querySelector('.canvas');
+    if (!(canvas instanceof HTMLElement)) throw new Error('missing canvas');
+    fireEvent.click(canvas);
+    expect(document.querySelector('[data-selected]')).toBeNull();
+  });
+
+  it('walks selection up to the card with Escape', () => {
+    render(<LoomaEditor document={layoutDocument()} />);
+    fireEvent.click(screen.getByText('Left'));
+    const root = editorRoot();
+    fireEvent.keyDown(root, { key: 'Escape' });
+    expect(selectedNodes()).toEqual(['n_cols']);
+    fireEvent.keyDown(root, { key: 'Escape' });
+    expect(selectedNodes()).toEqual([]);
+    expect(document.querySelector('[data-lm-editor-card="c_1"]')).toHaveAttribute('data-selected');
+    fireEvent.keyDown(root, { key: 'Escape' });
+    expect(document.querySelector('[data-selected]')).toBeNull();
+  });
+
+  it('deletes the selected node, selects the next sibling, and restores it with undo', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={layoutDocument()} />);
+    fireEvent.click(screen.getByText('One'));
+    const root = editorRoot();
+    fireEvent.keyDown(root, { key: 'Backspace' });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_2',
+      'b_3',
+      'n_cols',
+    ]);
+    expect(selectedNodes()).toEqual(['b_2']);
+    fireEvent.keyDown(root, { key: 'z', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toContain('b_1');
+  });
+
+  it('keeps the other card mounted when the selection changes', () => {
+    render(<LoomaEditor document={layoutDocument()} />);
+    const other = document.querySelector('[data-lm-card-id="c_2"]');
+    fireEvent.click(screen.getByText('One'));
+    expect(document.querySelector('[data-lm-card-id="c_2"]')).toBe(other);
+    expect(selectedNodes()).toEqual(['b_1']);
+  });
+
+  it('flashes external edits and drops that highlight for user edits or when disabled', () => {
+    vi.useFakeTimers();
+    try {
+      const store = createLoomaStore(layoutDocument());
+      const { rerender } = render(<LoomaEditor store={store} />);
+      act(() => {
+        store.apply([{ op: 'updateNode', id: 'b_1', patch: { text: 'Edited' } }], { origin: 'ai' });
+      });
+      expect(document.querySelector('[data-lm-editor-node="b_1"]')).toHaveAttribute('data-flash');
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      expect(document.querySelector('[data-lm-editor-node="b_1"]')).not.toHaveAttribute(
+        'data-flash',
+      );
+
+      act(() => {
+        store.apply([{ op: 'updateNode', id: 'b_1', patch: { text: 'Mine' } }], { origin: 'user' });
+      });
+      expect(document.querySelector('[data-lm-editor-node="b_1"]')).not.toHaveAttribute(
+        'data-flash',
+      );
+
+      rerender(<LoomaEditor store={store} highlightExternalChanges={false} />);
+      act(() => {
+        store.apply([{ op: 'updateNode', id: 'b_2', patch: { text: 'Nope' } }], { origin: 'ai' });
+      });
+      expect(document.querySelector('[data-lm-editor-node="b_2"]')).not.toHaveAttribute(
+        'data-flash',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drops a selection when that node is deleted elsewhere', () => {
+    const store = createLoomaStore(layoutDocument());
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} store={store} />);
+    act(() => {
+      ref.current?.select(['b_1']);
+    });
+    act(() => {
+      store.apply([{ op: 'deleteNode', id: 'b_1' }], { origin: 'ai' });
+    });
+    expect(ref.current?.getSelection().nodeIds).not.toContain('b_1');
+  });
+
+  it('does not select or delete while read only', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={layoutDocument()} readOnly />);
+    fireEvent.click(screen.getByText('One'));
+    expect(document.querySelector('[data-selected]')).toBeNull();
+    fireEvent.keyDown(editorRoot(), { key: 'Backspace' });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toContain('b_1');
   });
 });

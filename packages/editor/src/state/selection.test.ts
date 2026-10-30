@@ -1,7 +1,13 @@
 import { parseDocument } from '@lor-looma/core';
 import type { LoomaDocument } from '@lor-looma/core';
 import { describe, expect, it } from 'vitest';
-import { normalizeSelectIds, pruneSelection, selectCard, selectNode } from './selection';
+import {
+  normalizeSelectIds,
+  pruneSelection,
+  selectCard,
+  selectNode,
+  selectionAfterDelete,
+} from './selection';
 import type { EditorSelection } from './viewState';
 
 function document(): LoomaDocument {
@@ -87,6 +93,27 @@ describe('pruneSelection', () => {
     const doc = document();
     const selection = { cardId: 'c_a', nodeIds: ['b_1'] };
     expect(pruneSelection(doc, selection)).toBe(selection);
+  });
+});
+
+describe('selectionAfterDelete', () => {
+  it('selects the next sibling, then the previous, then the card', () => {
+    const doc = document();
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_1'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_2'],
+    });
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_3'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['n_cols'],
+    });
+    expect(selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['n_cols'] })).toEqual({
+      cardId: 'c_a',
+      nodeIds: ['b_3'],
+    });
+    expect(
+      selectionAfterDelete(doc, { cardId: 'c_a', nodeIds: ['b_1', 'b_2', 'b_3', 'n_cols'] }),
+    ).toEqual({ cardId: 'c_a', nodeIds: [] });
   });
 });
 

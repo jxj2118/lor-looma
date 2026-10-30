@@ -1,0 +1,43 @@
+.node {
+  position: relative;
+}
+
+.node[data-selected] {
+  outline: 2px solid var(--lm-editor-accent);
+  outline-offset: 4px;
+}
+
+.node[data-hovered]:not([data-selected]) {
+  outline: 1px solid color-mix(in srgb, var(--lm-editor-accent) 45%, transparent);
+  outline-offset: 4px;
+}
+
+.node[data-flash] {
+  animation: flash 1.5s ease;
+}
+
+@keyframes flash {
+  from {
+    box-shadow: 0 0 0 3px var(--lm-editor-flash);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+.add {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 999px;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+}
