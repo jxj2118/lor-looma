@@ -1,8 +1,32 @@
 .root {
+  --lm-palette-red: #dc2626;
+  --lm-palette-orange: #ea580c;
+  --lm-palette-yellow: #ca8a04;
+  --lm-palette-green: #16a34a;
+  --lm-palette-blue: #2563eb;
+  --lm-palette-purple: #7c3aed;
+  --lm-palette-pink: #db2777;
+  --lm-palette-gray: #6b7280;
+  --lm-highlight-yellow: #fde68a;
+  --lm-highlight-green: #bbf7d0;
+  --lm-highlight-blue: #bfdbfe;
+  --lm-highlight-pink: #fbcfe8;
+  --lm-highlight-purple: #e9d5ff;
+  --lm-highlight-orange: #fed7aa;
+  --lm-highlight-red: #fecaca;
+  --lm-highlight-gray: #e5e7eb;
+  --lm-border: color-mix(in srgb, var(--lm-color-fg, #1f2328) 16%, transparent);
+  --lm-table-stripe: color-mix(in srgb, var(--lm-color-fg, #1f2328) 6%, transparent);
+  --lm-callout-info: color-mix(in srgb, var(--lm-color-info, #0284c7) 12%, transparent);
+  --lm-callout-success: color-mix(in srgb, var(--lm-color-success, #16a34a) 12%, transparent);
+  --lm-callout-warning: color-mix(in srgb, var(--lm-color-warning, #d97706) 12%, transparent);
+  --lm-callout-danger: color-mix(in srgb, var(--lm-color-danger, #dc2626) 12%, transparent);
+  --lm-callout-note: color-mix(in srgb, var(--lm-color-note, #6b7280) 12%, transparent);
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family:
+  font-family: var(
+    --lm-font-body,
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -12,12 +36,32 @@
     'Noto Sans',
     'PingFang SC',
     'Microsoft YaHei',
-    sans-serif;
+    sans-serif
+  );
   font-size: 16px;
   line-height: 1.5;
-  color: #1f2328;
+  color: var(--lm-color-fg, #1f2328);
   text-align: left;
   -webkit-font-smoothing: antialiased;
+}
+
+.root[data-looma-theme='dark'] {
+  --lm-palette-red: #fca5a5;
+  --lm-palette-orange: #fdba74;
+  --lm-palette-yellow: #fde047;
+  --lm-palette-green: #86efac;
+  --lm-palette-blue: #93c5fd;
+  --lm-palette-purple: #d8b4fe;
+  --lm-palette-pink: #f9a8d4;
+  --lm-palette-gray: #d1d5db;
+  --lm-highlight-yellow: rgb(250 204 21 / 0.28);
+  --lm-highlight-green: rgb(74 222 128 / 0.24);
+  --lm-highlight-blue: rgb(96 165 250 / 0.24);
+  --lm-highlight-pink: rgb(244 114 182 / 0.24);
+  --lm-highlight-purple: rgb(192 132 252 / 0.24);
+  --lm-highlight-orange: rgb(251 146 60 / 0.24);
+  --lm-highlight-red: rgb(248 113 113 / 0.24);
+  --lm-highlight-gray: rgb(156 163 175 / 0.22);
 }
 
 .root *,
