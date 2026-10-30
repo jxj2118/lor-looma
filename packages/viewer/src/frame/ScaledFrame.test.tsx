@@ -66,6 +66,20 @@ describe('ScaledFrame', () => {
     expect(shown.outer.style.height).toBe('360px');
   });
 
+  it('fits a slide inside both the width and the height', () => {
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+    const view = render(
+      <ScaledFrame logicalWidth={1280} logicalHeight={720} fit="contain">
+        <section>Slide</section>
+      </ScaledFrame>,
+    );
+    act(() => {
+      for (const observer of MockResizeObserver.instances) observer.flush(640, 200);
+    });
+    const scale = Math.min(640 / 1280, 200 / 720);
+    expect(frameOf(view.container).inner.style.transform).toContain(`scale(${scale})`);
+  });
+
   it('does not scale past maxScale', () => {
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
     const view = render(

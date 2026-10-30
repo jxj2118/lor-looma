@@ -1,0 +1,33 @@
+.present {
+  position: relative;
+  height: 100%;
+  background: var(--lm-color-bg);
+}
+
+.stage,
+.stageScroll {
+  height: 100%;
+  background: var(--lm-color-bg);
+}
+
+.stageScroll {
+  overflow: auto;
+}
+
+.stage a,
+.stageScroll a {
+  cursor: pointer;
+}
+
+.pager {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  z-index: 2;
+  color: var(--lm-color-muted);
+  font-family: var(--lm-font-body);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}

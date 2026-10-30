@@ -1,7 +1,7 @@
 import { LOOMA_SCHEMA_VERSION } from '@lor-looma/core';
 import type { LoomaTheme } from '@lor-looma/core';
 import { forwardRef } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEventHandler, ReactNode } from 'react';
 import { themeToCssVariables } from '../theme/themeToCssVariables';
 import styles from './LoomaRoot.module.css';
 
@@ -10,10 +10,12 @@ export interface LoomaRootProps {
   className?: string;
   style?: CSSProperties;
   theme?: LoomaTheme;
+  tabIndex?: number;
+  onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
 }
 
 export const LoomaRoot = forwardRef<HTMLDivElement, LoomaRootProps>(function LoomaRoot(
-  { children, className, style, theme },
+  { children, className, style, theme, tabIndex, onKeyDown },
   ref,
 ) {
   const themeStyle = theme ? themeToCssVariables(theme) : undefined;
@@ -25,6 +27,8 @@ export const LoomaRoot = forwardRef<HTMLDivElement, LoomaRootProps>(function Loo
       data-looma-theme={theme?.preset}
       className={className ? `${styles.root} ${className}` : styles.root}
       style={themeStyle ? { ...themeStyle, ...style } : style}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
     >
       {children}
     </div>

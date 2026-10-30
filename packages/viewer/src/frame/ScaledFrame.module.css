@@ -4,6 +4,10 @@
   overflow: hidden;
 }
 
+.contain {
+  height: 100%;
+}
+
 .inner {
   position: absolute;
   top: 0;

@@ -1,11 +1,12 @@
 import type { LoomaAsset, LoomaDocument, LoomaStore } from '@lor-looma/core';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import type { RenderNode } from '../card/LoomaCardView';
 import { useOverflow } from '../frame/useOverflow';
 import { useLoomaDocument } from '../hooks/useLoomaDocument';
 import { LoomaRoot } from '../root/LoomaRoot';
 import styles from './LoomaViewer.module.css';
+import { PresentView } from './PresentView';
 import { ScrollView } from './ScrollView';
 
 export type ViewerMode = 'scroll' | 'present';
@@ -52,6 +53,7 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
     resolveAsset,
     onOverflow,
     maxScale,
+    showPageNumber = true,
     onFullscreenChange,
     renderNode,
     className,
@@ -75,7 +77,7 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
     docRef.current = doc;
     modeRef.current = mode;
     pagePropRef.current = pageProp;
-    pageRef.current = page;
+    pageRef.current = clampPage(page, doc.cards.length);
     onPageChangeRef.current = onPageChange;
     onOverflowRef.current = onOverflow;
     onFullscreenChangeRef.current = onFullscreenChange;
@@ -102,6 +104,17 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
     const ordered = docRef.current.cards.map((card) => card.id).filter((id) => overflowing.has(id));
     onOverflowRef.current?.(ordered);
   }, [overflowing]);
+
+  useEffect(() => {
+    if (pageProp === undefined) return;
+    const clamped = clampPage(pageProp, doc.cards.length);
+    if (clamped !== pageProp) onPageChangeRef.current?.(clamped);
+  }, [pageProp, doc.cards.length]);
+
+  useEffect(() => {
+    if (mode !== 'present') return;
+    rootRef.current?.focus();
+  }, [mode]);
 
   useEffect(() => {
     const live = globalThis.document;
@@ -157,10 +170,52 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
 
   const scaleCap = maxScale ?? (doc.format === 'document' ? 1 : Number.POSITIVE_INFINITY);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
+  const displayed = clampPage(page, doc.cards.length);
+  if (pageProp === undefined && page !== displayed) setInternalPage(displayed);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (mode !== 'present') return;
+    const current = pageRef.current;
+    if (
+      event.key === 'ArrowRight' ||
+      event.key === 'ArrowDown' ||
+      event.key === ' ' ||
+      event.key === 'PageDown'
+    ) {
+      event.preventDefault();
+      commitPage(current + 1);
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'PageUp') {
+      event.preventDefault();
+      commitPage(current - 1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      commitPage(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      commitPage(docRef.current.cards.length - 1);
+    }
+  };
 
   return (
-    <LoomaRoot ref={rootRef} theme={doc.theme} className={rootClass} style={style}>
-      {mode === 'scroll' ? (
+    <LoomaRoot
+      ref={rootRef}
+      theme={doc.theme}
+      className={rootClass}
+      style={style}
+      tabIndex={mode === 'present' ? 0 : undefined}
+      onKeyDown={onKeyDown}
+    >
+      {mode === 'present' ? (
+        <PresentView
+          document={doc}
+          page={displayed}
+          maxScale={scaleCap}
+          showPageNumber={showPageNumber}
+          resolveAsset={resolveAsset}
+          renderNode={renderNode}
+          onPage={commitPage}
+        />
+      ) : (
         <ScrollView
           document={doc}
           resolveAsset={resolveAsset}
@@ -168,7 +223,7 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
           maxScale={scaleCap}
           overflowing={overflowing}
         />
-      ) : null}
+      )}
     </LoomaRoot>
   );
 });
