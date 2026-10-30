@@ -8,6 +8,7 @@ import { collectIds } from '../tree/tree';
 import { CommandFailure, createCommandContext } from './context';
 import { deleteCard, duplicateCard, insertCard, moveCard, updateCard } from './handlers/cards';
 import { putAsset, removeAsset, setFormat, setTheme, setTitle } from './handlers/document';
+import { deleteColumn, insertColumn, unwrapNode, wrapNodes } from './handlers/layout';
 import { deleteNode, insertNode, moveNode, replaceNode, updateNode } from './handlers/nodes';
 import { LoomaCommandSchema } from './schema';
 import type { ParsedLoomaCommand } from './schema';
@@ -81,11 +82,13 @@ function dispatch(ctx: ReturnType<typeof createCommandContext>, command: ParsedL
     case 'deleteNode':
       return deleteNode(ctx, command);
     case 'wrapNodes':
+      return wrapNodes(ctx, command);
     case 'unwrapNode':
+      return unwrapNode(ctx, command);
     case 'insertColumn':
+      return insertColumn(ctx, command);
     case 'deleteColumn':
-      ctx.fail('op', `${command.op} is not implemented`);
-      return;
+      return deleteColumn(ctx, command);
     default: {
       const unreachable: never = command;
       return unreachable;
