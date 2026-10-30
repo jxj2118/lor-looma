@@ -255,7 +255,14 @@ const INVALID_COMMANDS: unknown[] = [
   { op: 'setTitle' },
   { op: 'setFormat', format: 'poster' },
   { op: 'setTheme', preset: 'neon' },
+  { op: 'setTheme' },
+  { op: 'deleteCard' },
   { op: 'setFormat' },
+  { op: 'updateNode', id: 'b_title', patch: {} },
+  { op: 'updateCard', id: 'c_title', patch: {} },
+  { op: 'updateNode', id: 'b_title', patch: { id: 'b_other' } },
+  { op: 'updateNode', id: 'b_title', patch: { type: 'heading' } },
+  { op: 'updateNode', id: 'n_process_stack', patch: { children: [] } },
   { op: 'deleteNode', id: '1bad' },
   {
     op: 'insertNode',
@@ -474,6 +481,49 @@ describe('JSON Schema generation', () => {
     expect(accepted).toEqual([]);
   });
 
+  it('rejects refinements the runtime also rejects', () => {
+    const doc = freshDocument();
+    const cases = [
+      { op: 'setTheme' },
+      { op: 'deleteCard' },
+      { op: 'updateNode', id: 'b_title', patch: {} },
+      { op: 'updateCard', id: 'c_title', patch: {} },
+      { op: 'updateNode', id: 'b_title', patch: { id: 'b_other' } },
+      { op: 'updateNode', id: 'b_title', patch: { type: 'heading' } },
+      { op: 'updateNode', id: 'n_process_stack', patch: { children: [] } },
+    ];
+    for (const command of cases) {
+      const label = JSON.stringify(command);
+      expect(validateCommand(command), label).toBe(false);
+      const applied = applyCommands(doc, [command]);
+      expect(applied.ok, label).toBe(false);
+    }
+  });
+
+  it('requires the same top-level fields the runtime requires', () => {
+    const doc = freshDocument();
+    const variants = commandSchema.anyOf;
+    expect(Array.isArray(variants)).toBe(true);
+    for (const op of COMMAND_OPS) {
+      const applied = applyCommands(doc, [{ op }]);
+      const paths = applied.ok
+        ? []
+        : applied.errors.map((error) => error.path).filter((path) => !path.includes('.'));
+      const variant = (variants as JsonSchema[]).find((branch) => {
+        const properties = branch.properties;
+        return isRecord(properties) && isRecord(properties.op) && properties.op.const === op;
+      });
+      const required = Array.isArray(variant?.required) ? [...variant.required].sort() : [];
+      // setTheme's refine reports path `preset`, but either preset or overrides is enough.
+      if (op === 'setTheme') {
+        expect(required, op).toEqual(['op']);
+        expect(variant?.anyOf).toEqual([{ required: ['preset'] }, { required: ['overrides'] }]);
+        continue;
+      }
+      expect(required, op).toEqual(['op', ...paths].sort());
+    }
+  });
+
   it('accepts a fixture document with every id and looma omitted', () => {
     const stripped = stripIdsAndVersion(fixture);
     expect(validateDocument(stripped), JSON.stringify(validateDocument.errors)).toBe(true);
@@ -481,16 +531,24 @@ describe('JSON Schema generation', () => {
     expect(parsed.ok, JSON.stringify(parsed)).toBe(true);
   });
 
-  it('uses anyOf, drops unknown blocks, and never requires id', () => {
+  it('uses anyOf, drops unknown blocks, and omits id on created objects', () => {
     for (const schema of [commandSchema, documentSchema]) {
       const json = JSON.stringify(schema);
       expect(json).not.toContain('oneOf');
       expect(json).not.toContain('"unknown"');
-      walk(schema, (node) => {
+    }
+    const defs = commandSchema.$defs;
+    expect(isRecord(defs)).toBe(true);
+    for (const name of ['LoomaNode', 'LoomaCard']) {
+      walk(isRecord(defs) ? defs[name] : undefined, (node) => {
         if (!Array.isArray(node.required)) return;
-        expect(node.required).not.toContain('id');
+        expect(node.required, name).not.toContain('id');
       });
     }
+    walk(documentSchema, (node) => {
+      if (!Array.isArray(node.required)) return;
+      expect(node.required).not.toContain('id');
+    });
   });
 
   it('stays small enough to send to a model', () => {

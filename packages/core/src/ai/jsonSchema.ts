@@ -101,8 +101,12 @@ function kindConst(properties: JsonSchema): unknown {
   return kind.const;
 }
 
-/** Recursive cleanup applied to every generated schema object. */
-function postProcess(schema: JsonSchema, isRoot = false): void {
+/**
+ * Recursive cleanup applied to every generated schema object.
+ * `omitCreatedIds` drops `id` from `required` only for objects being created
+ * (nodes, cards, the document). Command arguments that address existing ids stay required.
+ */
+function postProcess(schema: JsonSchema, isRoot = false, omitCreatedIds = false): void {
   for (const key of Object.keys(schema)) {
     if (key.startsWith('~')) delete schema[key];
     if (key === '$schema' && !isRoot) delete schema[key];
@@ -118,7 +122,7 @@ function postProcess(schema: JsonSchema, isRoot = false): void {
     schema.anyOf = schema.anyOf.filter((branch) => !isUnknownBlock(branch));
   }
 
-  if (Array.isArray(schema.required)) {
+  if (omitCreatedIds && Array.isArray(schema.required)) {
     const required = schema.required.filter((key) => key !== 'id');
     if (required.length === 0) delete schema.required;
     else schema.required = required;
@@ -142,10 +146,10 @@ function postProcess(schema: JsonSchema, isRoot = false): void {
   for (const value of Object.values(schema)) {
     if (Array.isArray(value)) {
       for (const item of value) {
-        if (isSchema(item)) postProcess(item);
+        if (isSchema(item)) postProcess(item, false, omitCreatedIds);
       }
     } else if (isSchema(value)) {
-      postProcess(value);
+      postProcess(value, false, omitCreatedIds);
     }
   }
 }
@@ -174,7 +178,7 @@ interface NodeDefs {
  */
 function nodeDefs(): NodeDefs {
   const raw = toInputSchema(LoomaNodeSchema);
-  postProcess(raw, true);
+  postProcess(raw, true, true);
   const defs = raw.$defs;
   if (!isSchema(defs)) throw new Error('node schema is missing $defs');
   const listKey = Object.keys(defs)[0];
@@ -195,7 +199,7 @@ function nodeDefs(): NodeDefs {
 
 function cardDef(): JsonSchema {
   const raw = toInputSchema(LoomaCardSchema);
-  postProcess(raw, true);
+  postProcess(raw, true, true);
   delete raw.$schema;
   delete raw.$defs;
   const properties = raw.properties;
@@ -263,8 +267,14 @@ function buildCommandSchema(): JsonSchema {
       properties.card = { $ref: '#/$defs/LoomaCard' };
     } else if (op === 'wrapNodes') {
       properties.container = { anyOf: shells.map((shell) => cloneSchema(shell)) };
+    } else if (op === 'setTheme') {
+      variant.anyOf = [{ required: ['preset'] }, { required: ['overrides'] }];
     } else if (op === 'updateNode' && isSchema(properties.patch)) {
       properties.patch.description = PATCH_DESCRIPTION;
+      properties.patch.minProperties = 1;
+      properties.patch.propertyNames = { not: { enum: ['id', 'type', 'children'] } };
+    } else if (op === 'updateCard' && isSchema(properties.patch)) {
+      properties.patch.minProperties = 1;
     } else if (op === 'putAsset') {
       properties.asset = { $ref: '#/$defs/LoomaAsset' };
     }
@@ -282,7 +292,7 @@ function buildDocumentSchema(): JsonSchema {
   const LoomaCard = cardDef();
   const LoomaAsset = assetDef();
   const raw = toInputSchema(LoomaDocumentSchema);
-  postProcess(raw, true);
+  postProcess(raw, true, true);
   if (Array.isArray(raw.required)) {
     const required = raw.required.filter((key) => key !== 'looma' && key !== 'id');
     if (required.length === 0) delete raw.required;
@@ -305,7 +315,7 @@ function buildDocumentSchema(): JsonSchema {
 let commandSchema: JsonSchema | undefined;
 let documentSchema: JsonSchema | undefined;
 
-/** JSON Schema (draft 2020-12) for one Looma command, with ids optional everywhere. */
+/** JSON Schema (draft 2020-12) for one Looma command. Ids on created nodes and cards are optional; ids that address existing objects stay required. */
 export function getCommandJsonSchema(): JsonSchema {
   commandSchema ??= buildCommandSchema();
   return cloneSchema(commandSchema);
