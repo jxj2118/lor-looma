@@ -8,7 +8,11 @@ const deps = [
 
 export default defineConfig({
   build: {
-    lib: { entry: 'src/index.ts', formats: ['es'], fileName: 'index' },
+    lib: {
+      entry: { index: 'src/index.ts', ai: 'src/ai/index.ts' },
+      formats: ['es'],
+      fileName: (_format, name) => `${name}.js`,
+    },
     sourcemap: true,
     rolldownOptions: {
       external: (id) => deps.some((d) => id === d || id.startsWith(`${d}/`)),
