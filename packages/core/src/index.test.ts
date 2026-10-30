@@ -31,6 +31,17 @@ const RUNTIME_EXPORTS = [
   'FONT_STACKS',
   'MAX_CONTAINER_DEPTH',
   'MAX_LIST_DEPTH',
+  'LoomaCommandSchema',
+  'COMMAND_OPS',
+  'NodeLocationSchema',
+  'CardLocationSchema',
+  'applyCommands',
+  'createLoomaStore',
+  'findNode',
+  'findCard',
+  'walkNodes',
+  'getOutline',
+  'getCards',
 ] as const;
 
 describe('public API', () => {
@@ -42,5 +53,15 @@ describe('public API', () => {
     expect(surface).not.toHaveProperty('runMigrations');
     expect(surface).not.toHaveProperty('zodIssuesToParseIssues');
     expect(surface).not.toHaveProperty('formatPath');
+    expect(surface).not.toHaveProperty('materializeNode');
+    expect(surface).not.toHaveProperty('materializeCard');
+    expect(surface).not.toHaveProperty('materializeAsset');
+    expect(surface).not.toHaveProperty('resolveNodeLocation');
+    expect(surface).not.toHaveProperty('resolveCardLocation');
+    expect(surface).not.toHaveProperty('collectIds');
+    expect(surface).not.toHaveProperty('childArrayOf');
+    expect(surface).not.toHaveProperty('nodePreview');
+    expect(surface).not.toHaveProperty('cardToMarkdown');
+    expect(surface).not.toHaveProperty('CommandContext');
   });
 });
