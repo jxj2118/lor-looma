@@ -1,0 +1,100 @@
+{
+  "looma": 1,
+  "id": "doc_field_guide",
+  "title": "A Field Guide to Backyard Leaves",
+  "format": "document",
+  "theme": { "preset": "serif" },
+  "assets": {},
+  "cards": [
+    {
+      "id": "c_open",
+      "body": [
+        { "id": "b_h1", "type": "heading", "level": 1, "text": "A field guide to backyard leaves" },
+        {
+          "id": "b_intro",
+          "type": "paragraph",
+          "text": "You do not need a rare forest to practice identification. A street tree, a schoolyard maple, and the shrub by the bike rack already show the features botanists use: shape, margin, venation, and how the leaves are arranged on the twig."
+        },
+        {
+          "id": "b_intro_2",
+          "type": "paragraph",
+          "text": "This short guide is meant to be read slowly. Take one leaf outside, keep it attached to the plant if you can, and check each section against what you are holding. A name is less useful than the habit of looking twice."
+        }
+      ]
+    },
+    {
+      "id": "c_shape",
+      "body": [
+        { "id": "b_shape_h", "type": "heading", "level": 2, "text": "Shape and arrangement" },
+        {
+          "id": "b_shape_p",
+          "type": "paragraph",
+          "text": "Start with the whole blade. Is it a single piece, or is it divided into leaflets that all meet at one point? A horse chestnut is palmately compound. An ash is pinnately compound. A maple is simple, even though the blade is deeply lobed. Students often call every lobed leaf compound. Ask them to look for a joint at the base of each piece."
+        },
+        { "id": "b_arrange_h", "type": "heading", "level": 3, "text": "Opposite or alternate" },
+        {
+          "id": "b_arrange_p",
+          "type": "paragraph",
+          "text": "Follow the twig, not a single leaf. Opposite leaves leave the stem in pairs. Alternate leaves take turns. Maples, ashes, and dogwoods are the common opposite trees in many temperate yards. If the pairs are slightly offset, do not force the category. Write down what you see and compare a second twig."
+        }
+      ]
+    },
+    {
+      "id": "c_table",
+      "body": [
+        { "id": "b_table_h", "type": "heading", "level": 2, "text": "Four leaves worth knowing" },
+        {
+          "id": "b_table_p",
+          "type": "paragraph",
+          "text": "Use the table as a first sort, then go back outside. Bark, buds, and fruit will confirm or correct the leaf."
+        },
+        {
+          "id": "b_table",
+          "type": "table",
+          "header": true,
+          "rows": [
+            ["Tree", "Blade", "Margin", "Arrangement"],
+            ["Sugar maple", "Simple, 5 lobes", "Smooth, with pointed tips", "Opposite"],
+            ["Red oak", "Simple, bristle tips", "Lobed, with shallow sinuses", "Alternate"],
+            ["White ash", "Pinnate leaflets", "Mostly smooth", "Opposite"],
+            ["American beech", "Simple, oval", "Finely toothed", "Alternate"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c_key",
+      "body": [
+        { "id": "b_key_h", "type": "heading", "level": 2, "text": "A pocket key" },
+        {
+          "id": "b_key_p",
+          "type": "paragraph",
+          "text": "The lines below are a tiny dichotomous key. Read both choices before you pick one. If neither fits, the tree is outside this lesson, which is a useful result."
+        },
+        {
+          "id": "b_key",
+          "type": "code",
+          "language": "text",
+          "code": "1a Leaves opposite .................... 2\n1b Leaves alternate ................... 3\n2a Blade simple and lobed ........... maple\n2b Blade divided into leaflets ...... ash\n3a Lobes end in bristles ............ red oak\n3b Margin finely toothed ............ beech"
+        }
+      ]
+    },
+    {
+      "id": "c_close",
+      "body": [
+        { "id": "b_close_h", "type": "heading", "level": 2, "text": "Before you name it" },
+        {
+          "id": "b_quote",
+          "type": "quote",
+          "text": "A leaf is a sentence. The twig is the paragraph that tells you whether you read it correctly.",
+          "cite": "Field notebook, week three"
+        },
+        {
+          "id": "b_close_p",
+          "type": "paragraph",
+          "text": "Write three observations that do not use the common name. Then, and only then, offer a guess. If you are teaching, collect the guesses on the board and sort them by the feature students actually used. The point of the walk is the feature, not the winner."
+        }
+      ]
+    }
+  ]
+}

@@ -24,6 +24,7 @@ const RUNTIME_EXPORTS = [
   'validateDocumentSemantics',
   'formatIssue',
   'BLOCK_TYPES',
+  'CALLOUT_TONES',
   'CONTAINER_TYPES',
   'THEME_PRESETS',
   'INLINE_COLORS',

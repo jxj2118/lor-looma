@@ -1,0 +1,83 @@
+{
+  "looma": 1,
+  "id": "doc_overflow",
+  "title": "When a Slide Runs Long",
+  "format": "presentation",
+  "theme": { "preset": "clean" },
+  "assets": {},
+  "cards": [
+    {
+      "id": "c_open",
+      "body": [
+        { "id": "b_open_h", "type": "heading", "level": 1, "text": "Keep the slide honest" },
+        {
+          "id": "b_open_p",
+          "type": "paragraph",
+          "text": "A presentation card is a fixed stage. If the lesson needs more room, split it. This first card still fits."
+        }
+      ]
+    },
+    {
+      "id": "c_long",
+      "body": [
+        {
+          "id": "b_long_h",
+          "type": "heading",
+          "level": 2,
+          "text": "A lab procedure that does not fit"
+        },
+        {
+          "id": "b_long_p1",
+          "type": "paragraph",
+          "text": "Students sometimes paste an entire method onto one slide. Read this card aloud and you will run out of stage before you run out of steps. That is the point of the example."
+        },
+        {
+          "id": "b_long_p2",
+          "type": "paragraph",
+          "text": "Each line below is a real classroom action. None of them is filler. Together they are simply too many for a 16:9 card, even before the closing paragraph."
+        },
+        {
+          "id": "b_long_list",
+          "type": "list",
+          "style": "number",
+          "items": [
+            "Collect two leaves from the same twig and label the petioles.",
+            "Sketch the outline before you look up a name.",
+            "Mark whether the leaves are opposite or alternate.",
+            "Count the lobes and note any bristle tips.",
+            "Describe the margin in plain words, not a glossary term.",
+            "Hold the leaf to the light and trace one vein from midrib to edge.",
+            "Compare the upper and lower surfaces.",
+            "Record the bud at the base of the petiole.",
+            "Note the bark color on the same twig.",
+            "Measure the blade length in millimeters.",
+            "Write one sentence about the tree's site: sun, shade, or pavement.",
+            "Check a second twig before you commit to opposite or alternate.",
+            "List two features you are sure about.",
+            "List one feature you are not sure about.",
+            "Ask a partner to sort your leaf without hearing your guess.",
+            "Only then open the pocket key from the field guide.",
+            "If the key and the leaf disagree, trust the leaf and reread the couplet.",
+            "Put the leaf back or press it. Do not strip the branch."
+          ]
+        },
+        {
+          "id": "b_long_p3",
+          "type": "paragraph",
+          "text": "If this card were a handout, the length would be a kindness. On a slide it is a warning: the audience cannot see the last steps, so the lesson has already failed."
+        }
+      ]
+    },
+    {
+      "id": "c_close",
+      "body": [
+        { "id": "b_close_h", "type": "heading", "level": 2, "text": "Split it" },
+        {
+          "id": "b_close_p",
+          "type": "paragraph",
+          "text": "Move the procedure to the next card, or to a document-format page. Leave this slide with the question and one picture."
+        }
+      ]
+    }
+  ]
+}

@@ -1,2 +1,12 @@
+export { LOGICAL_SIZE } from './constants';
+export { LoomaCardView } from './card/LoomaCardView';
+export type { LoomaCardViewProps, RenderNode, RenderNodeInfo } from './card/LoomaCardView';
+export { useLoomaDocument } from './hooks/useLoomaDocument';
+export { InlineText } from './inline/InlineText';
+export type { InlineTextProps } from './inline/InlineText';
 export { LoomaRoot } from './root/LoomaRoot';
 export type { LoomaRootProps } from './root/LoomaRoot';
+export { THEME_PRESET_TOKENS, themeToCssVariables } from './theme/themeToCssVariables';
+export type { ThemeTokens } from './theme/themeToCssVariables';
+export { LoomaViewer } from './viewer/LoomaViewer';
+export type { LoomaViewerHandle, LoomaViewerProps, ViewerMode } from './viewer/LoomaViewer';

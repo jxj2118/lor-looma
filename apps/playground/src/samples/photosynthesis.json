@@ -1,0 +1,271 @@
+{
+  "looma": 1,
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+  "format": "presentation",
+  "theme": { "preset": "clean" },
+  "assets": {
+    "img_leaf": {
+      "kind": "image",
+      "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20140%22%3E%3Crect%20width%3D%22200%22%20height%3D%22140%22%20fill%3D%22rgb(232%2C244%2C234)%22%2F%3E%3Cellipse%20cx%3D%22108%22%20cy%3D%2278%22%20rx%3D%2252%22%20ry%3D%2230%22%20fill%3D%22rgb(46%2C125%2C70)%22%20transform%3D%22rotate(-28%20108%2078)%22%2F%3E%3Cpath%20d%3D%22M62%20108C90%2074%20132%2054%20170%2038%22%20fill%3D%22none%22%20stroke%3D%22rgb(24%2C90%2C40)%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%22168%22%20cy%3D%2228%22%20r%3D%2214%22%20fill%3D%22rgb(244%2C185%2C66)%22%2F%3E%3C%2Fsvg%3E",
+      "alt": "A simple green leaf held up toward a small sun"
+    },
+    "img_sun": {
+      "kind": "image",
+      "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20160%22%3E%3Crect%20width%3D%22160%22%20height%3D%22160%22%20fill%3D%22rgb(255%2C246%2C216)%22%2F%3E%3Ccircle%20cx%3D%2280%22%20cy%3D%2280%22%20r%3D%2228%22%20fill%3D%22rgb(244%2C185%2C66)%22%2F%3E%3Cg%20stroke%3D%22rgb(217%2C137%2C40)%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M80%2024v18M80%20118v18M24%2080h18M118%2080h18M40%2040l13%2013M107%20107l13%2013M120%2040l-13%2013M53%20107l-13%2013%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "alt": "A yellow sun with short rays"
+    },
+    "img_drop": {
+      "kind": "image",
+      "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20160%22%3E%3Crect%20width%3D%22160%22%20height%3D%22160%22%20fill%3D%22rgb(232%2C244%2C252)%22%2F%3E%3Cpath%20d%3D%22M80%2026C80%2026%2038%2080%2038%20104a42%2042%200%200%200%2084%200C122%2080%2080%2026%2080%2026z%22%20fill%3D%22rgb(56%2C148%2C198)%22%2F%3E%3Cellipse%20cx%3D%2266%22%20cy%3D%2298%22%20rx%3D%2210%22%20ry%3D%2214%22%20fill%3D%22rgb(255%2C255%2C255)%22%20opacity%3D%220.75%22%2F%3E%3C%2Fsvg%3E",
+      "alt": "A single blue water drop"
+    },
+    "img_formula": {
+      "kind": "image",
+      "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20240%20140%22%3E%3Crect%20width%3D%22240%22%20height%3D%22140%22%20fill%3D%22rgb(255%2C250%2C243)%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%22204%22%20height%3D%22104%22%20rx%3D%2212%22%20fill%3D%22rgb(255%2C255%2C255)%22%20stroke%3D%22rgb(47%2C107%2C58)%22%20stroke-width%3D%223%22%2F%3E%3Ctext%20x%3D%22120%22%20y%3D%2278%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%2222%22%20fill%3D%22rgb(31%2C35%2C40)%22%3E6%20CO2%20%2B%206%20H2O%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "alt": "A card showing the inputs of the photosynthesis equation"
+    },
+    "img_cell": {
+      "kind": "image",
+      "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20120%22%3E%3Crect%20width%3D%22200%22%20height%3D%22120%22%20fill%3D%22rgb(241%2C248%2C242)%22%2F%3E%3Cellipse%20cx%3D%22100%22%20cy%3D%2260%22%20rx%3D%2278%22%20ry%3D%2240%22%20fill%3D%22rgb(76%2C154%2C92)%22%2F%3E%3Cellipse%20cx%3D%2272%22%20cy%3D%2258%22%20rx%3D%2220%22%20ry%3D%228%22%20fill%3D%22rgb(214%2C236%2C190)%22%20transform%3D%22rotate(-18%2072%2058)%22%2F%3E%3Cellipse%20cx%3D%22112%22%20cy%3D%2250%22%20rx%3D%2218%22%20ry%3D%228%22%20fill%3D%22rgb(214%2C236%2C190)%22%20transform%3D%22rotate(16%20112%2050)%22%2F%3E%3Cellipse%20cx%3D%22118%22%20cy%3D%2274%22%20rx%3D%2216%22%20ry%3D%227%22%20fill%3D%22rgb(214%2C236%2C190)%22%2F%3E%3C%2Fsvg%3E",
+      "alt": "An oval chloroplast with a few pale thylakoid stacks"
+    }
+  },
+  "cards": [
+    {
+      "id": "c_title",
+      "accent": { "position": "right", "assetId": "img_leaf" },
+      "notes": "Open by asking what a plant eats. Pause after the quote.",
+      "body": [
+        {
+          "id": "b_title",
+          "type": "heading",
+          "level": 1,
+          "text": "Introduction to Photosynthesis"
+        },
+        {
+          "id": "b_lead",
+          "type": "paragraph",
+          "text": "Plants turn **sunlight**, water, and air into {color:primary}chemical energy{/color}."
+        },
+        {
+          "id": "b_quote",
+          "type": "quote",
+          "text": "A leaf is a quiet factory that runs on light.",
+          "cite": "Classroom notes"
+        }
+      ]
+    },
+    {
+      "id": "c_process",
+      "background": { "kind": "gradient", "from": "#e7f5ea", "to": "#fff6d8", "angle": 135 },
+      "notes": "Walk the two columns from left to right.",
+      "body": [
+        { "id": "b_process_heading", "type": "heading", "level": 2, "text": "The short version" },
+        {
+          "id": "n_process_stack",
+          "type": "stack",
+          "gap": "md",
+          "children": [
+            {
+              "id": "n_process_columns",
+              "type": "columns",
+              "widths": [1.2, 1],
+              "gap": "md",
+              "align": "start",
+              "children": [
+                [
+                  {
+                    "id": "b_overview",
+                    "type": "paragraph",
+                    "text": "Carbon dioxide and water, plus light, become glucose and oxygen."
+                  },
+                  {
+                    "id": "b_steps",
+                    "type": "list",
+                    "style": "number",
+                    "items": [
+                      "Capture light",
+                      {
+                        "text": "Split water",
+                        "children": ["Release oxygen", "Keep the electrons"]
+                      },
+                      "Build sugar"
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "id": "b_leaf",
+                    "type": "image",
+                    "assetId": "img_leaf",
+                    "fit": "cover",
+                    "width": "full",
+                    "caption": "See a [diagram of a leaf](https://example.com/leaf)."
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c_inside",
+      "body": [
+        { "id": "b_where", "type": "heading", "level": 3, "text": "Where it happens" },
+        {
+          "id": "b_chlorophyll",
+          "type": "callout",
+          "tone": "info",
+          "text": "Chlorophyll lives in **chloroplasts**, mostly in the *mesophyll* of the leaf.\n\nThat green pigment is what makes the leaf look {highlight:yellow}green{/highlight}."
+        },
+        {
+          "id": "n_organelles",
+          "type": "grid",
+          "columns": 2,
+          "gap": "sm",
+          "children": [
+            {
+              "id": "b_light_reactions",
+              "type": "paragraph",
+              "text": "Light reactions sit in the thylakoid membrane."
+            },
+            {
+              "id": "b_checklist",
+              "type": "list",
+              "style": "check",
+              "items": [
+                { "text": "Thylakoids", "checked": true },
+                { "text": "Stroma", "checked": false }
+              ]
+            }
+          ]
+        },
+        { "id": "b_rule", "type": "divider" },
+        {
+          "id": "b_stages",
+          "type": "table",
+          "header": true,
+          "rows": [
+            ["Stage", "Location", "Output"],
+            ["Light reactions", "Thylakoid", "ATP and oxygen"],
+            ["Calvin cycle", "Stroma", "Sugar"]
+          ]
+        },
+        {
+          "id": "b_equation",
+          "type": "code",
+          "language": "text",
+          "code": "6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2"
+        }
+      ]
+    },
+    {
+      "id": "c_review",
+      "body": [
+        {
+          "id": "b_review_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "Check your understanding"
+        },
+        {
+          "id": "b_question",
+          "type": "paragraph",
+          "align": "center",
+          "text": "Why do leaves look {color:green}green{/color} if they use other colors of light?"
+        },
+        {
+          "id": "b_answers",
+          "type": "list",
+          "style": "bullet",
+          "items": ["Green light is reflected", "Other colors are absorbed"]
+        }
+      ]
+    },
+    {
+      "id": "c_inputs",
+      "accent": { "position": "left", "assetId": "img_sun" },
+      "body": [
+        {
+          "id": "b_inputs_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "What the leaf collects"
+        },
+        {
+          "id": "b_inputs_copy",
+          "type": "paragraph",
+          "text": "Think of light as the fuel, and `CO2` as the carbon source. The leaf does not *eat* soil."
+        },
+        {
+          "id": "b_inputs_note",
+          "type": "callout",
+          "tone": "success",
+          "text": "If students remember only one sentence, let it be this: light reactions charge the battery, and the Calvin cycle spends it."
+        }
+      ]
+    },
+    {
+      "id": "c_water",
+      "accent": { "position": "top", "assetId": "img_drop" },
+      "body": [
+        { "id": "b_water_heading", "type": "heading", "level": 2, "text": "Water's path" },
+        {
+          "id": "b_water_copy",
+          "type": "paragraph",
+          "text": "Water enters through the roots, climbs the xylem, and reaches the mesophyll. A little is split. Most of it leaves again as vapor."
+        },
+        {
+          "id": "b_water_list",
+          "type": "list",
+          "style": "bullet",
+          "items": ["Roots take up water", "Xylem carries it upward", "Stomata let vapor out"]
+        }
+      ]
+    },
+    {
+      "id": "c_equation",
+      "accent": { "position": "background", "assetId": "img_formula" },
+      "body": [
+        {
+          "id": "b_equation_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "The equation, up close"
+        },
+        {
+          "id": "b_equation_copy",
+          "type": "paragraph",
+          "text": "Count the atoms before you leave the slide. Six carbons in, one glucose out. A readable walk-through lives in the [class handout](https://example.com/equation)."
+        }
+      ]
+    },
+    {
+      "id": "c_palette",
+      "background": { "kind": "color", "value": "#f3f7f4" },
+      "body": [
+        {
+          "id": "b_palette_heading",
+          "type": "heading",
+          "level": 2,
+          "text": "Look inside one cell"
+        },
+        {
+          "id": "b_cell",
+          "type": "image",
+          "assetId": "img_cell",
+          "fit": "contain",
+          "width": "full",
+          "caption": "A chloroplast, drawn as a few stacked membranes."
+        },
+        {
+          "id": "b_palette_copy",
+          "type": "paragraph",
+          "text": "Name the parts out loud: {color:accent}thylakoid{/color}, stroma, and the sugar that leaves for the rest of the plant."
+        }
+      ]
+    }
+  ]
+}
