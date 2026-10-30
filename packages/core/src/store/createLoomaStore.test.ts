@@ -104,6 +104,16 @@ describe('createLoomaStore', () => {
     expect(other.canUndo()).toBe(true);
   });
 
+  it('does not merge applies from different origins', () => {
+    const store = createLoomaStore(document(), { now: () => 0 });
+    store.apply([{ op: 'setTitle', title: 'A' }], { mergeKey: 'title' });
+    store.apply([{ op: 'setTitle', title: 'B' }], { mergeKey: 'title', origin: 'ai' });
+    expect(store.undo()).toBe(true);
+    expect(store.getDocument().title).toBe('A');
+    expect(store.undo()).toBe(true);
+    expect(store.getDocument().title).toBe('Demo');
+  });
+
   it('does not merge with an entry that was followed by undo', () => {
     let now = 0;
     const store = createLoomaStore(document(), { now: () => now });

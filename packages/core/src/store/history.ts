@@ -51,6 +51,7 @@ export function pushEntry(
     entry.mergeKey !== undefined &&
     top !== undefined &&
     top.mergeKey === entry.mergeKey &&
+    top.origin === entry.origin &&
     elapsed <= windowMs
   ) {
     top.patches.push(...entry.patches);
