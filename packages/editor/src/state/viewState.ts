@@ -101,7 +101,11 @@ export interface EditorContextValue {
   finishEditing?: () => void;
   bindFinishEditing?: (fn: (() => void) | null) => void;
   editEpoch?: number;
-  suppressCommit?: { current: boolean };
+  bumpEditEpoch?: () => void;
+  suppressCommitRef?: { current: boolean };
+  slashActions?: {
+    current: { move: (delta: number) => void; confirm: () => void };
+  };
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
 }
 
@@ -128,7 +132,9 @@ export function useEditorContext(): EditorContextValue & {
   finishEditing: () => void;
   bindFinishEditing: (fn: (() => void) | null) => void;
   editEpoch: number;
-  suppressCommit: { current: boolean };
+  bumpEditEpoch: () => void;
+  suppressCommitRef: { current: boolean };
+  slashActions: { current: { move: (delta: number) => void; confirm: () => void } };
 } {
   const context = useContext(EditorContext);
   if (!context?.store || !context.messages || !context.rootRef || !context.layerRef) {
@@ -145,6 +151,10 @@ export function useEditorContext(): EditorContextValue & {
     finishEditing: context.finishEditing ?? (() => {}),
     bindFinishEditing: context.bindFinishEditing ?? (() => {}),
     editEpoch: context.editEpoch ?? 0,
-    suppressCommit: context.suppressCommit ?? { current: false },
+    bumpEditEpoch: context.bumpEditEpoch ?? (() => {}),
+    suppressCommitRef: context.suppressCommitRef ?? { current: false },
+    slashActions: context.slashActions ?? {
+      current: { move() {}, confirm() {} },
+    },
   };
 }

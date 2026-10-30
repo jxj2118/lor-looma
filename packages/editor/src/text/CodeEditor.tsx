@@ -15,7 +15,7 @@ export function CodeEditor({
   initialText: string;
   caret: 'start' | 'end';
 }) {
-  const { store, viewState, bindFinishEditing, suppressCommit } = useEditorContext();
+  const { store, viewState, bindFinishEditing, suppressCommitRef } = useEditorContext();
   const [value, setValue] = useState(initialText);
   const valueRef = useRef(initialText);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,7 +24,7 @@ export function CodeEditor({
   const flush = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = undefined;
-    if (suppressCommit.current) return;
+    if (suppressCommitRef.current) return;
     commitSlot(store, nodeId, slot, valueRef.current);
   };
 
@@ -51,8 +51,8 @@ export function CodeEditor({
   useEffect(() => {
     bindFinishEditing(() => exit());
     return () => {
-      if (suppressCommit.current) {
-        suppressCommit.current = false;
+      if (suppressCommitRef.current) {
+        suppressCommitRef.current = false;
         return;
       }
       exit();
@@ -60,7 +60,7 @@ export function CodeEditor({
     };
     // `exit` reads the latest text through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bindFinishEditing, suppressCommit]);
+  }, [bindFinishEditing, suppressCommitRef]);
 
   return (
     <textarea

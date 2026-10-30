@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Canvas } from './canvas/Canvas';
+import { SlashMenu } from './insert/SlashMenu';
 import { armFlash, clearFlash } from './canvas/flash';
 import { Notice } from './chrome/Notice';
 import { PlayOverlay } from './chrome/PlayOverlay';
@@ -91,7 +92,8 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   const sourceDocument = useRef(documentProp);
   const highlightRef = useRef(highlightExternalChanges);
   const flashTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const suppressCommit = useMemo(() => ({ current: false }), []);
+  const suppressCommitRef = useMemo(() => ({ current: false }), []);
+  const slashActions = useMemo(() => ({ current: { move(_delta: number) {}, confirm() {} } }), []);
   const noticeId = useRef(0);
   const doc = useLoomaDocument({ store });
   const [playing, setPlaying] = useState(false);
@@ -113,7 +115,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     return store.subscribe((next, change) => {
       onChangeRef.current?.(next, change);
       if (change.kind === 'load') {
-        suppressCommit.current = true;
+        suppressCommitRef.current = true;
         clearFlash(viewState, flashTimers.current);
         viewState.set({
           selection: { cardId: null, nodeIds: [] },
@@ -127,7 +129,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         const live = findNode(next, editing.nodeId)?.node;
         const slotGone = !live || readSlot(live, editing.slot) === undefined;
         if (slotGone) {
-          suppressCommit.current = true;
+          suppressCommitRef.current = true;
           viewState.set({ editing: null });
         } else if (change.origin !== 'user' && change.touchedIds.includes(editing.nodeId)) {
           noticeId.current += 1;
@@ -146,7 +148,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         armFlash(viewState, ids, flashTimers.current);
       }
     });
-  }, [messages.externalChange, store, suppressCommit, viewState]);
+  }, [messages.externalChange, store, suppressCommitRef, viewState]);
 
   useEffect(() => () => clearFlash(viewState, flashTimers.current), [viewState]);
 
@@ -157,7 +159,9 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
       if (!viewState.get().editing) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (target.closest('[data-lm-inline-editor], [data-lm-format-toolbar], [data-lm-color-popover]')) {
+      if (
+        target.closest('[data-lm-inline-editor], [data-lm-format-toolbar], [data-lm-color-popover]')
+      ) {
         return;
       }
       finishEditing();
@@ -218,7 +222,9 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         finishEditing,
         bindFinishEditing,
         editEpoch,
-        suppressCommit,
+        bumpEditEpoch: () => setEditEpoch((epoch) => epoch + 1),
+        suppressCommitRef,
+        slashActions,
         resolveAsset,
       }}
     >
@@ -234,6 +240,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         <Canvas />
         <div ref={setLayer} className={styles.layer}>
           <Notice />
+          <SlashMenu />
           {playing ? <PlayOverlay open initialPage={playPage} onOpenChange={setPlaying} /> : null}
         </div>
       </LoomaRoot>

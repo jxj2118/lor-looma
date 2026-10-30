@@ -12,7 +12,7 @@ export function EditableNode({
   info: RenderNodeInfo;
   renderDefault: () => ReactNode;
 }) {
-  const { messages, readOnly } = useEditorContext();
+  const { messages, readOnly, viewState, rootRef } = useEditorContext();
   const selected = useViewState((state) => state.selection.nodeIds.includes(node.id));
   const hovered = useViewState((state) => state.hoverId === node.id);
   const flashing = useViewState((state) => state.flashIds.has(node.id));
@@ -34,6 +34,19 @@ export function EditableNode({
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
+            const rect = event.currentTarget.getBoundingClientRect();
+            const box = rootRef.current?.getBoundingClientRect();
+            viewState.set({
+              slash: {
+                target: { kind: 'after', nodeId: node.id },
+                source: 'button',
+                query: '',
+                anchor: {
+                  x: rect.left - (box?.left ?? 0),
+                  y: rect.bottom - (box?.top ?? 0),
+                },
+              },
+            });
           }}
         >
           +

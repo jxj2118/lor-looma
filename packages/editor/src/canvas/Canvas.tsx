@@ -180,7 +180,7 @@ function EditorCard({
   renderNode: RenderNode;
   renderSlot: RenderSlot;
 }) {
-  const { messages, resolveAsset } = useEditorContext();
+  const { messages, resolveAsset, readOnly, viewState } = useEditorContext();
   const selected = useViewState(
     (state) => state.selection.cardId === card.id && state.selection.nodeIds.length === 0,
   );
@@ -202,6 +202,24 @@ function EditorCard({
           renderSlot={renderSlot}
         />
       </ScaledFrame>
+      {!readOnly && card.body.length === 0 ? (
+        <button
+          type="button"
+          className={styles.add}
+          onClick={() => {
+            viewState.set({
+              slash: {
+                target: { kind: 'card', cardId: card.id },
+                source: 'button',
+                query: '',
+                anchor: { x: 24, y: 24 },
+              },
+            });
+          }}
+        >
+          {messages.addBlock}
+        </button>
+      ) : null}
       {overflow ? (
         <span className={styles.badge} title={messages.overflowTitle}>
           {messages.overflow}
