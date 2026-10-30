@@ -8,6 +8,7 @@ import { collectIds } from '../tree/tree';
 import { CommandFailure, createCommandContext } from './context';
 import { deleteCard, duplicateCard, insertCard, moveCard, updateCard } from './handlers/cards';
 import { putAsset, removeAsset, setFormat, setTheme, setTitle } from './handlers/document';
+import { deleteNode, insertNode, moveNode, replaceNode, updateNode } from './handlers/nodes';
 import { LoomaCommandSchema } from './schema';
 import type { ParsedLoomaCommand } from './schema';
 
@@ -70,10 +71,15 @@ function dispatch(ctx: ReturnType<typeof createCommandContext>, command: ParsedL
     case 'deleteCard':
       return deleteCard(ctx, command);
     case 'insertNode':
+      return insertNode(ctx, command);
     case 'updateNode':
+      return updateNode(ctx, command);
     case 'replaceNode':
+      return replaceNode(ctx, command);
     case 'moveNode':
+      return moveNode(ctx, command);
     case 'deleteNode':
+      return deleteNode(ctx, command);
     case 'wrapNodes':
     case 'unwrapNode':
     case 'insertColumn':
