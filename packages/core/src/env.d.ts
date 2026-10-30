@@ -14,3 +14,5 @@ interface LoomaPerformance {
 }
 
 declare const performance: LoomaPerformance;
+
+declare function queueMicrotask(callback: () => void): void;
