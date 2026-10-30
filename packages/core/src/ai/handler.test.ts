@@ -230,6 +230,26 @@ describe('createToolHandler', () => {
     expect(current.getDocument()).toBe(before);
   });
 
+  it('joins several errors on one command with semicolons', () => {
+    const result = createToolHandler(store())('looma_apply', {
+      commands: [{ op: 'moveNode' }],
+    });
+    expect(result).toEqual({
+      ok: false,
+      error:
+        'No changes were applied. Command 0 (moveNode) failed: id: is required (expected string); to: is required (expected { before: id }, { after: id } or { parent: id, slot?: number, index?: number }). Fix the command and send the whole batch again.',
+      errors: [
+        { commandIndex: 0, path: 'id', message: 'is required (expected string)' },
+        {
+          commandIndex: 0,
+          path: 'to',
+          message:
+            'is required (expected { before: id }, { after: id } or { parent: id, slot?: number, index?: number })',
+        },
+      ],
+    });
+  });
+
   it('joins every apply error and tells the model to resend the batch', () => {
     const result = createToolHandler(store())('looma_apply', {
       commands: [
@@ -248,7 +268,7 @@ describe('createToolHandler', () => {
     expect(result).toEqual({
       ok: false,
       error:
-        'No changes were applied. The resulting document would be invalid: cards[0].accent.assetId: references missing asset "img_missing". No changes were applied. The resulting document would be invalid: cards[2].accent.assetId: references missing asset "img_other". Fix the command and send the whole batch again.',
+        'No changes were applied. The resulting document would be invalid: cards[0].accent.assetId: references missing asset "img_missing"; cards[2].accent.assetId: references missing asset "img_other". Fix the command and send the whole batch again.',
       errors: [
         {
           commandIndex: null,

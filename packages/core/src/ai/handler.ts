@@ -128,14 +128,31 @@ function commandOp(commands: unknown, index: number): string {
   return 'unknown';
 }
 
+function detailList(errors: readonly ApplyError[]): string {
+  return errors.map((error) => `${error.path}: ${error.message}`).join('; ');
+}
+
 function summarize(commands: unknown, errors: readonly ApplyError[]): string {
-  const sentences = errors.map((error) => {
+  const byCommand = new Map<number, ApplyError[]>();
+  const documentErrors: ApplyError[] = [];
+  for (const error of errors) {
     if (error.commandIndex === null) {
-      return `No changes were applied. The resulting document would be invalid: ${error.path}: ${error.message}.`;
+      documentErrors.push(error);
+      continue;
     }
-    return `No changes were applied. Command ${error.commandIndex} (${commandOp(commands, error.commandIndex)}) failed: ${error.path}: ${error.message}.`;
-  });
-  return `${sentences.join(' ')} Fix the command and send the whole batch again.`;
+    const group = byCommand.get(error.commandIndex) ?? [];
+    group.push(error);
+    byCommand.set(error.commandIndex, group);
+  }
+  const parts: string[] = [];
+  for (const index of [...byCommand.keys()].sort((left, right) => left - right)) {
+    const group = byCommand.get(index) ?? [];
+    parts.push(`Command ${index} (${commandOp(commands, index)}) failed: ${detailList(group)}.`);
+  }
+  if (documentErrors.length > 0) {
+    parts.push(`The resulting document would be invalid: ${detailList(documentErrors)}.`);
+  }
+  return `No changes were applied. ${parts.join(' ')} Fix the command and send the whole batch again.`;
 }
 
 function applyCommands(
