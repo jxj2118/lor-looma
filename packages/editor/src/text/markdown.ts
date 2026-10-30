@@ -130,6 +130,10 @@ function astToRuns(nodes: readonly InlineNode[], inherited: readonly Mark[] = []
           ...astToRuns(node.children, [...inherited, { type: 'lmHighlight', color: node.color }]),
         );
         break;
+      default: {
+        const unreachable: never = node;
+        return unreachable;
+      }
     }
   }
   return runs;
@@ -152,6 +156,10 @@ function pmMark(mark: Mark): { type: string; attrs?: Record<string, string> } | 
       return mark.color && isHighlightColor(mark.color)
         ? { type: 'lmHighlight', attrs: { color: mark.color } }
         : null;
+    default: {
+      const unreachable: never = mark.type;
+      return unreachable;
+    }
   }
 }
 
@@ -261,6 +269,10 @@ function wrap(mark: Mark, children: InlineNode[]): InlineNode | null {
         : null;
     case 'code':
       return { type: 'code', value: plainValue(children) };
+    default: {
+      const unreachable: never = mark.type;
+      return unreachable;
+    }
   }
 }
 
