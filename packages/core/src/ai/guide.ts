@@ -97,12 +97,14 @@ Each line is the op, the fields a successful call must include, and what it does
 - \`replaceNode\` — required: \`id\`, \`node\`. Replace a node with a different one (may change its type). Keeps the old id unless the new node sets one.
 - \`moveNode\` — required: \`id\`, \`to\`. Move a node to another location, possibly in another card.
 - \`deleteNode\` — required: \`id\`. Delete a block or container (and its children).
-- \`wrapNodes\` — required: \`ids\` (one or more adjacent siblings), \`container\`. Wrap adjacent sibling nodes in a new stack, columns, or grid container. For columns, each node becomes one column, so provide one width per node.
+- \`wrapNodes\` — required: \`ids\` (one or more adjacent siblings), \`container\`. Wrap adjacent sibling nodes in a new stack, columns, or grid container. For columns, each node becomes one column. \`container.widths\` is optional and defaults to equal widths; if given, it needs one number per wrapped node.
 - \`unwrapNode\` — required: \`id\`. Remove a container and put its children in its place.
 - \`insertColumn\` — required: \`id\` of a \`columns\` container; optional \`index\` and \`width\`. Add an empty column to a columns container (max 4).
 - \`deleteColumn\` — required: \`id\`, \`index\`; optional \`moveNodesTo\`. Remove a column from a columns container (min 2). Its nodes are deleted unless \`moveNodesTo\` is given. If only two columns remain, use \`unwrapNode\` instead.
 
 ## Examples
+
+The examples use ids from a sample document (such as \`b_lead\` and \`c_review\`); always use ids from your own \`looma_get_outline\` / \`looma_get_cards\` results.
 
 <!-- example: title-and-columns -->
 \`\`\`json
@@ -201,7 +203,7 @@ Each line is the op, the fields a successful call must include, and what it does
 - Do not use \`updateNode\` to change \`children\`. Insert, move, or delete the child nodes, or replace the container.
 - Do not put a card id in \`before\` or \`after\`. Those keys name a node. To insert into a card, use \`{ "parent": "<cardId>" }\`.
 - Do not write \`#\` inside heading text. The \`level\` field is the heading. The \`text\` is the words only.
-- Do not build \`columns\` from a single node. A columns container needs 2 to 4 columns, and \`widths\` must have one number per column. \`wrapNodes\` with \`columns\` also needs 2 to 4 adjacent siblings, one per column.
+- Do not build \`columns\` from a single node. On \`insertNode\`, \`widths\` is required: 2 to 4 positive numbers, one per column. \`wrapNodes\` into \`columns\` needs 2 to 4 adjacent siblings; its \`widths\` is optional and defaults to equal widths.
 - Do not reference an asset id that no command has created and that the document does not already contain. \`putAsset\` in an earlier command of the same batch, then use the id.
 - Do not send several independent edits as several \`looma_apply\` calls when they are one intention. The user would have to undo each call separately. One batch is one undo step.
 `.trim();

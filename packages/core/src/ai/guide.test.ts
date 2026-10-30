@@ -51,10 +51,10 @@ function fixtureStore() {
 }
 
 describe('LOOMA_AI_GUIDE', () => {
-  it('stays between 1200 and 2200 words', () => {
+  it('stays between 1200 and 2400 words', () => {
     const count = words(LOOMA_AI_GUIDE).length;
     expect(count).toBeGreaterThanOrEqual(1200);
-    expect(count).toBeLessThanOrEqual(2200);
+    expect(count).toBeLessThanOrEqual(2400);
   });
 
   it('uses the ten section headings in order', () => {
@@ -89,6 +89,18 @@ describe('LOOMA_AI_GUIDE', () => {
       const result = createToolHandler(fixtureStore())('looma_apply', args);
       expect(result.ok, `${sample.name} ${JSON.stringify(result)}`).toBe(true);
     }
+  });
+
+  it('tells models that example ids come from a sample document', () => {
+    expect(LOOMA_AI_GUIDE).toContain(
+      'The examples use ids from a sample document (such as `b_lead` and `c_review`); always use ids from your own `looma_get_outline` / `looma_get_cards` results.',
+    );
+  });
+
+  it('describes wrapNodes widths as optional', () => {
+    const line = LOOMA_AI_GUIDE.split('\n').find((row) => row.includes('`wrapNodes` —'));
+    expect(line).toContain('optional');
+    expect(line).toContain('equal widths');
   });
 
   it('does not contain placeholders', () => {
