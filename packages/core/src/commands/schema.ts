@@ -15,21 +15,36 @@ const cardShape = z.looseObject({
   body: z.array(nodeShape).optional(),
 });
 
-export const NodeLocationSchema = z.union([
-  z.strictObject({ before: IdSchema }),
-  z.strictObject({ after: IdSchema }),
-  z.strictObject({
-    parent: IdSchema,
-    slot: z.number().int().min(0).optional(),
-    index: z.number().int().min(0).optional(),
-  }),
-]);
+const NODE_LOCATION_EXPECTED =
+  '{ before: id }, { after: id } or { parent: id, slot?: number, index?: number }';
+const CARD_LOCATION_EXPECTED = '{ before: id }, { after: id } or { index: number }';
 
-export const CardLocationSchema = z.union([
-  z.strictObject({ before: IdSchema }),
-  z.strictObject({ after: IdSchema }),
-  z.strictObject({ index: z.number().int().min(0) }),
-]);
+function locationMessage(expected: string, input: unknown): string {
+  if (input === undefined) return `is required (expected ${expected})`;
+  return `must be exactly one of ${expected}; received ${JSON.stringify(input)}`;
+}
+
+export const NodeLocationSchema = z.union(
+  [
+    z.strictObject({ before: IdSchema }),
+    z.strictObject({ after: IdSchema }),
+    z.strictObject({
+      parent: IdSchema,
+      slot: z.number().int().min(0).optional(),
+      index: z.number().int().min(0).optional(),
+    }),
+  ],
+  { error: (issue) => locationMessage(NODE_LOCATION_EXPECTED, issue.input) },
+);
+
+export const CardLocationSchema = z.union(
+  [
+    z.strictObject({ before: IdSchema }),
+    z.strictObject({ after: IdSchema }),
+    z.strictObject({ index: z.number().int().min(0) }),
+  ],
+  { error: (issue) => locationMessage(CARD_LOCATION_EXPECTED, issue.input) },
+);
 
 export type NodeLocation = z.infer<typeof NodeLocationSchema>;
 export type CardLocation = z.infer<typeof CardLocationSchema>;
@@ -82,6 +97,7 @@ export const LoomaCommandSchema = z.discriminatedUnion('op', [
       overrides: z.record(z.string(), z.unknown()).optional(),
     })
     .refine((command) => command.preset !== undefined || command.overrides !== undefined, {
+      path: ['preset'],
       message: 'setTheme needs a preset, overrides, or both',
     }),
   z.strictObject({

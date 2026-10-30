@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { zodIssuesToParseIssues } from '../parse/issues';
 import { COMMAND_OPS, CardLocationSchema, LoomaCommandSchema, NodeLocationSchema } from './schema';
 import type { CommandOp } from './schema';
 
@@ -121,5 +122,115 @@ describe('COMMAND_OPS', () => {
   it('matches CommandOp', () => {
     const ops: _CommandOpsMatch = true;
     expect(ops).toBe(true);
+  });
+});
+
+const OP_LIST = COMMAND_OPS.join(', ');
+const NODE_LOCATION =
+  '{ before: id }, { after: id } or { parent: id, slot?: number, index?: number }';
+const CARD_LOCATION = '{ before: id }, { after: id } or { index: number }';
+
+const TOP_LEVEL_ARGS: Record<(typeof COMMAND_OPS)[number], readonly string[]> = {
+  setTitle: ['title'],
+  setFormat: ['format'],
+  setTheme: ['preset', 'overrides'],
+  putAsset: ['id', 'asset'],
+  removeAsset: ['id'],
+  insertCard: ['card', 'at'],
+  updateCard: ['id', 'patch'],
+  moveCard: ['id', 'to'],
+  duplicateCard: ['id', 'newId'],
+  deleteCard: ['id'],
+  insertNode: ['node', 'at'],
+  updateNode: ['id', 'patch'],
+  replaceNode: ['id', 'node'],
+  moveNode: ['id', 'to'],
+  deleteNode: ['id'],
+  wrapNodes: ['ids', 'container'],
+  unwrapNode: ['id'],
+  insertColumn: ['id', 'index', 'width'],
+  deleteColumn: ['id', 'index', 'moveNodesTo'],
+};
+
+function commandIssues(command: unknown) {
+  const parsed = LoomaCommandSchema.safeParse(command);
+  if (parsed.success) return [];
+  return zodIssuesToParseIssues(parsed.error.issues, command);
+}
+
+describe('command error messages', () => {
+  it('names an unknown op and the ops it can use instead', () => {
+    expect(commandIssues({ op: 'bogus' })).toEqual([
+      {
+        path: 'op',
+        message: `unknown op "bogus"; expected one of ${OP_LIST}`,
+      },
+    ]);
+    expect(commandIssues({})).toEqual([
+      {
+        path: 'op',
+        message: `is required (expected one of ${OP_LIST})`,
+      },
+    ]);
+  });
+
+  it('describes a missing or malformed node location', () => {
+    expect(commandIssues({ op: 'moveNode', id: 'x' })).toEqual([
+      {
+        path: 'to',
+        message: `is required (expected ${NODE_LOCATION})`,
+      },
+    ]);
+    expect(
+      commandIssues({
+        op: 'insertNode',
+        node: { type: 'paragraph' },
+        at: { before: 'a', after: 'b' },
+      }),
+    ).toEqual([
+      {
+        path: 'at',
+        message: `must be exactly one of ${NODE_LOCATION}; received {"before":"a","after":"b"}`,
+      },
+    ]);
+    expect(commandIssues({ op: 'insertNode', node: { type: 'paragraph' }, at: {} })).toEqual([
+      {
+        path: 'at',
+        message: `must be exactly one of ${NODE_LOCATION}; received {}`,
+      },
+    ]);
+  });
+
+  it('describes a missing or malformed card location', () => {
+    expect(commandIssues({ op: 'moveCard', id: 'c_1' })).toEqual([
+      {
+        path: 'to',
+        message: `is required (expected ${CARD_LOCATION})`,
+      },
+    ]);
+    expect(commandIssues({ op: 'insertCard', at: { before: 'a', after: 'b' } })).toEqual([
+      {
+        path: 'at',
+        message: `must be exactly one of ${CARD_LOCATION}; received {"before":"a","after":"b"}`,
+      },
+    ]);
+    expect(commandIssues({ op: 'insertCard', at: {} })).toEqual([
+      {
+        path: 'at',
+        message: `must be exactly one of ${CARD_LOCATION}; received {}`,
+      },
+    ]);
+  });
+
+  it('keeps every bare command error specific and on a real argument', () => {
+    for (const op of COMMAND_OPS) {
+      const issues = commandIssues({ op });
+      for (const issue of issues) {
+        expect(issue.message.length).toBeGreaterThan(0);
+        expect(issue.message).not.toContain('Invalid input');
+        expect(issue.message).not.toContain('Invalid discriminator');
+        expect(TOP_LEVEL_ARGS[op]).toContain(issue.path);
+      }
+    }
   });
 });

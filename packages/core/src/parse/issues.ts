@@ -103,12 +103,19 @@ function messageFromZodIssue(issue: z.core.$ZodIssue, input: unknown, hasInput: 
       return `must be one of ${options}; received ${formatValue(located.value)}`;
     }
     case 'invalid_union': {
-      if (issue.discriminator === 'type' || issue.discriminator === 'kind') {
+      if (
+        issue.discriminator === 'type' ||
+        issue.discriminator === 'kind' ||
+        issue.discriminator === 'op'
+      ) {
         const rawOptions = 'options' in issue ? issue.options : undefined;
         const options = (rawOptions ?? [])
           .map((value) => (typeof value === 'string' ? value : formatValue(value)))
           .join(', ');
         const received = located?.found ? formatValue(located.value) : undefined;
+        if (issue.discriminator === 'op' && received === undefined) {
+          return options ? `is required (expected one of ${options})` : 'is required';
+        }
         const head =
           received === undefined
             ? `unknown ${issue.discriminator}`
