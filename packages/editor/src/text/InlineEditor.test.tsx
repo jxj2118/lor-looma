@@ -13,6 +13,69 @@ function editable(): HTMLElement {
   return node;
 }
 
+describe('structural editing and formatting', () => {
+  it('splits a paragraph on Enter, indents with Tab, and bolds a selection', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument({
+          cards: [
+            {
+              id: 'c_1',
+              body: [
+                { id: 'b_p', type: 'paragraph', text: 'Hello' },
+                { id: 'b_list', type: 'list', style: 'bullet', items: ['One', 'Two'] },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+    await user.dblClick(screen.getByText('Hello'));
+    await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
+    fireEvent.keyDown(editable(), { key: 'ArrowLeft', keyCode: 37 });
+    fireEvent.keyDown(editable(), { key: 'ArrowLeft', keyCode: 37 });
+    fireEvent.keyDown(editable(), { key: 'Enter', keyCode: 13 });
+    await waitFor(() => {
+      const body = ref.current?.store.getDocument().cards[0]?.body ?? [];
+      expect(body.slice(0, 2).map((node) => ('text' in node ? node.text : node.type))).toEqual([
+        'Hello',
+        '',
+      ]);
+    });
+
+    await user.dblClick(screen.getByText('Two'));
+    await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
+    fireEvent.keyDown(editable(), { key: 'Tab' });
+    await waitFor(() => {
+      const list = ref.current?.store.getDocument().cards[0]?.body.find((node) => node.type === 'list');
+      expect(list).toMatchObject({ items: [{ text: 'One', children: ['Two'] }] });
+    });
+  });
+
+  it('bolds the selection and rejects an unsafe link', async () => {
+    const { Editor } = await import('@tiptap/core');
+    const { createExtensions } = await import('./extensions');
+    const { markdownToDoc, docToMarkdown } = await import('./markdown');
+    const host = document.createElement('div');
+    document.body.append(host);
+    const editor = new Editor({
+      element: host,
+      extensions: createExtensions({ mode: 'single' }),
+      content: markdownToDoc('Hello', 'single'),
+    });
+    editor.commands.setTextSelection({ from: 1, to: 6 });
+    editor.chain().focus().toggleBold().run();
+    expect(docToMarkdown(editor.getJSON(), 'single')).toBe('**Hello**');
+    editor.chain().focus().setLink({ href: 'javascript:x' }).run();
+    expect(docToMarkdown(editor.getJSON(), 'single')).not.toContain('javascript');
+    editor.destroy();
+    host.remove();
+  });
+});
+
 describe('InlineEditor', () => {
   it('shows a placeholder on an empty paragraph', () => {
     render(

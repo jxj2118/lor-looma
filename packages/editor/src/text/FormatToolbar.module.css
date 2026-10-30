@@ -1,0 +1,64 @@
+.toolbar,
+.popover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 8px;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+  pointer-events: auto;
+}
+
+.button,
+.swatch {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.button[aria-pressed='true'],
+.swatch[aria-pressed='true'] {
+  border-color: var(--lm-editor-accent);
+}
+
+.linkForm {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.linkInput {
+  width: 160px;
+  height: 28px;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.error {
+  color: var(--lm-color-danger, #dc2626);
+  font-size: 12px;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 132px;
+}
+
+.chip {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 4px;
+}

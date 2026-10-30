@@ -151,6 +151,22 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   useEffect(() => () => clearFlash(viewState, flashTimers.current), [viewState]);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!viewState.get().editing) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('[data-lm-inline-editor], [data-lm-format-toolbar], [data-lm-color-popover]')) {
+        return;
+      }
+      finishEditing();
+    };
+    root.addEventListener('pointerdown', onPointerDown, true);
+    return () => root.removeEventListener('pointerdown', onPointerDown, true);
+  }, [finishEditing, viewState]);
+
+  useEffect(() => {
     if (storeProp || !documentProp || documentProp === sourceDocument.current) return;
     sourceDocument.current = documentProp;
     if (documentProp !== store.getDocument()) store.load(documentProp);

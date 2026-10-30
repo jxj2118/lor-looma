@@ -14,6 +14,7 @@ import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent }
 import { selectCard, selectNode } from '../state/selection';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { defaultSlot, isTextNodeType } from '../text/slots';
+import { toggleChecked } from '../text/structure';
 import { EditableNode } from './EditableNode';
 import { EditableSlot } from './EditableSlot';
 import styles from './Canvas.module.css';
@@ -62,6 +63,22 @@ export function Canvas() {
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (target.closest('button, a, input, textarea, select')) return;
+    const mark = target.closest('[aria-hidden="true"]');
+    const markedNode = mark?.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
+    if (mark && markedNode) {
+      const found = findNode(store.getDocument(), markedNode);
+      if (found?.node.type === 'list' && found.node.style === 'check') {
+        const path = listItemPath(mark);
+        const items = path ? toggleChecked(found.node.items, path) : null;
+        if (items) {
+          store.apply([{ op: 'updateNode', id: found.node.id, patch: { items } }], {
+            origin: 'user',
+            label: 'Edit structure',
+          });
+          return;
+        }
+      }
+    }
     const nodeId = target.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
     if (nodeId) {
       viewState.set({
@@ -130,6 +147,20 @@ export function Canvas() {
       )}
     </div>
   );
+}
+
+function listItemPath(mark: Element): number[] | null {
+  const path: number[] = [];
+  let item = mark.closest('li');
+  while (item) {
+    const parent = item.parentElement;
+    if (!parent) return null;
+    const index = [...parent.children].filter((child) => child.tagName === 'LI').indexOf(item);
+    if (index < 0) return null;
+    path.unshift(index);
+    item = parent.parentElement?.closest('li') ?? null;
+  }
+  return path.length > 0 ? path : null;
 }
 
 function EditorCard({
