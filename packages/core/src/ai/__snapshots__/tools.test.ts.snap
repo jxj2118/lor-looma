@@ -1,0 +1,76 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getToolDefinitions > snapshots name, description, and top-level required for each provider 1`] = `
+[
+  {
+    "description": "Get a compact outline of the current Looma document: title, format, and for every card its id, title and the id, type, nesting depth and a short text preview of every block and container. Call this first to learn the ids you need.",
+    "name": "looma_get_outline",
+    "required": null,
+  },
+  {
+    "description": "Read full cards by id. Use as: "json" for exact field values before editing, or as: "markdown" for a readable view where every node is preceded by an <!-- id: ... --> comment. Markdown is read-only.",
+    "name": "looma_get_cards",
+    "required": [
+      "ids",
+    ],
+  },
+  {
+    "description": "Apply a batch of edit commands to the document. The batch is atomic: if any command fails, nothing changes and the errors explain what to fix. Each call is one undo step for the user. Omit ids on new cards and nodes to have them generated; generated ids are returned in createdIds, in creation order.",
+    "name": "looma_apply",
+    "required": [
+      "commands",
+    ],
+  },
+]
+`;
+
+exports[`getToolDefinitions > snapshots name, description, and top-level required for each provider 2`] = `
+[
+  {
+    "description": "Get a compact outline of the current Looma document: title, format, and for every card its id, title and the id, type, nesting depth and a short text preview of every block and container. Call this first to learn the ids you need.",
+    "name": "looma_get_outline",
+    "required": null,
+    "type": "function",
+  },
+  {
+    "description": "Read full cards by id. Use as: "json" for exact field values before editing, or as: "markdown" for a readable view where every node is preceded by an <!-- id: ... --> comment. Markdown is read-only.",
+    "name": "looma_get_cards",
+    "required": [
+      "ids",
+    ],
+    "type": "function",
+  },
+  {
+    "description": "Apply a batch of edit commands to the document. The batch is atomic: if any command fails, nothing changes and the errors explain what to fix. Each call is one undo step for the user. Omit ids on new cards and nodes to have them generated; generated ids are returned in createdIds, in creation order.",
+    "name": "looma_apply",
+    "required": [
+      "commands",
+    ],
+    "type": "function",
+  },
+]
+`;
+
+exports[`getToolDefinitions > snapshots name, description, and top-level required for each provider 3`] = `
+[
+  {
+    "description": "Get a compact outline of the current Looma document: title, format, and for every card its id, title and the id, type, nesting depth and a short text preview of every block and container. Call this first to learn the ids you need.",
+    "name": "looma_get_outline",
+    "required": null,
+  },
+  {
+    "description": "Read full cards by id. Use as: "json" for exact field values before editing, or as: "markdown" for a readable view where every node is preceded by an <!-- id: ... --> comment. Markdown is read-only.",
+    "name": "looma_get_cards",
+    "required": [
+      "ids",
+    ],
+  },
+  {
+    "description": "Apply a batch of edit commands to the document. The batch is atomic: if any command fails, nothing changes and the errors explain what to fix. Each call is one undo step for the user. Omit ids on new cards and nodes to have them generated; generated ids are returned in createdIds, in creation order.",
+    "name": "looma_apply",
+    "required": [
+      "commands",
+    ],
+  },
+]
+`;
