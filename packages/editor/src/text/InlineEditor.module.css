@@ -1,0 +1,12 @@
+.color {
+  color: var(--lm-inline-color);
+}
+
+.highlight {
+  background-color: var(--lm-inline-highlight);
+  color: inherit;
+}
+
+.link {
+  color: var(--lm-color-primary, #2563eb);
+}
