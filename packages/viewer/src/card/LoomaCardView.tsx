@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import { LOGICAL_SIZE, TYPE_SCALE } from '../constants';
 import { NodeView } from '../nodes/NodeView';
 import { NodeRenderProvider } from '../nodes/context';
+import { surfaceVariables } from '../theme/surface';
 import type { RenderNode } from '../nodes/context';
 import styles from './LoomaCardView.module.css';
 
@@ -48,6 +49,7 @@ function sameCardProps(prev: LoomaCardViewProps, next: LoomaCardViewProps): bool
     prev.card === next.card &&
     prev.document.format === next.document.format &&
     prev.document.assets === next.document.assets &&
+    prev.document.theme === next.document.theme &&
     prev.resolveAsset === next.resolveAsset &&
     prev.renderNode === next.renderNode &&
     prev.className === next.className
@@ -71,9 +73,11 @@ export const LoomaCardView = memo(function LoomaCardView({
   const accentSrc = card.accent ? assetSrc(assets, card.accent.assetId, resolveAsset) : undefined;
   const accentPosition = card.accent && accentSrc ? card.accent.position : undefined;
   const paint = backgroundPaint(card, assets, resolveAsset, accentPosition, accentSrc);
+  const surface = surfaceVariables(document.theme, card.background);
 
   const style = {
     ...sizeVariables(format),
+    ...surface.vars,
     ...paint.style,
     ...(format === 'presentation' ? { height: LOGICAL_SIZE.presentation.height } : null),
     ...(accentPosition === 'left'
@@ -115,6 +119,7 @@ export const LoomaCardView = memo(function LoomaCardView({
         data-lm-card-id={card.id}
         data-lm-format={format}
         data-lm-accent={accentPosition}
+        data-lm-surface={surface.tone}
         className={className ? `${styles.card} ${className}` : styles.card}
         style={style}
       >
