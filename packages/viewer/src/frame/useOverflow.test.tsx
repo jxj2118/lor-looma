@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useOverflow } from './useOverflow';
+import { useCardOverflow } from './useOverflow';
 
 class MockResizeObserver {
   static instances: MockResizeObserver[] = [];
@@ -30,7 +30,7 @@ function box(scrollHeight: number, clientHeight: number): HTMLElement {
   return el;
 }
 
-describe('useOverflow', () => {
+describe('useCardOverflow', () => {
   afterEach(() => {
     MockResizeObserver.instances = [];
     vi.unstubAllGlobals();
@@ -42,7 +42,7 @@ describe('useOverflow', () => {
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
     const element = box(400, 100);
     const { result } = renderHook(() =>
-      useOverflow(['c_x', 'c_y'], (id) => (id === 'c_x' ? element : null), true),
+      useCardOverflow(['c_x', 'c_y'], (id) => (id === 'c_x' ? element : null), true),
     );
     expect(result.current.size).toBe(0);
 
@@ -72,7 +72,7 @@ describe('useOverflow', () => {
     const element = box(100, 100);
     const child = document.createElement('p');
     element.append(child);
-    const { result } = renderHook(() => useOverflow(['c_x'], () => element, true));
+    const { result } = renderHook(() => useCardOverflow(['c_x'], () => element, true));
     act(() => {
       vi.advanceTimersByTime(100);
     });
@@ -92,7 +92,7 @@ describe('useOverflow', () => {
 
   it('stays empty when ResizeObserver is missing', () => {
     vi.stubGlobal('ResizeObserver', undefined);
-    const { result } = renderHook(() => useOverflow(['c_x'], () => box(400, 100), true));
+    const { result } = renderHook(() => useCardOverflow(['c_x'], () => box(400, 100), true));
     expect([...result.current]).toEqual([]);
   });
 });

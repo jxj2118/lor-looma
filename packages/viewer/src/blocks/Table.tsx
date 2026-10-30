@@ -1,10 +1,11 @@
 import type { TableBlock } from '@lor-looma/core';
-import { InlineText } from '../inline/InlineText';
+import { TextSlot, slotKey } from '../nodes/TextSlot';
 import styles from './blocks.module.css';
 
 export function Table({ block }: { block: TableBlock }) {
   const rows = block.header ? block.rows.slice(1) : block.rows;
   const header = block.header ? block.rows[0] : undefined;
+  const bodyOffset = block.header ? 1 : 0;
   return (
     <div className={`${styles.block} ${styles.tableScroll}`}>
       <table className={styles.table}>
@@ -13,7 +14,11 @@ export function Table({ block }: { block: TableBlock }) {
             <tr>
               {header.map((cell, index) => (
                 <th key={index} scope="col">
-                  <InlineText text={cell} />
+                  <TextSlot
+                    nodeId={block.id}
+                    slot={slotKey({ kind: 'cell', row: 0, col: index })}
+                    text={cell}
+                  />
                 </th>
               ))}
             </tr>
@@ -24,7 +29,11 @@ export function Table({ block }: { block: TableBlock }) {
             <tr key={rowIndex}>
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex}>
-                  <InlineText text={cell} />
+                  <TextSlot
+                    nodeId={block.id}
+                    slot={slotKey({ kind: 'cell', row: rowIndex + bodyOffset, col: cellIndex })}
+                    text={cell}
+                  />
                 </td>
               ))}
             </tr>

@@ -2,27 +2,13 @@ import { isSafeHref, parseInline } from '@lor-looma/core';
 import type { InlineNode } from '@lor-looma/core';
 import { Fragment, memo, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { highlightColorValue, inlineColorValue } from './colors';
 import styles from './InlineText.module.css';
 
 export interface InlineTextProps {
   text: string;
   as?: 'span' | 'div' | 'p';
   className?: string;
-}
-
-const THEME_COLORS = new Set([
-  'primary',
-  'accent',
-  'muted',
-  'info',
-  'success',
-  'warning',
-  'danger',
-]);
-
-function colorVariable(name: string): string {
-  const token = THEME_COLORS.has(name) ? 'color' : 'palette';
-  return `var(--lm-${token}-${name})`;
 }
 
 function renderInline(node: InlineNode, key: string): ReactNode {
@@ -61,7 +47,7 @@ function renderInline(node: InlineNode, key: string): ReactNode {
         <span
           key={key}
           className={styles.color}
-          style={{ '--lm-inline-color': colorVariable(node.color) } as CSSProperties}
+          style={{ '--lm-inline-color': inlineColorValue(node.color) } as CSSProperties}
         >
           {renderChildren(node.children, key)}
         </span>
@@ -71,7 +57,7 @@ function renderInline(node: InlineNode, key: string): ReactNode {
         <mark
           key={key}
           className={styles.highlight}
-          style={{ '--lm-inline-highlight': `var(--lm-highlight-${node.color})` } as CSSProperties}
+          style={{ '--lm-inline-highlight': highlightColorValue(node.color) } as CSSProperties}
         >
           {renderChildren(node.children, key)}
         </mark>

@@ -1,9 +1,15 @@
 export { LOGICAL_SIZE } from './constants';
 export { LoomaCardView } from './card/LoomaCardView';
 export type { LoomaCardViewProps, RenderNode, RenderNodeInfo } from './card/LoomaCardView';
+export { ScaledFrame } from './frame/ScaledFrame';
+export type { ScaledFrameProps } from './frame/ScaledFrame';
+export { useCardOverflow } from './frame/useOverflow';
 export { useLoomaDocument } from './hooks/useLoomaDocument';
+export { highlightColorValue, inlineColorValue } from './inline/colors';
 export { InlineText } from './inline/InlineText';
 export type { InlineTextProps } from './inline/InlineText';
+export { TextSlot, parseSlotKey, slotKey } from './nodes/TextSlot';
+export type { ParsedSlot, RenderSlot, SlotKey, TextSlotProps } from './nodes/TextSlot';
 export { LoomaRoot } from './root/LoomaRoot';
 export type { LoomaRootProps } from './root/LoomaRoot';
 export { THEME_PRESET_TOKENS, themeToCssVariables } from './theme/themeToCssVariables';

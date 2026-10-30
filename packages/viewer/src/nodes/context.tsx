@@ -1,6 +1,7 @@
 import type { LoomaAsset, LoomaDocument, LoomaNode } from '@lor-looma/core';
 import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
+import type { RenderSlot } from './TextSlot';
 
 export interface RenderNodeInfo {
   depth: number;
@@ -20,9 +21,14 @@ export interface NodeRenderContextValue {
   assets: LoomaDocument['assets'];
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
   renderNode?: RenderNode;
+  renderSlot?: RenderSlot;
 }
 
 const NodeRenderContext = createContext<NodeRenderContextValue | null>(null);
+
+export function useRenderSlot(): RenderSlot | undefined {
+  return useContext(NodeRenderContext)?.renderSlot;
+}
 
 export function NodeRenderProvider({
   value,

@@ -6,6 +6,7 @@ import { NodeView } from '../nodes/NodeView';
 import { NodeRenderProvider } from '../nodes/context';
 import { surfaceVariables } from '../theme/surface';
 import type { RenderNode } from '../nodes/context';
+import type { RenderSlot } from '../nodes/TextSlot';
 import styles from './LoomaCardView.module.css';
 
 export type { RenderNode, RenderNodeInfo } from '../nodes/context';
@@ -15,6 +16,7 @@ export interface LoomaCardViewProps {
   document: LoomaDocument;
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
   renderNode?: RenderNode;
+  renderSlot?: RenderSlot;
   className?: string;
 }
 
@@ -52,6 +54,7 @@ function sameCardProps(prev: LoomaCardViewProps, next: LoomaCardViewProps): bool
     prev.document.theme === next.document.theme &&
     prev.resolveAsset === next.resolveAsset &&
     prev.renderNode === next.renderNode &&
+    prev.renderSlot === next.renderSlot &&
     prev.className === next.className
   );
 }
@@ -61,13 +64,14 @@ export const LoomaCardView = memo(function LoomaCardView({
   document,
   resolveAsset,
   renderNode,
+  renderSlot,
   className,
 }: LoomaCardViewProps) {
   const format = document.format;
   const assets = document.assets;
   const context = useMemo(
-    () => ({ format, assets, resolveAsset, renderNode }),
-    [format, assets, resolveAsset, renderNode],
+    () => ({ format, assets, resolveAsset, renderNode, renderSlot }),
+    [format, assets, resolveAsset, renderNode, renderSlot],
   );
 
   const accentSrc = card.accent ? assetSrc(assets, card.accent.assetId, resolveAsset) : undefined;

@@ -2,7 +2,7 @@ import type { LoomaAsset, LoomaDocument, LoomaStore } from '@lor-looma/core';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import type { RenderNode } from '../card/LoomaCardView';
-import { useOverflow } from '../frame/useOverflow';
+import { useCardOverflow } from '../frame/useOverflow';
 import { useLoomaDocument } from '../hooks/useLoomaDocument';
 import { LoomaRoot } from '../root/LoomaRoot';
 import styles from './LoomaViewer.module.css';
@@ -84,7 +84,7 @@ export const LoomaViewer = forwardRef<LoomaViewerHandle, LoomaViewerProps>(funct
   }, [doc, mode, page, pageProp, onPageChange, onOverflow, onFullscreenChange]);
 
   const cardIds = doc.cards.map((card) => card.id);
-  const overflowing = useOverflow(
+  const overflowing = useCardOverflow(
     cardIds,
     (id) => {
       const element = rootRef.current?.querySelector(

@@ -11,7 +11,7 @@ function sameMembers(current: ReadonlySet<string>, next: ReadonlySet<string>): b
 }
 
 /** Presentation cards whose content is taller than the slide, debounced by 100ms. */
-export function useOverflow(
+export function useCardOverflow(
   cardIds: readonly string[],
   getContentElement: (id: string) => HTMLElement | null,
   enabled: boolean,

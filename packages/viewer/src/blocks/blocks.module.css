@@ -207,6 +207,14 @@
   min-width: 0;
 }
 
+.calloutBody p {
+  margin: 0;
+}
+
+.slotHost {
+  display: contents;
+}
+
 .quote {
   display: flex;
   flex-direction: column;

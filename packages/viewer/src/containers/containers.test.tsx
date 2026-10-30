@@ -74,7 +74,7 @@ describe('containers', () => {
     expect((columns as HTMLElement).style.gridTemplateColumns).toBe('1.2fr 1fr');
     expect((columns as HTMLElement).style.alignItems).toBe('center');
     expect((columns as HTMLElement).style.gap).toBe('calc(var(--lm-block-gap) * 1.75)');
-    expect(columns?.querySelectorAll('[data-lm-slot]')).toHaveLength(2);
+    expect(columns?.querySelectorAll(':scope > [data-lm-slot]')).toHaveLength(2);
     expect(columns?.querySelector('[data-lm-slot="1"]')?.textContent).toContain('Right column');
 
     const grid = node(container, 'n_grid').firstElementChild as HTMLElement;

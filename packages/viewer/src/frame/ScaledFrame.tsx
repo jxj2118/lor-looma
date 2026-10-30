@@ -2,19 +2,21 @@ import type { ReactNode } from 'react';
 import { useElementSize } from '../hooks/useElementSize';
 import styles from './ScaledFrame.module.css';
 
+export interface ScaledFrameProps {
+  logicalWidth: number;
+  logicalHeight?: number;
+  maxScale?: number;
+  fit?: 'width' | 'contain';
+  children: ReactNode;
+}
+
 export function ScaledFrame({
   logicalWidth,
   logicalHeight,
   maxScale,
   fit = 'width',
   children,
-}: {
-  logicalWidth: number;
-  logicalHeight?: number;
-  maxScale?: number;
-  fit?: 'width' | 'contain';
-  children: ReactNode;
-}) {
+}: ScaledFrameProps) {
   const [outerRef, outer] = useElementSize<HTMLDivElement>();
   const [innerRef, inner] = useElementSize<HTMLDivElement>();
   const ready = outer.width > 0 && (fit !== 'contain' || outer.height > 0);

@@ -1,19 +1,18 @@
 import type { QuoteBlock } from '@lor-looma/core';
 import { InlineText } from '../inline/InlineText';
+import { TextSlot } from '../nodes/TextSlot';
 import styles from './blocks.module.css';
-
-function segments(text: string): string[] {
-  return text.split(/\n\n/);
-}
 
 export function Quote({ block }: { block: QuoteBlock }) {
   return (
     <blockquote className={`${styles.block} ${styles.quote}`}>
-      {segments(block.text).map((part, index) => (
-        <p key={index}>
-          <InlineText text={part} />
-        </p>
-      ))}
+      <TextSlot
+        nodeId={block.id}
+        slot="text"
+        text={block.text}
+        as="div"
+        className={styles.slotHost}
+      />
       {block.cite ? (
         <footer className={styles.cite}>
           —{' '}

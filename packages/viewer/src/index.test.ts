@@ -6,8 +6,13 @@ import type {
   LoomaRootProps,
   LoomaViewerHandle,
   LoomaViewerProps,
+  ParsedSlot,
   RenderNode,
   RenderNodeInfo,
+  RenderSlot,
+  ScaledFrameProps,
+  SlotKey,
+  TextSlotProps,
   ThemeTokens,
   ViewerMode,
 } from './index';
@@ -21,11 +26,17 @@ const RUNTIME = [
   'InlineText',
   'useLoomaDocument',
   'LOGICAL_SIZE',
+  'TextSlot',
+  'slotKey',
+  'parseSlotKey',
+  'ScaledFrame',
+  'useCardOverflow',
+  'inlineColorValue',
+  'highlightColorValue',
 ] as const;
 
 const PRIVATE = [
   'NodeView',
-  'ScaledFrame',
   'Heading',
   'Paragraph',
   'List',
@@ -70,6 +81,11 @@ describe('public API', () => {
       LoomaRootProps,
       ThemeTokens,
       InlineTextProps,
+      TextSlotProps,
+      RenderSlot,
+      SlotKey,
+      ParsedSlot,
+      ScaledFrameProps,
     ];
     expect(types).toBeNull();
   });

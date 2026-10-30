@@ -231,7 +231,7 @@ describe('blocks', () => {
       />,
     );
     const quote = container.querySelector('blockquote');
-    expect(quote?.querySelectorAll(':scope > p')).toHaveLength(2);
+    expect(quote?.querySelectorAll('p')).toHaveLength(2);
     expect(quote?.querySelector('footer')?.textContent).toContain('—');
     expect(quote?.querySelector('cite')?.textContent).toBe('Classroom notes');
   });

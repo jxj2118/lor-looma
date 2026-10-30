@@ -9,6 +9,7 @@ export {
   MAX_LIST_DEPTH,
   THEME_PRESETS,
 } from './constants';
+export type { HighlightColor, InlineColor } from './constants';
 export { createId, ID_PATTERN, ID_PREFIX, isValidId } from './ids';
 export {
   inlineToPlainText,
