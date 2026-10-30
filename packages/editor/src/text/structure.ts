@@ -41,7 +41,11 @@ function locateItem(
   return { list: [...list], index, item };
 }
 
-function writeChildList(items: readonly ListItem[], parentPath: readonly number[], next: ListItem[]): ListItem[] {
+function writeChildList(
+  items: readonly ListItem[],
+  parentPath: readonly number[],
+  next: ListItem[],
+): ListItem[] {
   if (parentPath.length === 0) return next;
   const [head, ...rest] = parentPath;
   return items.map((item, index) => {
@@ -118,7 +122,11 @@ export function splitListItem(
         patch: { items: writeChildList(found.node.items, path.slice(0, -1), located.list) },
       },
     ],
-    next: { nodeId, slot: `item:${[...path.slice(0, -1), located.index + 1].join('.')}`, caret: 'start' },
+    next: {
+      nodeId,
+      slot: `item:${[...path.slice(0, -1), located.index + 1].join('.')}`,
+      caret: 'start',
+    },
   };
 }
 
@@ -202,7 +210,11 @@ function countItems(items: readonly ListItem[]): number {
   return count;
 }
 
-export function exitList(doc: LoomaDocument, nodeId: string, path: number[]): StructureResult | null {
+export function exitList(
+  doc: LoomaDocument,
+  nodeId: string,
+  path: number[],
+): StructureResult | null {
   const found = findNode(doc, nodeId);
   if (!found || found.node.type !== 'list') return null;
   const paragraphId = createId('block');
@@ -244,8 +256,7 @@ export function removeListItem(
   const located = locateItem(found.node.items, path);
   if (!located) return null;
   if (located.index === 0 && countItems(found.node.items) <= 1) return exitList(doc, nodeId, path);
-  const nextPath =
-    located.index === 0 ? path : [...path.slice(0, -1), located.index - 1];
+  const nextPath = located.index === 0 ? path : [...path.slice(0, -1), located.index - 1];
   const caret = located.index === 0 ? 'start' : 'end';
   located.list.splice(located.index, 1);
   return {
@@ -264,7 +275,8 @@ export function toggleChecked(items: readonly ListItem[], path: number[]): ListI
   const located = locateItem(items, path);
   if (!located) return null;
   const item = located.item;
-  const next = typeof item === 'string' ? { text: item, checked: true } : { ...item, checked: !item.checked };
+  const next =
+    typeof item === 'string' ? { text: item, checked: true } : { ...item, checked: !item.checked };
   located.list.splice(located.index, 1, next);
   return writeChildList(items, path.slice(0, -1), located.list);
 }

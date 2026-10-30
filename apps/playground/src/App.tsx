@@ -1,5 +1,13 @@
-import { THEME_PRESETS, createLoomaStore, formatIssue, parseDocument } from '@lor-looma/core';
-import type { LoomaDocument } from '@lor-looma/core';
+import {
+  THEME_PRESETS,
+  createLoomaStore,
+  findNode,
+  formatIssue,
+  parseDocument,
+} from '@lor-looma/core';
+import type { LoomaDocument, LoomaNode } from '@lor-looma/core';
+import { LoomaEditor } from '@lor-looma/editor';
+import type { LoomaEditorHandle } from '@lor-looma/editor';
 import { LoomaViewer, useLoomaDocument } from '@lor-looma/viewer';
 import type { LoomaViewerHandle, ViewerMode } from '@lor-looma/viewer';
 import { useRef, useState } from 'react';
@@ -54,14 +62,55 @@ export function App() {
   return <Playground initial={samples[0]} />;
 }
 
+function textWithSuffix(node: LoomaNode): { text: string } | { code: string } | null {
+  if (
+    node.type === 'heading' ||
+    node.type === 'paragraph' ||
+    node.type === 'callout' ||
+    node.type === 'quote'
+  ) {
+    return { text: `${node.text} (edited by AI)` };
+  }
+  if (node.type === 'code') return { code: `${node.code} (edited by AI)` };
+  return null;
+}
+
 function Playground({ initial }: { initial: ReadySample }) {
   const viewerRef = useRef<LoomaViewerHandle>(null);
+  const editorRef = useRef<LoomaEditorHandle>(null);
   const [store] = useState(() => createLoomaStore(initial.doc));
   const document = useLoomaDocument({ store });
   const [sampleId, setSampleId] = useState(initial.id);
+  const [view, setView] = useState<'viewer' | 'editor'>('viewer');
   const [mode, setMode] = useState<ViewerMode>('scroll');
   const [page, setPage] = useState(0);
   const [overflowIds, setOverflowIds] = useState<string[]>([]);
+
+  function simulateAiEdit() {
+    window.setTimeout(() => {
+      const doc = store.getDocument();
+      const selection = editorRef.current?.getSelection();
+      const candidate = selection?.editingId ?? selection?.nodeIds[0];
+      const node = candidate ? findNode(doc, candidate)?.node : undefined;
+      const patch = node ? textWithSuffix(node) : null;
+      if (candidate && patch) {
+        store.apply([{ op: 'updateNode', id: candidate, patch }], { origin: 'ai' });
+        return;
+      }
+      const card = doc.cards[0];
+      if (!card) return;
+      store.apply(
+        [
+          {
+            op: 'insertNode',
+            node: { type: 'paragraph', text: 'Added by AI.' },
+            at: { parent: card.id },
+          },
+        ],
+        { origin: 'ai' },
+      );
+    }, 3000);
+  }
 
   function selectSample(id: string) {
     const next = samples.find((sample) => sample.id === id);
@@ -80,6 +129,16 @@ function Playground({ initial }: { initial: ReadySample }) {
   return (
     <div className={styles.app}>
       <header className={styles.toolbar}>
+        <label className={styles.field}>
+          View
+          <select
+            value={view}
+            onChange={(event) => setView(event.target.value === 'editor' ? 'editor' : 'viewer')}
+          >
+            <option value="viewer">Viewer</option>
+            <option value="editor">Editor</option>
+          </select>
+        </label>
         <label className={styles.field}>
           Sample
           <select value={sampleId} onChange={(event) => selectSample(event.target.value)}>
@@ -120,24 +179,36 @@ function Playground({ initial }: { initial: ReadySample }) {
             <option value="document">document</option>
           </select>
         </label>
-        <label className={styles.field}>
-          Mode
-          <select
-            value={mode}
-            onChange={(event) => setMode(event.target.value === 'present' ? 'present' : 'scroll')}
-          >
-            <option value="scroll">scroll</option>
-            <option value="present">present</option>
-          </select>
-        </label>
+        {view === 'viewer' ? (
+          <label className={styles.field}>
+            Mode
+            <select
+              value={mode}
+              onChange={(event) => setMode(event.target.value === 'present' ? 'present' : 'scroll')}
+            >
+              <option value="scroll">scroll</option>
+              <option value="present">present</option>
+            </select>
+          </label>
+        ) : null}
         <div className={styles.actions}>
-          <button type="button" onClick={() => void enterFullscreen()}>
-            Fullscreen
+          {view === 'viewer' ? (
+            <>
+              <button type="button" onClick={() => void enterFullscreen()}>
+                Fullscreen
+              </button>
+              <button type="button" onClick={() => store.undo()}>
+                Undo
+              </button>
+            </>
+          ) : null}
+          <button type="button" onClick={simulateAiEdit}>
+            Simulate AI edit (3s)
           </button>
-          <button type="button" onClick={() => store.undo()}>
-            Undo
+          <button type="button" onClick={() => console.log(store.getDocument())}>
+            Log document
           </button>
-          {mode === 'present' ? (
+          {view === 'viewer' && mode === 'present' ? (
             <>
               <button type="button" onClick={() => viewerRef.current?.prev()}>
                 Prev
@@ -152,19 +223,25 @@ function Playground({ initial }: { initial: ReadySample }) {
           ) : null}
         </div>
       </header>
-      <p className={styles.overflow}>
-        Overflow: {overflowIds.length > 0 ? overflowIds.join(', ') : 'none'}
-      </p>
+      {view === 'viewer' ? (
+        <p className={styles.overflow}>
+          Overflow: {overflowIds.length > 0 ? overflowIds.join(', ') : 'none'}
+        </p>
+      ) : null}
       <div className={styles.stage}>
-        <LoomaViewer
-          ref={viewerRef}
-          className={styles.viewer}
-          store={store}
-          mode={mode}
-          page={page}
-          onPageChange={setPage}
-          onOverflow={setOverflowIds}
-        />
+        {view === 'editor' ? (
+          <LoomaEditor ref={editorRef} className={styles.viewer} store={store} />
+        ) : (
+          <LoomaViewer
+            ref={viewerRef}
+            className={styles.viewer}
+            store={store}
+            mode={mode}
+            page={page}
+            onPageChange={setPage}
+            onOverflow={setOverflowIds}
+          />
+        )}
       </div>
     </div>
   );

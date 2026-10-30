@@ -54,7 +54,12 @@ describe('structure commands', () => {
     ]);
 
     const longer = document([
-      { id: 'b_list', type: 'list', style: 'bullet', items: ['Stay', { text: 'Parent', children: [''] }] },
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: ['Stay', { text: 'Parent', children: [''] }],
+      },
     ]);
     const exited = exitList(longer, 'b_list', [1, 0]);
     const exitedDoc = apply(longer, exited);

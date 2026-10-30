@@ -50,7 +50,9 @@ describe('structural editing and formatting', () => {
     await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
     fireEvent.keyDown(editable(), { key: 'Tab' });
     await waitFor(() => {
-      const list = ref.current?.store.getDocument().cards[0]?.body.find((node) => node.type === 'list');
+      const list = ref.current?.store
+        .getDocument()
+        .cards[0]?.body.find((node) => node.type === 'list');
       expect(list).toMatchObject({ items: [{ text: 'One', children: ['Two'] }] });
     });
   });
