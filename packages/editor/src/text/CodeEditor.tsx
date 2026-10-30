@@ -15,7 +15,7 @@ export function CodeEditor({
   initialText: string;
   caret: 'start' | 'end';
 }) {
-  const { store, viewState, bindFinishEditing, suppressCommitRef } = useEditorContext();
+  const { store, viewState, bindFinishEditing, suppressCommitRef, rootRef } = useEditorContext();
   const [value, setValue] = useState(initialText);
   const valueRef = useRef(initialText);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -50,13 +50,14 @@ export function CodeEditor({
 
   useEffect(() => {
     bindFinishEditing(() => exit());
+    // Unmounting only flushes: StrictMode remounts effects, and clearing `editing` here would close the editor.
     return () => {
+      bindFinishEditing(null);
       if (suppressCommitRef.current) {
         suppressCommitRef.current = false;
         return;
       }
-      exit();
-      bindFinishEditing(null);
+      flush();
     };
     // `exit` reads the latest text through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,6 +82,7 @@ export function CodeEditor({
           event.preventDefault();
           event.stopPropagation();
           exit();
+          rootRef.current?.focus({ preventScroll: true });
           return;
         }
         if (event.key !== 'Tab') return;

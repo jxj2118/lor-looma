@@ -132,7 +132,16 @@ export function SlashMenu() {
         style={{ left: slash.anchor.x, top: slash.anchor.y }}
       />
       <Popover.Portal container={layerElement}>
-        <Popover.Content className={styles.menu} data-lm-slash="" side="bottom" align="start">
+        <Popover.Content
+          className={styles.menu}
+          data-lm-slash=""
+          side="bottom"
+          align="start"
+          onOpenAutoFocus={(event) => {
+            if (slash.source === 'text') event.preventDefault();
+          }}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+        >
           <input
             ref={fileRef}
             type="file"

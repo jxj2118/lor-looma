@@ -104,6 +104,7 @@ export function InlineEditor({
   const extensions = useMemo(() => createExtensions({ mode, placeholder }), [mode, placeholder]);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const exitRef = useRef<() => void>(() => {});
+  const flushRef = useRef<() => void>(() => {});
   const keyRef = useRef<(event: KeyboardEvent) => boolean>(() => false);
   const hostRef = useRef<HTMLSpanElement>(null);
 
@@ -119,12 +120,15 @@ export function InlineEditor({
   });
 
   useEffect(() => {
-    exitRef.current = () => {
+    flushRef.current = () => {
       if (timer.current) clearTimeout(timer.current);
       timer.current = undefined;
       if (editor && !suppressCommitRef.current) {
         commitSlot(store, nodeId, slot, docToMarkdown(editor.getJSON(), mode));
       }
+    };
+    exitRef.current = () => {
+      flushRef.current();
       if (viewState.get().editing?.nodeId === nodeId) viewState.set({ editing: null });
     };
   }, [editor, mode, nodeId, slot, store, suppressCommitRef, viewState]);
@@ -202,13 +206,14 @@ export function InlineEditor({
 
   useEffect(() => {
     bindFinishEditing(() => exitRef.current());
+    // Unmounting only flushes: StrictMode remounts effects, and clearing `editing` here would close the editor.
     return () => {
+      bindFinishEditing(null);
       if (suppressCommitRef.current) {
         suppressCommitRef.current = false;
         return;
       }
-      exitRef.current();
-      bindFinishEditing(null);
+      flushRef.current();
     };
   }, [bindFinishEditing, suppressCommitRef]);
 
@@ -287,6 +292,7 @@ export function InlineEditor({
         event.preventDefault();
         event.stopPropagation();
         exitRef.current();
+        rootRef.current?.focus({ preventScroll: true });
         return true;
       }
       if (event.key === 'Enter' && event.shiftKey) return false;
@@ -368,10 +374,11 @@ export function InlineEditor({
       }
       return false;
     };
-  }, [editor, mode, nodeId, slashActions, slot, store, suppressCommitRef, viewState]);
+  }, [editor, mode, nodeId, rootRef, slashActions, slot, store, suppressCommitRef, viewState]);
 
   return (
-    <span ref={hostRef} data-lm-inline-editor="" className={styles.editor}>
+    <span data-lm-inline-editor="" className={styles.editor}>
+      <span ref={hostRef} />
       {editor ? <FormatToolbar editor={editor} /> : null}
     </span>
   );
