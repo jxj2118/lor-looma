@@ -1,0 +1,33 @@
+{
+  "name": "read-then-edit-markdown",
+  "description": "Read two cards as markdown, notice a node id, then edit the real card.",
+  "initial": "fixture",
+  "steps": [
+    {
+      "tool": "looma_get_cards",
+      "args": "{\"ids\":[\"c_title\",\"b_title\"],\"as\":\"markdown\"}",
+      "expect": { "ok": true, "missing": ["b_title"] }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          { "op": "updateNode", "id": "b_title", "patch": { "text": "Photosynthesis, briefly" } },
+          { "op": "deleteNode", "id": "b_quote" },
+          {
+            "op": "replaceNode",
+            "id": "b_lead",
+            "node": {
+              "type": "list",
+              "style": "bullet",
+              "items": ["Green light is reflected", "Other colors are absorbed"]
+            }
+          }
+        ],
+        "label": "Turn the lead into a list and drop the quote"
+      },
+      "expect": { "ok": true, "createdIdsCount": 0, "outlineCardCount": 4 }
+    }
+  ],
+  "final": { "cardCount": 4, "undoSteps": 1 }
+}

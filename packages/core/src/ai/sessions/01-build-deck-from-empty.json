@@ -1,0 +1,212 @@
+{
+  "name": "build-deck-from-empty",
+  "description": "Build a five-card Remote Team Onboarding deck from an empty document.",
+  "initial": "empty",
+  "steps": [
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          { "op": "setTitle", "title": "Remote Team Onboarding" },
+          { "op": "setTheme", "preset": "warm", "overrides": { "colorPrimary": "#1f4b99" } }
+        ],
+        "label": "Name the deck and set a warm theme"
+      },
+      "expect": { "ok": true, "createdIdsCount": 0, "outlineCardCount": 0 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "insertCard",
+            "card": {
+              "id": "c_cover",
+              "notes": "Welcome people by name, then read the quote and wait.",
+              "body": [
+                {
+                  "id": "b_cover_title",
+                  "type": "heading",
+                  "level": 1,
+                  "text": "Remote Team Onboarding"
+                },
+                {
+                  "id": "b_cover_lead",
+                  "type": "paragraph",
+                  "align": "center",
+                  "text": "Your first week, without the scavenger hunt."
+                },
+                {
+                  "id": "b_cover_quote",
+                  "type": "quote",
+                  "text": "Start with people, then process.",
+                  "cite": "People team"
+                }
+              ]
+            }
+          },
+          {
+            "op": "insertCard",
+            "card": {
+              "id": "c_compare",
+              "notes": "Walk the left column, then the right. Ask which habit they already have.",
+              "body": [
+                {
+                  "id": "b_compare_title",
+                  "type": "heading",
+                  "level": 2,
+                  "text": "Office habits, remote habits"
+                },
+                {
+                  "id": "n_compare_columns",
+                  "type": "columns",
+                  "widths": [1, 1],
+                  "gap": "md",
+                  "align": "start",
+                  "children": [
+                    [
+                      {
+                        "id": "b_compare_office",
+                        "type": "paragraph",
+                        "text": "In an office you learn by walking over."
+                      },
+                      {
+                        "id": "b_compare_list",
+                        "type": "list",
+                        "style": "bullet",
+                        "items": ["Drop by a desk", "Read the room", "Stay for the aside"]
+                      }
+                    ],
+                    [
+                      {
+                        "id": "b_compare_remote",
+                        "type": "paragraph",
+                        "text": "On a remote team you learn by writing it down."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "op": "insertCard",
+            "card": {
+              "id": "c_tools",
+              "notes": "Name the owner of each tool. Do not demo all four.",
+              "body": [
+                {
+                  "id": "b_tools_title",
+                  "type": "heading",
+                  "level": 2,
+                  "text": "Four tools you will actually open"
+                },
+                {
+                  "id": "n_tools_grid",
+                  "type": "grid",
+                  "columns": 2,
+                  "gap": "sm",
+                  "children": [
+                    {
+                      "id": "b_tool_chat",
+                      "type": "paragraph",
+                      "text": "Chat — where decisions are discussed."
+                    },
+                    {
+                      "id": "b_tool_docs",
+                      "type": "paragraph",
+                      "text": "Docs — where decisions are kept."
+                    },
+                    {
+                      "id": "b_tool_cal",
+                      "type": "paragraph",
+                      "text": "Calendar — where time is promised."
+                    },
+                    {
+                      "id": "b_tool_tasks",
+                      "type": "paragraph",
+                      "text": "Tasks — where work is visible."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "op": "insertCard",
+            "card": {
+              "id": "c_week",
+              "notes": "Read the list once, then the callout. Offer to pair on day one.",
+              "body": [
+                {
+                  "id": "b_week_title",
+                  "type": "heading",
+                  "level": 2,
+                  "text": "Your first five days"
+                },
+                {
+                  "id": "b_week_list",
+                  "type": "list",
+                  "style": "number",
+                  "items": [
+                    "Meet your manager and your buddy",
+                    "Read the team handbook",
+                    "Ship one tiny change",
+                    "Write down what confused you"
+                  ]
+                },
+                {
+                  "id": "b_week_callout",
+                  "type": "callout",
+                  "tone": "info",
+                  "text": "Confusion is useful. Send it to your buddy the same day."
+                }
+              ]
+            }
+          },
+          {
+            "op": "insertCard",
+            "card": {
+              "id": "c_monday",
+              "notes": "End on the code block. Leave the last minute for questions.",
+              "body": [
+                {
+                  "id": "b_monday_title",
+                  "type": "heading",
+                  "level": 2,
+                  "text": "What to do on Monday"
+                },
+                {
+                  "id": "n_monday_stack",
+                  "type": "stack",
+                  "gap": "md",
+                  "children": [
+                    {
+                      "id": "b_monday_text",
+                      "type": "paragraph",
+                      "text": "Say hello where the team already is, then open one doc and one task."
+                    },
+                    {
+                      "id": "b_monday_code",
+                      "type": "code",
+                      "language": "text",
+                      "code": "Hello — I am new. My buddy is Alex. I will start with the handbook."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "label": "Add the five onboarding cards"
+      },
+      "expect": { "ok": true, "createdIdsCount": 26, "outlineCardCount": 5 }
+    },
+    {
+      "tool": "looma_get_outline",
+      "args": "{}",
+      "expect": { "ok": true, "outlineCardCount": 5 }
+    }
+  ],
+  "final": { "cardCount": 5, "undoSteps": 2 }
+}

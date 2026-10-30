@@ -1,0 +1,73 @@
+{
+  "name": "layout-theme-assets",
+  "description": "Add a diagram, adjust columns and theme colors, then refuse to delete an asset that is still in use.",
+  "initial": "fixture",
+  "steps": [
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "putAsset",
+            "id": "img_diagram",
+            "asset": {
+              "kind": "image",
+              "src": "https://example.com/photosynthesis/diagram.png",
+              "alt": "A simple leaf diagram"
+            }
+          },
+          {
+            "op": "insertNode",
+            "node": {
+              "id": "b_diagram",
+              "type": "image",
+              "assetId": "img_diagram",
+              "fit": "contain",
+              "caption": "The leaf, drawn simply."
+            },
+            "at": { "parent": "c_review" }
+          },
+          {
+            "op": "updateCard",
+            "id": "c_review",
+            "patch": { "accent": { "position": "right", "assetId": "img_diagram" } }
+          }
+        ],
+        "label": "Add a diagram to the review card"
+      },
+      "expect": { "ok": true, "createdIdsCount": 2, "outlineCardCount": 4 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [{ "op": "insertColumn", "id": "n_process_columns", "index": 2, "width": 1 }],
+        "label": "Add a third column"
+      },
+      "expect": { "ok": true, "createdIdsCount": 0 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          { "op": "deleteColumn", "id": "n_process_columns", "index": 2, "moveNodesTo": 0 }
+        ],
+        "label": "Remove the empty column and keep its nodes"
+      },
+      "expect": { "ok": true, "createdIdsCount": 0 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": "{\"commands\":[{\"op\":\"setTheme\",\"overrides\":{\"colorPrimary\":\"#123456\",\"colorAccent\":\"#abcdef\"}},{\"op\":\"setTheme\",\"overrides\":{\"colorPrimary\":null}}],\"label\":\"Adjust two theme colors, then drop one\"}",
+      "expect": { "ok": true, "outlineCardCount": 4 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [{ "op": "removeAsset", "id": "img_leaf" }],
+        "label": "Remove the leaf photo"
+      },
+      "expect": { "ok": false, "errorIncludes": ["img_leaf", "still used"] }
+    }
+  ],
+  "final": { "cardCount": 4, "undoSteps": 4 }
+}

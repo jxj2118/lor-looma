@@ -1,0 +1,79 @@
+{
+  "name": "recover-from-errors",
+  "description": "Send an invalid batch, read the error, and resend a corrected batch.",
+  "initial": "fixture",
+  "steps": [
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "insertNode",
+            "node": { "type": "heading", "level": 4, "text": "Too deep for a heading" },
+            "at": { "parent": "c_inside" }
+          }
+        ],
+        "label": "Add a heading"
+      },
+      "expect": { "ok": false, "errorIncludes": ["Command 0", "level"] }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "insertNode",
+            "node": {
+              "id": "b_better_heading",
+              "type": "heading",
+              "level": 2,
+              "text": "A clearer heading"
+            },
+            "at": { "parent": "c_inside" }
+          }
+        ],
+        "label": "Add a heading"
+      },
+      "expect": { "ok": true, "createdIdsCount": 1 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "insertNode",
+            "node": { "type": "paragraph", "text": "This location names a card." },
+            "at": { "before": "c_title" }
+          }
+        ],
+        "label": "Insert a paragraph"
+      },
+      "expect": { "ok": false, "errorIncludes": ["parent"] }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "insertNode",
+            "node": { "id": "b_placed", "type": "paragraph", "text": "Placed on the title card." },
+            "at": { "parent": "c_title" }
+          }
+        ],
+        "label": "Insert a paragraph"
+      },
+      "expect": { "ok": true, "createdIdsCount": 1 }
+    },
+    {
+      "tool": "looma_draw",
+      "args": {},
+      "expect": { "ok": false, "errorIncludes": ["unknown tool", "looma_get_outline"] }
+    },
+    {
+      "tool": "looma_get_outline",
+      "args": "{",
+      "expect": { "ok": false, "errorIncludes": ["arguments are not valid JSON"] }
+    }
+  ],
+  "final": { "cardCount": 4, "undoSteps": 2 }
+}

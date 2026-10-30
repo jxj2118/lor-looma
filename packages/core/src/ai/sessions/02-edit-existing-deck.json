@@ -1,0 +1,63 @@
+{
+  "name": "edit-existing-deck",
+  "description": "Read the photosynthesis deck, then revise one card and rearrange the deck.",
+  "initial": "fixture",
+  "steps": [
+    {
+      "tool": "looma_get_outline",
+      "args": "{}",
+      "expect": { "ok": true, "outlineCardCount": 4 }
+    },
+    {
+      "tool": "looma_get_cards",
+      "args": { "ids": ["c_title"], "as": "json" },
+      "expect": { "ok": true, "missing": [] }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          {
+            "op": "updateNode",
+            "id": "b_title",
+            "patch": { "text": "Photosynthesis, in one sitting" }
+          },
+          {
+            "op": "insertNode",
+            "node": {
+              "id": "b_pause",
+              "type": "callout",
+              "tone": "note",
+              "text": "Ask what a plant eats before you explain it."
+            },
+            "at": { "after": "b_lead" }
+          },
+          {
+            "op": "wrapNodes",
+            "ids": ["b_title", "b_lead"],
+            "container": {
+              "id": "n_title_columns",
+              "type": "columns",
+              "widths": [1.2, 1],
+              "gap": "md"
+            }
+          }
+        ],
+        "label": "Revise the title card"
+      },
+      "expect": { "ok": true, "createdIdsCount": 2, "outlineCardCount": 4 }
+    },
+    {
+      "tool": "looma_apply",
+      "args": {
+        "commands": [
+          { "op": "moveCard", "id": "c_review", "to": { "index": 0 } },
+          { "op": "duplicateCard", "id": "c_inside", "newId": "c_inside_copy" }
+        ],
+        "label": "Lead with the review and copy the inside card"
+      },
+      "expect": { "ok": true, "createdIdsCount": 9, "outlineCardCount": 5 }
+    }
+  ],
+  "final": { "cardCount": 5, "undoSteps": 2 }
+}

@@ -1,0 +1,888 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AI session replay > build-deck-from-empty 1`] = `
+{
+  "cardCount": 5,
+  "cards": [
+    {
+      "id": "c_cover",
+      "index": 0,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_cover_title",
+          "preview": "Remote Team Onboarding",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_cover_lead",
+          "preview": "Your first week, without the scavenger hunt.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_cover_quote",
+          "preview": "Start with people, then process. — People team",
+          "type": "quote",
+        },
+      ],
+      "title": "Remote Team Onboarding",
+    },
+    {
+      "id": "c_compare",
+      "index": 1,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_compare_title",
+          "preview": "Office habits, remote habits",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_compare_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 1,
+          "id": "b_compare_office",
+          "preview": "In an office you learn by walking over.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_compare_list",
+          "preview": "Drop by a desk; Read the room; Stay for the aside",
+          "type": "list",
+        },
+        {
+          "depth": 1,
+          "id": "b_compare_remote",
+          "preview": "On a remote team you learn by writing it down.",
+          "type": "paragraph",
+        },
+      ],
+      "title": "Office habits, remote habits",
+    },
+    {
+      "id": "c_tools",
+      "index": 2,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_tools_title",
+          "preview": "Four tools you will actually open",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_tools_grid",
+          "preview": "[grid: 2 columns, 4 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_tool_chat",
+          "preview": "Chat — where decisions are discussed.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_tool_docs",
+          "preview": "Docs — where decisions are kept.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_tool_cal",
+          "preview": "Calendar — where time is promised.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_tool_tasks",
+          "preview": "Tasks — where work is visible.",
+          "type": "paragraph",
+        },
+      ],
+      "title": "Four tools you will actually open",
+    },
+    {
+      "id": "c_week",
+      "index": 3,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_week_title",
+          "preview": "Your first five days",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_week_list",
+          "preview": "Meet your manager and your buddy; Read the team handbook; Sh…",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_week_callout",
+          "preview": "Confusion is useful. Send it to your buddy the same day.",
+          "type": "callout",
+        },
+      ],
+      "title": "Your first five days",
+    },
+    {
+      "id": "c_monday",
+      "index": 4,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_monday_title",
+          "preview": "What to do on Monday",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_monday_stack",
+          "preview": "[stack: 2 items]",
+          "type": "stack",
+        },
+        {
+          "depth": 1,
+          "id": "b_monday_text",
+          "preview": "Say hello where the team already is, then open one doc and o…",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_monday_code",
+          "preview": "[code] Hello — I am new. My buddy is Alex. I will start with…",
+          "type": "code",
+        },
+      ],
+      "title": "What to do on Monday",
+    },
+  ],
+  "format": "presentation",
+  "id": "doc_session",
+  "title": "Remote Team Onboarding",
+}
+`;
+
+exports[`AI session replay > edit-existing-deck 1`] = `
+{
+  "cardCount": 5,
+  "cards": [
+    {
+      "id": "c_review",
+      "index": 0,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_review_heading",
+          "preview": "Check your understanding",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_question",
+          "preview": "Why do leaves look green if they use other colors of light?",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_answers",
+          "preview": "Green light is reflected; Other colors are absorbed",
+          "type": "list",
+        },
+      ],
+      "title": "Check your understanding",
+    },
+    {
+      "id": "c_title",
+      "index": 1,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "n_title_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 1,
+          "id": "b_title",
+          "preview": "Photosynthesis, in one sitting",
+          "type": "heading",
+        },
+        {
+          "depth": 1,
+          "id": "b_lead",
+          "preview": "Plants turn sunlight, water, and air into chemical energy.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_pause",
+          "preview": "Ask what a plant eats before you explain it.",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "b_quote",
+          "preview": "A leaf is a quiet factory that runs on light. — Classroom no…",
+          "type": "quote",
+        },
+      ],
+      "title": "Photosynthesis, in one sitting",
+    },
+    {
+      "id": "c_process",
+      "index": 2,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_process_heading",
+          "preview": "The short version",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_process_stack",
+          "preview": "[stack: 1 items]",
+          "type": "stack",
+        },
+        {
+          "depth": 1,
+          "id": "n_process_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 2,
+          "id": "b_overview",
+          "preview": "Carbon dioxide and water, plus light, become glucose and oxy…",
+          "type": "paragraph",
+        },
+        {
+          "depth": 2,
+          "id": "b_steps",
+          "preview": "Capture light; Split water; Release oxygen; Keep the electro…",
+          "type": "list",
+        },
+        {
+          "depth": 2,
+          "id": "b_leaf",
+          "preview": "[image] See a diagram of a leaf.",
+          "type": "image",
+        },
+      ],
+      "title": "The short version",
+    },
+    {
+      "id": "c_inside",
+      "index": 3,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_where",
+          "preview": "Where it happens",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_chlorophyll",
+          "preview": "Chlorophyll lives in chloroplasts, mostly in the mesophyll o…",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "n_organelles",
+          "preview": "[grid: 2 columns, 2 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_light_reactions",
+          "preview": "Light reactions sit in the thylakoid membrane.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_checklist",
+          "preview": "Thylakoids; Stroma",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_rule",
+          "preview": "[divider]",
+          "type": "divider",
+        },
+        {
+          "depth": 0,
+          "id": "b_stages",
+          "preview": "Stage | Location | Output / Light reactions | Thylakoid | AT…",
+          "type": "table",
+        },
+        {
+          "depth": 0,
+          "id": "b_equation",
+          "preview": "[code] 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2",
+          "type": "code",
+        },
+      ],
+      "title": "Where it happens",
+    },
+    {
+      "id": "c_inside_copy",
+      "index": 4,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_hyfwdubs",
+          "preview": "Where it happens",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_9q7o5m3g",
+          "preview": "Chlorophyll lives in chloroplasts, mostly in the mesophyll o…",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "n_xevctar8",
+          "preview": "[grid: 2 columns, 2 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_p6n4l2fw",
+          "preview": "Light reactions sit in the thylakoid membrane.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_dubs9q7o",
+          "preview": "Thylakoids; Stroma",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_5m3k1evc",
+          "preview": "[divider]",
+          "type": "divider",
+        },
+        {
+          "depth": 0,
+          "id": "b_tar8p6n4",
+          "preview": "Stage | Location | Output / Light reactions | Thylakoid | AT…",
+          "type": "table",
+        },
+        {
+          "depth": 0,
+          "id": "b_l2j0dubs",
+          "preview": "[code] 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2",
+          "type": "code",
+        },
+      ],
+      "title": "Where it happens",
+    },
+  ],
+  "format": "presentation",
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+}
+`;
+
+exports[`AI session replay > layout-theme-assets 1`] = `
+{
+  "cardCount": 4,
+  "cards": [
+    {
+      "id": "c_title",
+      "index": 0,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_title",
+          "preview": "Introduction to Photosynthesis",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_lead",
+          "preview": "Plants turn sunlight, water, and air into chemical energy.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_quote",
+          "preview": "A leaf is a quiet factory that runs on light. — Classroom no…",
+          "type": "quote",
+        },
+      ],
+      "title": "Introduction to Photosynthesis",
+    },
+    {
+      "id": "c_process",
+      "index": 1,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_process_heading",
+          "preview": "The short version",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_process_stack",
+          "preview": "[stack: 1 items]",
+          "type": "stack",
+        },
+        {
+          "depth": 1,
+          "id": "n_process_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 2,
+          "id": "b_overview",
+          "preview": "Carbon dioxide and water, plus light, become glucose and oxy…",
+          "type": "paragraph",
+        },
+        {
+          "depth": 2,
+          "id": "b_steps",
+          "preview": "Capture light; Split water; Release oxygen; Keep the electro…",
+          "type": "list",
+        },
+        {
+          "depth": 2,
+          "id": "b_leaf",
+          "preview": "[image] See a diagram of a leaf.",
+          "type": "image",
+        },
+      ],
+      "title": "The short version",
+    },
+    {
+      "id": "c_inside",
+      "index": 2,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_where",
+          "preview": "Where it happens",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_chlorophyll",
+          "preview": "Chlorophyll lives in chloroplasts, mostly in the mesophyll o…",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "n_organelles",
+          "preview": "[grid: 2 columns, 2 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_light_reactions",
+          "preview": "Light reactions sit in the thylakoid membrane.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_checklist",
+          "preview": "Thylakoids; Stroma",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_rule",
+          "preview": "[divider]",
+          "type": "divider",
+        },
+        {
+          "depth": 0,
+          "id": "b_stages",
+          "preview": "Stage | Location | Output / Light reactions | Thylakoid | AT…",
+          "type": "table",
+        },
+        {
+          "depth": 0,
+          "id": "b_equation",
+          "preview": "[code] 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2",
+          "type": "code",
+        },
+      ],
+      "title": "Where it happens",
+    },
+    {
+      "id": "c_review",
+      "index": 3,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_review_heading",
+          "preview": "Check your understanding",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_question",
+          "preview": "Why do leaves look green if they use other colors of light?",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_answers",
+          "preview": "Green light is reflected; Other colors are absorbed",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_diagram",
+          "preview": "[image] The leaf, drawn simply.",
+          "type": "image",
+        },
+      ],
+      "title": "Check your understanding",
+    },
+  ],
+  "format": "presentation",
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+}
+`;
+
+exports[`AI session replay > read-then-edit-markdown 1`] = `
+{
+  "cardCount": 4,
+  "cards": [
+    {
+      "id": "c_title",
+      "index": 0,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_title",
+          "preview": "Photosynthesis, briefly",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_lead",
+          "preview": "Green light is reflected; Other colors are absorbed",
+          "type": "list",
+        },
+      ],
+      "title": "Photosynthesis, briefly",
+    },
+    {
+      "id": "c_process",
+      "index": 1,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_process_heading",
+          "preview": "The short version",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_process_stack",
+          "preview": "[stack: 1 items]",
+          "type": "stack",
+        },
+        {
+          "depth": 1,
+          "id": "n_process_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 2,
+          "id": "b_overview",
+          "preview": "Carbon dioxide and water, plus light, become glucose and oxy…",
+          "type": "paragraph",
+        },
+        {
+          "depth": 2,
+          "id": "b_steps",
+          "preview": "Capture light; Split water; Release oxygen; Keep the electro…",
+          "type": "list",
+        },
+        {
+          "depth": 2,
+          "id": "b_leaf",
+          "preview": "[image] See a diagram of a leaf.",
+          "type": "image",
+        },
+      ],
+      "title": "The short version",
+    },
+    {
+      "id": "c_inside",
+      "index": 2,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_where",
+          "preview": "Where it happens",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_chlorophyll",
+          "preview": "Chlorophyll lives in chloroplasts, mostly in the mesophyll o…",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "n_organelles",
+          "preview": "[grid: 2 columns, 2 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_light_reactions",
+          "preview": "Light reactions sit in the thylakoid membrane.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_checklist",
+          "preview": "Thylakoids; Stroma",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_rule",
+          "preview": "[divider]",
+          "type": "divider",
+        },
+        {
+          "depth": 0,
+          "id": "b_stages",
+          "preview": "Stage | Location | Output / Light reactions | Thylakoid | AT…",
+          "type": "table",
+        },
+        {
+          "depth": 0,
+          "id": "b_equation",
+          "preview": "[code] 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2",
+          "type": "code",
+        },
+      ],
+      "title": "Where it happens",
+    },
+    {
+      "id": "c_review",
+      "index": 3,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_review_heading",
+          "preview": "Check your understanding",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_question",
+          "preview": "Why do leaves look green if they use other colors of light?",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_answers",
+          "preview": "Green light is reflected; Other colors are absorbed",
+          "type": "list",
+        },
+      ],
+      "title": "Check your understanding",
+    },
+  ],
+  "format": "presentation",
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+}
+`;
+
+exports[`AI session replay > recover-from-errors 1`] = `
+{
+  "cardCount": 4,
+  "cards": [
+    {
+      "id": "c_title",
+      "index": 0,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_title",
+          "preview": "Introduction to Photosynthesis",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_lead",
+          "preview": "Plants turn sunlight, water, and air into chemical energy.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_quote",
+          "preview": "A leaf is a quiet factory that runs on light. — Classroom no…",
+          "type": "quote",
+        },
+        {
+          "depth": 0,
+          "id": "b_placed",
+          "preview": "Placed on the title card.",
+          "type": "paragraph",
+        },
+      ],
+      "title": "Introduction to Photosynthesis",
+    },
+    {
+      "id": "c_process",
+      "index": 1,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_process_heading",
+          "preview": "The short version",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "n_process_stack",
+          "preview": "[stack: 1 items]",
+          "type": "stack",
+        },
+        {
+          "depth": 1,
+          "id": "n_process_columns",
+          "preview": "[columns: 2]",
+          "type": "columns",
+        },
+        {
+          "depth": 2,
+          "id": "b_overview",
+          "preview": "Carbon dioxide and water, plus light, become glucose and oxy…",
+          "type": "paragraph",
+        },
+        {
+          "depth": 2,
+          "id": "b_steps",
+          "preview": "Capture light; Split water; Release oxygen; Keep the electro…",
+          "type": "list",
+        },
+        {
+          "depth": 2,
+          "id": "b_leaf",
+          "preview": "[image] See a diagram of a leaf.",
+          "type": "image",
+        },
+      ],
+      "title": "The short version",
+    },
+    {
+      "id": "c_inside",
+      "index": 2,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_where",
+          "preview": "Where it happens",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_chlorophyll",
+          "preview": "Chlorophyll lives in chloroplasts, mostly in the mesophyll o…",
+          "type": "callout",
+        },
+        {
+          "depth": 0,
+          "id": "n_organelles",
+          "preview": "[grid: 2 columns, 2 items]",
+          "type": "grid",
+        },
+        {
+          "depth": 1,
+          "id": "b_light_reactions",
+          "preview": "Light reactions sit in the thylakoid membrane.",
+          "type": "paragraph",
+        },
+        {
+          "depth": 1,
+          "id": "b_checklist",
+          "preview": "Thylakoids; Stroma",
+          "type": "list",
+        },
+        {
+          "depth": 0,
+          "id": "b_rule",
+          "preview": "[divider]",
+          "type": "divider",
+        },
+        {
+          "depth": 0,
+          "id": "b_stages",
+          "preview": "Stage | Location | Output / Light reactions | Thylakoid | AT…",
+          "type": "table",
+        },
+        {
+          "depth": 0,
+          "id": "b_equation",
+          "preview": "[code] 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2",
+          "type": "code",
+        },
+        {
+          "depth": 0,
+          "id": "b_better_heading",
+          "preview": "A clearer heading",
+          "type": "heading",
+        },
+      ],
+      "title": "Where it happens",
+    },
+    {
+      "id": "c_review",
+      "index": 3,
+      "nodes": [
+        {
+          "depth": 0,
+          "id": "b_review_heading",
+          "preview": "Check your understanding",
+          "type": "heading",
+        },
+        {
+          "depth": 0,
+          "id": "b_question",
+          "preview": "Why do leaves look green if they use other colors of light?",
+          "type": "paragraph",
+        },
+        {
+          "depth": 0,
+          "id": "b_answers",
+          "preview": "Green light is reflected; Other colors are absorbed",
+          "type": "list",
+        },
+      ],
+      "title": "Check your understanding",
+    },
+  ],
+  "format": "presentation",
+  "id": "doc_photosynthesis",
+  "title": "Introduction to Photosynthesis",
+}
+`;
