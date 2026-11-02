@@ -1,7 +1,13 @@
 import { applyCommands } from '@lor-looma/core';
 import { describe, expect, it } from 'vitest';
 import { editorDocument } from '../test/fixture';
-import { duplicatedNodeIds, duplicateSelection, moveSelection } from './shortcuts';
+import {
+  duplicatedNodeIds,
+  duplicateSelection,
+  moveSelection,
+  sameList,
+  siblingList,
+} from './shortcuts';
 import type { EditorSelection } from './viewState';
 
 function nodes(ids: string[], cardId = 'c_1'): EditorSelection {
@@ -38,6 +44,29 @@ function columnsDocument() {
     ],
   });
 }
+
+describe('siblingList', () => {
+  it('returns null when the parent is missing, not a container, or a column without a slot', () => {
+    const doc = columnsDocument();
+    const anchor = {
+      node: doc.cards[0]!.body[0]!,
+      cardId: 'c_1',
+      cardIndex: 0,
+      parentId: 'missing',
+      slot: null,
+      index: 0,
+      depth: 0,
+      path: 'cards[0].body[0]',
+    };
+    expect(siblingList(doc, anchor)).toBeNull();
+    expect(siblingList(doc, { ...anchor, parentId: 'b_1' })).toBeNull();
+    expect(siblingList(doc, { ...anchor, parentId: 'n_cols', slot: null })).toBeNull();
+    expect(
+      siblingList(doc, { ...anchor, parentId: 'c_1', cardId: 'c_1' })?.map((node) => node.id),
+    ).toContain('b_1');
+    expect(sameList(doc, [])).toBeNull();
+  });
+});
 
 describe('duplicateSelection', () => {
   it('duplicates one node after itself and leaves id assignment to insertNode', () => {

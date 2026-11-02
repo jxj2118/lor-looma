@@ -60,6 +60,18 @@
   color: var(--lm-editor-chrome-fg);
 }
 
+.emptyDrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.emptyDrop[data-over] {
+  outline: 2px solid var(--lm-editor-accent);
+  outline-offset: -4px;
+}
+
 .add {
   align-self: center;
   height: 36px;

@@ -15,8 +15,7 @@ function stripIds(value: unknown): void {
   if (!value || typeof value !== 'object') return;
   const record = value as Record<string, unknown>;
   delete record.id;
-  if ('children' in record) stripIds(record.children);
-  if ('body' in record) stripIds(record.body);
+  for (const child of Object.values(record)) stripIds(child);
 }
 
 function withoutIds(node: LoomaNode): NodeInput {
@@ -25,7 +24,7 @@ function withoutIds(node: LoomaNode): NodeInput {
   return copy;
 }
 
-function siblingList(doc: LoomaDocument, found: FoundNode): LoomaNode[] | null {
+export function siblingList(doc: LoomaDocument, found: FoundNode): LoomaNode[] | null {
   if (found.parentId === found.cardId) return findCard(doc, found.cardId)?.card.body ?? null;
   const parent = findNode(doc, found.parentId);
   if (!parent) return null;
@@ -38,8 +37,7 @@ function siblingList(doc: LoomaDocument, found: FoundNode): LoomaNode[] | null {
 }
 
 /** Selected nodes in document order, when they share one parent list. */
-function sameList(doc: LoomaDocument, nodeIds: readonly string[]): FoundNode[] | null {
-  if (nodeIds.length === 0) return null;
+export function sameList(doc: LoomaDocument, nodeIds: readonly string[]): FoundNode[] | null {
   const founds: FoundNode[] = [];
   for (const id of nodeIds) {
     const found = findNode(doc, id);
@@ -96,20 +94,18 @@ export function moveSelection(
     const list = siblingList(doc, founds[0]!);
     if (!list) return null;
     if (direction === 'up') {
-      const first = founds[0];
-      if (!first || first.index <= 0) return null;
-      const previous = list[first.index - 1];
-      if (!previous) return null;
+      const first = founds[0]!;
+      if (first.index <= 0) return null;
+      const previous = list[first.index - 1]!;
       return founds.map((found) => ({
         op: 'moveNode',
         id: found.node.id,
         to: { before: previous.id },
       }));
     }
-    const last = founds[founds.length - 1];
-    if (!last || last.index >= list.length - 1) return null;
-    const next = list[last.index + 1];
-    if (!next) return null;
+    const last = founds[founds.length - 1]!;
+    if (last.index >= list.length - 1) return null;
+    const next = list[last.index + 1]!;
     return [...founds].reverse().map((found) => ({
       op: 'moveNode',
       id: found.node.id,

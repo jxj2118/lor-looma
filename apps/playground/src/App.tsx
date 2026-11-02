@@ -7,7 +7,7 @@ import {
 } from '@lor-looma/core';
 import type { LoomaDocument, LoomaNode } from '@lor-looma/core';
 import { LoomaEditor } from '@lor-looma/editor';
-import type { LoomaEditorHandle } from '@lor-looma/editor';
+import type { LoomaEditorHandle, LoomaLocale } from '@lor-looma/editor';
 import { LoomaViewer, useLoomaDocument } from '@lor-looma/viewer';
 import type { LoomaViewerHandle, ViewerMode } from '@lor-looma/viewer';
 import { useRef, useState } from 'react';
@@ -85,6 +85,7 @@ function Playground({ initial }: { initial: ReadySample }) {
   const [mode, setMode] = useState<ViewerMode>('scroll');
   const [page, setPage] = useState(0);
   const [overflowIds, setOverflowIds] = useState<string[]>([]);
+  const [locale, setLocale] = useState<LoomaLocale>('en-US');
 
   function simulateAiEdit() {
     window.setTimeout(() => {
@@ -179,6 +180,23 @@ function Playground({ initial }: { initial: ReadySample }) {
             <option value="document">document</option>
           </select>
         </label>
+        {view === 'editor' ? (
+          <label className={styles.field}>
+            Locale
+            <select
+              aria-label="Locale"
+              value={locale}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (next === 'en-US' || next === 'zh-CN' || next === 'zh-TW') setLocale(next);
+              }}
+            >
+              <option value="en-US">en-US</option>
+              <option value="zh-CN">zh-CN</option>
+              <option value="zh-TW">zh-TW</option>
+            </select>
+          </label>
+        ) : null}
         {view === 'viewer' ? (
           <label className={styles.field}>
             Mode
@@ -230,7 +248,7 @@ function Playground({ initial }: { initial: ReadySample }) {
       ) : null}
       <div className={styles.stage}>
         {view === 'editor' ? (
-          <LoomaEditor ref={editorRef} className={styles.viewer} store={store} />
+          <LoomaEditor ref={editorRef} className={styles.viewer} store={store} locale={locale} />
         ) : (
           <LoomaViewer
             ref={viewerRef}

@@ -26,6 +26,10 @@ export interface SlashState {
   source: 'text' | 'button';
 }
 
+export interface DragState {
+  nodeId: string;
+}
+
 export interface ViewState {
   selection: EditorSelection;
   hoverId: string | null;
@@ -33,6 +37,7 @@ export interface ViewState {
   flashIds: ReadonlySet<string>;
   notice: { id: number; message: string } | null;
   slash: SlashState | null;
+  dragState: DragState | null;
 }
 
 export interface ViewStateStore {
@@ -48,6 +53,7 @@ const VIEW_KEYS: (keyof ViewState)[] = [
   'flashIds',
   'notice',
   'slash',
+  'dragState',
 ];
 
 function createInitial(initial?: Partial<ViewState>): ViewState {
@@ -58,6 +64,7 @@ function createInitial(initial?: Partial<ViewState>): ViewState {
     flashIds: initial?.flashIds ?? new Set<string>(),
     notice: initial?.notice ?? null,
     slash: initial?.slash ?? null,
+    dragState: initial?.dragState ?? null,
   };
 }
 

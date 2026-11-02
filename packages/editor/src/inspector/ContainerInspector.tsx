@@ -1,19 +1,12 @@
 import { findNode, MAX_CONTAINER_DEPTH } from '@lor-looma/core';
-import type { FoundNode, LoomaContainer, LoomaDocument, LoomaNode } from '@lor-looma/core';
+import type { FoundNode, LoomaContainer, LoomaDocument } from '@lor-looma/core';
+import { subtreeContainerDepth } from '../canvas/dnd/dropTarget';
 import { useLoomaDocument } from '@lor-looma/viewer';
 import { formatMessage } from '../i18n/useMessages';
 import { selectCard, selectionAfterDelete } from '../state/selection';
 import { useEditorContext } from '../state/viewState';
 import { NodeActions } from './NodeActions';
 import styles from './Inspector.module.css';
-
-function subtreeContainerDepth(node: LoomaNode): number {
-  if (node.type !== 'stack' && node.type !== 'columns' && node.type !== 'grid') return 0;
-  const children = node.type === 'columns' ? node.children.flat() : node.children;
-  let nested = 0;
-  for (const child of children) nested = Math.max(nested, subtreeContainerDepth(child));
-  return 1 + nested;
-}
 
 export function canWrapNodes(
   doc: LoomaDocument,

@@ -1,6 +1,15 @@
 import { findNode } from '@lor-looma/core';
 import type { LoomaCard, LoomaDocument } from '@lor-looma/core';
 import {
+  DndContext,
+  PointerSensor,
+  pointerWithin,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import {
   LOGICAL_SIZE,
   LoomaCardView,
   ScaledFrame,
@@ -15,12 +24,28 @@ import { selectCard, selectNode } from '../state/selection';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { defaultSlot, isTextNodeType } from '../text/slots';
 import { toggleChecked } from '../text/structure';
+import { buildMoveNodeCommand, canDropNode, parseDropId } from './dnd/dropTarget';
 import { EditableNode } from './EditableNode';
 import { EditableSlot } from './EditableSlot';
 import styles from './Canvas.module.css';
 
+const nodeCollision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  if (hits.length === 0) return [];
+  const ranked = [...hits].sort((left, right) => {
+    const area = (id: typeof left.id) => {
+      const rect = args.droppableRects.get(id);
+      return (rect?.width ?? 0) * (rect?.height ?? 0);
+    };
+    return area(left.id) - area(right.id);
+  });
+  const first = ranked[0];
+  return first ? [first] : [];
+};
+
 export function Canvas() {
-  const { store, messages, readOnly, viewState, finishEditing } = useEditorContext();
+  const { store, messages, readOnly, viewState, finishEditing, layerElement } = useEditorContext();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const doc = useLoomaDocument({ store });
   const canvasRef = useRef<HTMLDivElement>(null);
   const renderNode = useCallback<RenderNode>(
@@ -112,41 +137,73 @@ export function Canvas() {
     });
   };
 
+  function onDragStart(event: DragStartEvent) {
+    viewState.set({ dragState: { nodeId: String(event.active.id) } });
+  }
+
+  function onDragCancel() {
+    viewState.set({ dragState: null });
+  }
+
+  function onDragEnd(event: DragEndEvent) {
+    const draggedId = String(event.active.id);
+    viewState.set({ dragState: null });
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId) return;
+    const target = parseDropId(overId);
+    if (!target) return;
+    const command = buildMoveNodeCommand(store.getDocument(), draggedId, target);
+    if (!command) return;
+    const result = store.apply([command], { origin: 'user', label: 'Move block' });
+    if (!result.ok) return;
+    const found = findNode(result.doc, draggedId);
+    if (found) viewState.set({ selection: { cardId: found.cardId, nodeIds: [draggedId] } });
+  }
+
   return (
-    <div
-      ref={canvasRef}
-      className={styles.canvas}
-      data-lm-editor-canvas=""
-      onPointerMove={onPointerMove}
-      onPointerLeave={() => {
-        if (viewState.get().hoverId !== null) viewState.set({ hoverId: null });
-      }}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={nodeCollision}
+      accessibility={{ container: layerElement ?? undefined }}
+      onDragStart={onDragStart}
+      onDragCancel={onDragCancel}
+      onDragEnd={onDragEnd}
     >
-      {doc.cards.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{messages.emptyDocument}</p>
-          {readOnly ? null : <AddCard />}
-        </div>
-      ) : (
-        <div className={styles.list}>
-          {doc.cards.map((card) => (
-            <EditorCard
-              key={card.id}
-              card={card}
-              doc={doc}
-              overflow={presentation && overflowing.has(card.id)}
-              logicalWidth={logicalWidth}
-              logicalHeight={logicalHeight}
-              renderNode={renderNode}
-              renderSlot={renderSlot}
-            />
-          ))}
-          {readOnly ? null : <AddCard />}
-        </div>
-      )}
-    </div>
+      <div
+        ref={canvasRef}
+        className={styles.canvas}
+        data-lm-editor-canvas=""
+        onPointerMove={onPointerMove}
+        onPointerLeave={() => {
+          if (viewState.get().hoverId !== null) viewState.set({ hoverId: null });
+        }}
+        onClick={onClick}
+        onDoubleClick={onDoubleClick}
+      >
+        {doc.cards.length === 0 ? (
+          <div className={styles.empty}>
+            <p>{messages.emptyDocument}</p>
+            {readOnly ? null : <AddCard />}
+          </div>
+        ) : (
+          <div className={styles.list}>
+            {doc.cards.map((card) => (
+              <EditorCard
+                key={card.id}
+                card={card}
+                doc={doc}
+                overflow={presentation && overflowing.has(card.id)}
+                logicalWidth={logicalWidth}
+                logicalHeight={logicalHeight}
+                renderNode={renderNode}
+                renderSlot={renderSlot}
+              />
+            ))}
+            {readOnly ? null : <AddCard />}
+          </div>
+        )}
+      </div>
+    </DndContext>
   );
 }
 
@@ -203,6 +260,7 @@ function EditorCard({
           renderSlot={renderSlot}
         />
       </ScaledFrame>
+      {!readOnly && card.body.length === 0 ? <EmptyCardDrop cardId={card.id} /> : null}
       {!readOnly && card.body.length === 0 ? (
         <button
           type="button"
@@ -227,6 +285,23 @@ function EditorCard({
         </span>
       ) : null}
     </div>
+  );
+}
+
+function EmptyCardDrop({ cardId }: { cardId: string }) {
+  const { store } = useEditorContext();
+  const doc = useLoomaDocument({ store });
+  const draggedId = useViewState((state) => state.dragState?.nodeId ?? null);
+  const { setNodeRef, isOver } = useDroppable({ id: `inside:${cardId}` });
+  const allowed =
+    draggedId !== null &&
+    canDropNode(doc, draggedId, { kind: 'inside', parentId: cardId, index: 0 });
+  return (
+    <div
+      ref={setNodeRef}
+      className={styles.emptyDrop}
+      data-over={isOver && allowed ? '' : undefined}
+    />
   );
 }
 

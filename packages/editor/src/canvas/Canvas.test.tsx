@@ -49,4 +49,12 @@ describe('Canvas', () => {
     expect(document.querySelector('[data-lm-editor-node="b_1"]')).toHaveAttribute('data-selected');
     expect(cardRenders.get('c_2')).toBe(before);
   });
+
+  it('renders a drag handle on each block', () => {
+    render(<LoomaEditor document={editorDocument()} />);
+    const node = document.querySelector('[data-lm-editor-node="b_h"]');
+    expect(node?.querySelector('[aria-label="Drag to move"]')).not.toBeNull();
+    fireEvent.pointerMove(within(node as HTMLElement).getByText('Hello'));
+    expect(node).toHaveAttribute('data-hovered');
+  });
 });
