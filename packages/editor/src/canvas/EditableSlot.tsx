@@ -44,6 +44,7 @@ export function EditableSlot({
           mode={mode}
           initialText={text}
           caret={editing.caret}
+          initialRange={editing.initialRange}
           placeholder={placeholderFor(node, messages)}
         />
       );

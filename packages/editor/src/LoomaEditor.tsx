@@ -166,9 +166,24 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (
-        target.closest('[data-lm-inline-editor], [data-lm-format-toolbar], [data-lm-color-popover]')
+        target.closest(
+          '[data-lm-inline-editor], [data-lm-format-toolbar], [data-lm-color-popover], [data-lm-node-menu]',
+        )
       ) {
         return;
+      }
+      if (target instanceof HTMLElement) {
+        const slotElement = target.closest('[data-lm-slot]');
+        const nodeElement = target.closest('[data-lm-editor-node]');
+        const editing = viewState.get().editing;
+        if (
+          editing &&
+          slotElement &&
+          nodeElement?.getAttribute('data-lm-editor-node') === editing.nodeId &&
+          slotElement.getAttribute('data-lm-slot') === editing.slot
+        ) {
+          return;
+        }
       }
       finishEditing();
     };

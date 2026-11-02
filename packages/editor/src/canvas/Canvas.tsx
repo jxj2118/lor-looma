@@ -119,6 +119,69 @@ export function Canvas() {
     viewState.set({ selection: { cardId: null, nodeIds: [] } });
   };
 
+  const dragAnchorRef = useRef<{ x: number; y: number } | null>(null);
+
+  const onMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.detail > 1) {
+      dragAnchorRef.current = null;
+      return;
+    }
+    dragAnchorRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const onMouseUp = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const start = dragAnchorRef.current;
+    dragAnchorRef.current = null;
+    if (!start || event.detail > 1 || readOnly || viewState.get().editing) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) < 3) return;
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const anchor =
+      selection.anchorNode instanceof Element
+        ? selection.anchorNode
+        : selection.anchorNode?.parentElement;
+    if (!anchor) return;
+    const target = event.target instanceof Element ? event.target : anchor;
+    const nodeId =
+      anchor.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node') ??
+      target.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
+    if (!nodeId) return;
+    const found = findNode(store.getDocument(), nodeId);
+    if (!found || !isTextNodeType(found.node.type)) return;
+    const raw =
+      anchor.closest('[data-lm-slot]')?.getAttribute('data-lm-slot') ??
+      target.closest('[data-lm-slot]')?.getAttribute('data-lm-slot');
+    const slot = raw && parseSlotKey(raw) ? raw : defaultSlot(found.node);
+    if (!slot || slot === 'code') return;
+    const slotElement =
+      anchor.closest('[data-lm-slot]') ??
+      target.closest('[data-lm-slot]') ??
+      anchor.closest('[data-lm-editor-node]');
+    let initialRange: { from: number; to: number } | undefined;
+    if (slotElement && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (slotElement.contains(range.commonAncestorContainer)) {
+        try {
+          const pre = document.createRange();
+          pre.selectNodeContents(slotElement);
+          pre.setEnd(range.startContainer, range.startOffset);
+          const start = pre.toString().length;
+          const length = range.toString().length;
+          if (length > 0) {
+            initialRange = { from: start + 1, to: start + 1 + length };
+          }
+        } catch {
+          // Ignore range calculation failures and fall back to end caret.
+        }
+      }
+    }
+    finishEditing();
+    viewState.set({
+      selection: { cardId: found.cardId, nodeIds: [nodeId] },
+      editing: { nodeId, slot, caret: 'end', ...(initialRange ? { initialRange } : {}) },
+    });
+  };
+
   const onDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (readOnly) return;
     const target = event.target;
@@ -130,6 +193,9 @@ export function Canvas() {
     const raw = target.closest('[data-lm-slot]')?.getAttribute('data-lm-slot');
     const slot = raw && parseSlotKey(raw) ? raw : defaultSlot(found.node);
     if (!slot) return;
+    if (viewState.get().editing?.nodeId === nodeId && viewState.get().editing?.slot === slot) {
+      return;
+    }
     finishEditing();
     viewState.set({
       selection: { cardId: found.cardId, nodeIds: [nodeId] },
@@ -178,6 +244,8 @@ export function Canvas() {
           if (viewState.get().hoverId !== null) viewState.set({ hoverId: null });
         }}
         onClick={onClick}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
         onDoubleClick={onDoubleClick}
       >
         {doc.cards.length === 0 ? (

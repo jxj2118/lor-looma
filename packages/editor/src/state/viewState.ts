@@ -14,6 +14,7 @@ export interface EditingState {
   nodeId: string;
   slot: SlotKey;
   caret: 'start' | 'end';
+  initialRange?: { from: number; to: number };
 }
 
 export interface SlashState {

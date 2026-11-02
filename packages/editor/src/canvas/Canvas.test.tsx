@@ -57,4 +57,38 @@ describe('Canvas', () => {
     fireEvent.pointerMove(within(node as HTMLElement).getByText('Hello'));
     expect(node).toHaveAttribute('data-hovered');
   });
+
+  it('opens a block action menu when clicking the 6-dot handle', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={editorDocument()} />);
+    const node = document.querySelector('[data-lm-editor-node="b_h"]');
+    fireEvent.pointerMove(within(node as HTMLElement).getByText('Hello'));
+    const handle = node?.querySelector('[aria-label="Drag to move"]');
+    if (!(handle instanceof HTMLElement)) throw new Error('missing handle');
+    await user.click(handle);
+    const menu = document.querySelector('[data-lm-node-menu]');
+    expect(menu).not.toBeNull();
+    await user.click(within(menu as HTMLElement).getByRole('menuitem', { name: 'Duplicate' }));
+    expect(ref.current?.store.getDocument().cards[0]?.body).toHaveLength(3);
+    expect(document.querySelector('[data-lm-node-menu]')).toBeNull();
+  });
+
+  it('auto-enters inline editing and preserves the selected range when dragging across static text', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={editorDocument()} />);
+    const p = screen.getByText('Body');
+    const textNode = p.firstChild;
+    if (!textNode) throw new Error('missing text node');
+    fireEvent.mouseDown(p, { button: 0, clientX: 10, clientY: 10 });
+    const range = document.createRange();
+    range.setStart(textNode, 1);
+    range.setEnd(textNode, 3);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    fireEvent.mouseUp(p, { button: 0, clientX: 40, clientY: 10 });
+    expect(ref.current?.getSelection().editingId).toBe('b_p');
+  });
 });

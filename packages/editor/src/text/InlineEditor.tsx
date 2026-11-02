@@ -82,6 +82,7 @@ export function InlineEditor({
   mode,
   initialText,
   caret,
+  initialRange,
   placeholder,
 }: {
   nodeId: string;
@@ -89,6 +90,7 @@ export function InlineEditor({
   mode: EditorMode;
   initialText: string;
   caret: 'start' | 'end';
+  initialRange?: { from: number; to: number };
   placeholder?: string;
 }) {
   const {
@@ -137,8 +139,15 @@ export function InlineEditor({
     const host = hostRef.current;
     if (!editor || !host) return;
     if (editor.view.dom.parentNode !== host) host.replaceChildren(editor.view.dom);
-    editor.commands.focus(caret === 'start' ? 'start' : 'end');
-  }, [editor, caret]);
+    if (initialRange) {
+      const size = editor.state.doc.content.size;
+      const from = Math.max(1, Math.min(size, initialRange.from));
+      const to = Math.max(from, Math.min(size, initialRange.to));
+      editor.chain().focus().setTextSelection({ from, to }).run();
+    } else {
+      editor.commands.focus(caret === 'start' ? 'start' : 'end');
+    }
+  }, [editor, caret, initialRange]);
 
   useEffect(() => {
     if (!editor) return;
