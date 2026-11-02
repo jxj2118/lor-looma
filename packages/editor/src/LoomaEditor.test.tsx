@@ -1,5 +1,5 @@
 import { createLoomaStore } from '@lor-looma/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -464,5 +464,86 @@ describe('LoomaEditor', () => {
     expect(document.querySelector('[data-selected]')).toBeNull();
     fireEvent.keyDown(editorRoot(), { key: 'Backspace' });
     expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toContain('b_1');
+  });
+
+  it('flushes a pending title without waiting for the debounce', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={editorDocument()} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
+      target: { value: 'Field notes now' },
+    });
+    expect(ref.current?.store.getDocument().title).toBe('Field notes');
+    let flushed: ReturnType<LoomaEditorHandle['flush']> | undefined;
+    act(() => {
+      flushed = ref.current?.flush();
+    });
+    expect(flushed?.title).toBe('Field notes now');
+    expect(ref.current?.store.getDocument().title).toBe('Field notes now');
+  });
+
+  it('flushes an in-progress inline edit without waiting for the debounce', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument({
+          cards: [{ id: 'c_1', body: [{ id: 'b_p', type: 'paragraph', text: 'Body' }] }],
+        })}
+      />,
+    );
+    await user.dblClick(screen.getByText('Body'));
+    await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
+    const field = document.querySelector('[contenteditable="true"]');
+    if (!(field instanceof HTMLElement)) throw new Error('missing editor');
+    field.focus();
+    await user.keyboard('!');
+    await waitFor(() => expect(field.textContent).toContain('Body!'));
+    expect(ref.current?.store.getDocument().cards[0]?.body[0]).toMatchObject({ text: 'Body' });
+    let flushed: ReturnType<LoomaEditorHandle['flush']> | undefined;
+    act(() => {
+      flushed = ref.current?.flush();
+    });
+    expect(flushed?.cards[0]?.body[0]).toMatchObject({ text: 'Body!' });
+  });
+
+  it('flushes pending speaker notes without waiting for the debounce', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={editorDocument()} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Speaker notes' }), {
+      target: { value: 'Say this now' },
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBeUndefined();
+    act(() => {
+      ref.current?.flush();
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Say this now');
+  });
+
+  it('flushes an in-progress code editor without waiting for the debounce', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument({
+          cards: [{ id: 'c_1', body: [{ id: 'b_code', type: 'code', code: 'const a = 1' }] }],
+        })}
+      />,
+    );
+    await user.dblClick(screen.getByText('const a = 1'));
+    await waitFor(() => expect(document.querySelector('textarea')).not.toBeNull());
+    const area = document.querySelector('textarea');
+    if (!(area instanceof HTMLTextAreaElement)) throw new Error('missing code editor');
+    fireEvent.change(area, { target: { value: 'const a = 2' } });
+    expect(ref.current?.store.getDocument().cards[0]?.body[0]).toMatchObject({
+      code: 'const a = 1',
+    });
+    act(() => {
+      ref.current?.flush();
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.body[0]).toMatchObject({
+      code: 'const a = 2',
+    });
   });
 });

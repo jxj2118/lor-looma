@@ -1,7 +1,7 @@
 import { createId, findCard, THEME_PRESETS } from '@lor-looma/core';
 import type { LoomaCard, LoomaDocument } from '@lor-looma/core';
 import { useLoomaDocument } from '@lor-looma/viewer';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { AssetInput } from './AssetInput';
 import styles from './Inspector.module.css';
@@ -243,8 +243,15 @@ function CardFields({ card }: { card: LoomaCard }) {
 }
 
 function NotesField({ cardId, notes }: { cardId: string; notes: string }) {
-  const { store, messages } = useEditorContext();
+  const { store, messages, registerPendingFlush } = useEditorContext();
   const [draft, setDraft] = useState(notes);
+  const draftRef = useRef(draft);
+  const notesRef = useRef(notes);
+
+  useEffect(() => {
+    draftRef.current = draft;
+    notesRef.current = notes;
+  }, [draft, notes]);
 
   useEffect(() => {
     if (draft === notes) return;
@@ -260,6 +267,18 @@ function NotesField({ cardId, notes }: { cardId: string; notes: string }) {
     }, 600);
     return () => clearTimeout(timer);
   }, [cardId, draft, notes, store]);
+
+  useEffect(() => {
+    return registerPendingFlush(() => {
+      const next = draftRef.current;
+      if (next === notesRef.current) return;
+      store.apply([{ op: 'updateCard', id: cardId, patch: { notes: next === '' ? null : next } }], {
+        origin: 'user',
+        label: 'Notes',
+        mergeKey: `notes:${cardId}`,
+      });
+    });
+  }, [cardId, registerPendingFlush, store]);
 
   return (
     <label className={styles.field}>

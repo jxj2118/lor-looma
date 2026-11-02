@@ -7,10 +7,13 @@ import {
 } from '@lor-looma/core';
 import type { LoomaDocument, LoomaNode } from '@lor-looma/core';
 import { LoomaEditor } from '@lor-looma/editor';
-import type { LoomaEditorHandle, LoomaLocale } from '@lor-looma/editor';
+import type { LoomaEditorHandle } from '@lor-looma/editor';
 import { LoomaViewer, useLoomaDocument } from '@lor-looma/viewer';
 import type { LoomaViewerHandle, ViewerMode } from '@lor-looma/viewer';
 import { useRef, useState } from 'react';
+import { AiPanel } from './AiPanel';
+import { fill, isPlaygroundLocale, messagesFor } from './i18n';
+import type { PlaygroundLocale, PlaygroundMessages } from './i18n';
 import fieldGuide from './samples/field-guide.json';
 import overflowSample from './samples/overflow.json';
 import photosynthesis from './samples/photosynthesis.json';
@@ -26,6 +29,11 @@ interface ReadySample {
   id: string;
   label: string;
   doc: LoomaDocument;
+}
+
+interface Banner {
+  tone: 'info' | 'warning' | 'error';
+  text: string;
 }
 
 function prepareSamples(): { samples: ReadySample[]; problems: string[] } {
@@ -47,10 +55,11 @@ function prepareSamples(): { samples: ReadySample[]; problems: string[] } {
 const { samples, problems } = prepareSamples();
 
 export function App() {
+  const messages = messagesFor('en-US');
   if (problems.length > 0 || samples[0] === undefined) {
     return (
       <main className={styles.errors}>
-        <h1>Sample documents failed to parse</h1>
+        <h1>{messages.sampleErrors}</h1>
         <ul>
           {problems.map((problem) => (
             <li key={problem}>{problem}</li>
@@ -75,9 +84,38 @@ function textWithSuffix(node: LoomaNode): { text: string } | { code: string } | 
   return null;
 }
 
+function themeLabel(preset: (typeof THEME_PRESETS)[number], messages: PlaygroundMessages): string {
+  if (preset === 'clean') return messages.themeClean;
+  if (preset === 'dark') return messages.themeDark;
+  if (preset === 'warm') return messages.themeWarm;
+  return messages.themeSerif;
+}
+
+function fileSlug(title: string): string {
+  const slug = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${slug || 'document'}.looma.json`;
+}
+
+function downloadDocument(doc: LoomaDocument) {
+  const blob = new Blob([`${JSON.stringify(doc, null, 2)}\n`], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileSlug(doc.title);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function Playground({ initial }: { initial: ReadySample }) {
   const viewerRef = useRef<LoomaViewerHandle>(null);
   const editorRef = useRef<LoomaEditorHandle>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [store] = useState(() => createLoomaStore(initial.doc));
   const document = useLoomaDocument({ store });
   const [sampleId, setSampleId] = useState(initial.id);
@@ -85,7 +123,10 @@ function Playground({ initial }: { initial: ReadySample }) {
   const [mode, setMode] = useState<ViewerMode>('scroll');
   const [page, setPage] = useState(0);
   const [overflowIds, setOverflowIds] = useState<string[]>([]);
-  const [locale, setLocale] = useState<LoomaLocale>('en-US');
+  const [locale, setLocale] = useState<PlaygroundLocale>('en-US');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [banner, setBanner] = useState<Banner | null>(null);
+  const messages = messagesFor(locale);
 
   function simulateAiEdit() {
     window.setTimeout(() => {
@@ -120,6 +161,46 @@ function Playground({ initial }: { initial: ReadySample }) {
     setSampleId(id);
     setPage(0);
     setOverflowIds([]);
+    setBanner(null);
+  }
+
+  function exportDocument() {
+    editorRef.current?.flush();
+    const doc = store.getDocument();
+    downloadDocument(doc);
+    setBanner({ tone: 'info', text: messages.exported });
+  }
+
+  async function importFile(file: File) {
+    let input: unknown;
+    try {
+      input = JSON.parse(await file.text()) as unknown;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      setBanner({ tone: 'error', text: `${messages.invalidJson} ${detail}` });
+      return;
+    }
+    const parsed = parseDocument(input, { repair: true });
+    if (!parsed.ok) {
+      setBanner({
+        tone: 'error',
+        text: [messages.validationFailed, ...parsed.errors.map((issue) => formatIssue(issue))].join(
+          '\n',
+        ),
+      });
+      return;
+    }
+    store.load(parsed.doc);
+    setSampleId('');
+    setPage(0);
+    setOverflowIds([]);
+    const warnings = parsed.warnings.map((issue) => formatIssue(issue));
+    setBanner({
+      tone: warnings.length > 0 ? 'warning' : 'info',
+      text: [warnings.length > 0 ? messages.loadedRepaired : messages.loaded, ...warnings].join(
+        '\n',
+      ),
+    });
   }
 
   async function enterFullscreen() {
@@ -131,18 +212,24 @@ function Playground({ initial }: { initial: ReadySample }) {
     <div className={styles.app}>
       <header className={styles.toolbar}>
         <label className={styles.field}>
-          View
+          {messages.view}
           <select
+            aria-label={messages.view}
             value={view}
             onChange={(event) => setView(event.target.value === 'editor' ? 'editor' : 'viewer')}
           >
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
+            <option value="viewer">{messages.viewer}</option>
+            <option value="editor">{messages.editor}</option>
           </select>
         </label>
         <label className={styles.field}>
-          Sample
-          <select value={sampleId} onChange={(event) => selectSample(event.target.value)}>
+          {messages.sample}
+          <select
+            aria-label={messages.sample}
+            value={sampleId}
+            onChange={(event) => selectSample(event.target.value)}
+          >
+            {sampleId === '' ? <option value="">{document.title}</option> : null}
             {samples.map((sample) => (
               <option key={sample.id} value={sample.id}>
                 {sample.label}
@@ -151,8 +238,9 @@ function Playground({ initial }: { initial: ReadySample }) {
           </select>
         </label>
         <label className={styles.field}>
-          Theme
+          {messages.theme}
           <select
+            aria-label={messages.theme}
             value={document.theme.preset}
             onChange={(event) => {
               const preset = THEME_PRESETS.find((item) => item === event.target.value);
@@ -162,50 +250,51 @@ function Playground({ initial }: { initial: ReadySample }) {
           >
             {THEME_PRESETS.map((preset) => (
               <option key={preset} value={preset}>
-                {preset}
+                {themeLabel(preset, messages)}
               </option>
             ))}
           </select>
         </label>
         <label className={styles.field}>
-          Format
+          {messages.format}
           <select
+            aria-label={messages.format}
             value={document.format}
             onChange={(event) => {
               const format = event.target.value === 'document' ? 'document' : 'presentation';
               store.apply([{ op: 'setFormat', format }]);
             }}
           >
-            <option value="presentation">presentation</option>
-            <option value="document">document</option>
+            <option value="presentation">{messages.formatPresentation}</option>
+            <option value="document">{messages.formatDocument}</option>
           </select>
         </label>
-        {view === 'editor' ? (
-          <label className={styles.field}>
-            Locale
-            <select
-              aria-label="Locale"
-              value={locale}
-              onChange={(event) => {
-                const next = event.target.value;
-                if (next === 'en-US' || next === 'zh-CN' || next === 'zh-TW') setLocale(next);
-              }}
-            >
-              <option value="en-US">en-US</option>
-              <option value="zh-CN">zh-CN</option>
-              <option value="zh-TW">zh-TW</option>
-            </select>
-          </label>
-        ) : null}
+        <label className={styles.field}>
+          {messages.locale}
+          <select
+            aria-label={messages.locale}
+            data-testid="locale-select"
+            value={locale}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (isPlaygroundLocale(next)) setLocale(next);
+            }}
+          >
+            <option value="en-US">en-US</option>
+            <option value="zh-CN">zh-CN</option>
+            <option value="zh-TW">zh-TW</option>
+          </select>
+        </label>
         {view === 'viewer' ? (
           <label className={styles.field}>
-            Mode
+            {messages.mode}
             <select
+              aria-label={messages.mode}
               value={mode}
               onChange={(event) => setMode(event.target.value === 'present' ? 'present' : 'scroll')}
             >
-              <option value="scroll">scroll</option>
-              <option value="present">present</option>
+              <option value="scroll">{messages.modeScroll}</option>
+              <option value="present">{messages.modePresent}</option>
             </select>
           </label>
         ) : null}
@@ -213,53 +302,85 @@ function Playground({ initial }: { initial: ReadySample }) {
           {view === 'viewer' ? (
             <>
               <button type="button" onClick={() => void enterFullscreen()}>
-                Fullscreen
+                {messages.fullscreen}
               </button>
               <button type="button" onClick={() => store.undo()}>
-                Undo
+                {messages.undo}
               </button>
             </>
           ) : null}
           <button type="button" onClick={simulateAiEdit}>
-            Simulate AI edit (3s)
+            {messages.simulateAi}
           </button>
           <button type="button" onClick={() => console.log(store.getDocument())}>
-            Log document
+            {messages.logDocument}
           </button>
+          <button type="button" onClick={() => fileRef.current?.click()}>
+            {messages.importLooma}
+          </button>
+          <button type="button" onClick={exportDocument}>
+            {messages.exportLooma}
+          </button>
+          <button type="button" aria-pressed={aiOpen} onClick={() => setAiOpen((open) => !open)}>
+            {messages.aiConsole}
+          </button>
+          <input
+            ref={fileRef}
+            className={styles.file}
+            type="file"
+            accept=".looma,.json,application/json"
+            aria-label={messages.importLooma}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void importFile(file);
+            }}
+          />
           {view === 'viewer' && mode === 'present' ? (
             <>
               <button type="button" onClick={() => viewerRef.current?.prev()}>
-                Prev
+                {messages.prev}
               </button>
               <button type="button" onClick={() => viewerRef.current?.next()}>
-                Next
+                {messages.next}
               </button>
               <span>
-                {page + 1} / {document.cards.length}
+                {fill(messages.pageStatus, { current: page + 1, total: document.cards.length })}
               </span>
             </>
           ) : null}
         </div>
       </header>
-      {view === 'viewer' ? (
-        <p className={styles.overflow}>
-          Overflow: {overflowIds.length > 0 ? overflowIds.join(', ') : 'none'}
+      {banner ? (
+        <p className={banner.tone === 'error' ? styles.bannerError : styles.banner} role="status">
+          {banner.text}
         </p>
       ) : null}
-      <div className={styles.stage}>
-        {view === 'editor' ? (
-          <LoomaEditor ref={editorRef} className={styles.viewer} store={store} locale={locale} />
-        ) : (
-          <LoomaViewer
-            ref={viewerRef}
-            className={styles.viewer}
-            store={store}
-            mode={mode}
-            page={page}
-            onPageChange={setPage}
-            onOverflow={setOverflowIds}
-          />
-        )}
+      {view === 'viewer' ? (
+        <p className={styles.overflow}>
+          {messages.overflow}:{' '}
+          {overflowIds.length > 0 ? overflowIds.join(', ') : messages.overflowNone}
+        </p>
+      ) : null}
+      <div className={styles.body}>
+        <div className={styles.stage}>
+          {view === 'editor' ? (
+            <LoomaEditor ref={editorRef} className={styles.viewer} store={store} locale={locale} />
+          ) : (
+            <LoomaViewer
+              ref={viewerRef}
+              className={styles.viewer}
+              store={store}
+              mode={mode}
+              page={page}
+              onPageChange={setPage}
+              onOverflow={setOverflowIds}
+            />
+          )}
+        </div>
+        {aiOpen ? (
+          <AiPanel store={store} messages={messages} onClose={() => setAiOpen(false)} />
+        ) : null}
       </div>
     </div>
   );

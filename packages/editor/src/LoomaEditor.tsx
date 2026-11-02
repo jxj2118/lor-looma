@@ -58,6 +58,8 @@ export interface LoomaEditorHandle {
   select(ids: string[]): void;
   scrollTo(id: string): void;
   getSelection(): EditorSelection & { editingId: string | null };
+  /** Commit in-flight debounced edits and return the document. */
+  flush(): LoomaDocument;
 }
 
 export type { EditorSelection };
@@ -93,6 +95,13 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   const finishEditingRef = useRef<() => void>(() => {});
   const finishEditing = useCallback(() => {
     finishEditingRef.current();
+  }, []);
+  const pendingFlushes = useRef(new Set<() => void>());
+  const registerPendingFlush = useCallback((flush: () => void) => {
+    pendingFlushes.current.add(flush);
+    return () => {
+      pendingFlushes.current.delete(flush);
+    };
   }, []);
   const onChangeRef = useRef(onChange);
   const sourceDocument = useRef(documentProp);
@@ -217,8 +226,13 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         const state = viewState.get();
         return { ...state.selection, editingId: state.editing?.nodeId ?? null };
       },
+      flush() {
+        finishEditing();
+        for (const flushPending of [...pendingFlushes.current]) flushPending();
+        return store.getDocument();
+      },
     }),
-    [store, viewState],
+    [finishEditing, store, viewState],
   );
 
   const openPlay = () => {
@@ -244,6 +258,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         highlightExternalChanges,
         finishEditing,
         bindFinishEditing,
+        registerPendingFlush,
         editEpoch,
         bumpEditEpoch: () => setEditEpoch((epoch) => epoch + 1),
         suppressCommitRef,

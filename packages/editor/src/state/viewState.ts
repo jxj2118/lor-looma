@@ -110,6 +110,8 @@ export interface EditorContextValue {
   highlightExternalChanges?: boolean;
   finishEditing?: () => void;
   bindFinishEditing?: (fn: (() => void) | null) => void;
+  /** Registers a synchronous commit for a debounced field. Returns an unregister function. */
+  registerPendingFlush?: (flush: () => void) => () => void;
   editEpoch?: number;
   bumpEditEpoch?: () => void;
   suppressCommitRef?: { current: boolean };
@@ -141,6 +143,7 @@ export function useEditorContext(): EditorContextValue & {
   readOnly: boolean;
   finishEditing: () => void;
   bindFinishEditing: (fn: (() => void) | null) => void;
+  registerPendingFlush: (flush: () => void) => () => void;
   editEpoch: number;
   bumpEditEpoch: () => void;
   suppressCommitRef: { current: boolean };
@@ -160,6 +163,7 @@ export function useEditorContext(): EditorContextValue & {
     highlightExternalChanges: context.highlightExternalChanges ?? true,
     finishEditing: context.finishEditing ?? (() => {}),
     bindFinishEditing: context.bindFinishEditing ?? (() => {}),
+    registerPendingFlush: context.registerPendingFlush ?? (() => () => {}),
     editEpoch: context.editEpoch ?? 0,
     bumpEditEpoch: context.bumpEditEpoch ?? (() => {}),
     suppressCommitRef: context.suppressCommitRef ?? { current: false },

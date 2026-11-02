@@ -90,10 +90,29 @@ export function Topbar({ onPlay }: { onPlay: () => void }) {
 }
 
 function Title({ title, readOnly }: { title: string; readOnly: boolean }) {
-  const { store, messages } = useEditorContext();
+  const { store, messages, registerPendingFlush } = useEditorContext();
   const [value, setValue] = useState(title);
+  const valueRef = useRef(value);
   const focused = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const commitRef = useRef<(next: string) => void>(() => {});
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    commitRef.current = (next: string) => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = undefined;
+      if (next === store.getDocument().title) return;
+      store.apply([{ op: 'setTitle', title: next }], {
+        origin: 'user',
+        mergeKey: 'title',
+        label: 'Edit title',
+      });
+    };
+  }, [store]);
 
   useEffect(() => {
     if (!focused.current) setValue(title);
@@ -106,18 +125,14 @@ function Title({ title, readOnly }: { title: string; readOnly: boolean }) {
     [],
   );
 
-  if (readOnly) return <div className={styles.titleText}>{title}</div>;
-
-  const commit = (next: string) => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = undefined;
-    if (next === store.getDocument().title) return;
-    store.apply([{ op: 'setTitle', title: next }], {
-      origin: 'user',
-      mergeKey: 'title',
-      label: 'Edit title',
+  useEffect(() => {
+    if (readOnly) return;
+    return registerPendingFlush(() => {
+      commitRef.current(valueRef.current);
     });
-  };
+  }, [readOnly, registerPendingFlush]);
+
+  if (readOnly) return <div className={styles.titleText}>{title}</div>;
 
   return (
     <input
@@ -130,13 +145,14 @@ function Title({ title, readOnly }: { title: string; readOnly: boolean }) {
       }}
       onBlur={() => {
         focused.current = false;
-        commit(value);
+        commitRef.current(value);
       }}
       onChange={(event) => {
         const next = event.target.value;
         setValue(next);
+        valueRef.current = next;
         if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => commit(next), 600);
+        timer.current = setTimeout(() => commitRef.current(next), 600);
       }}
     />
   );
