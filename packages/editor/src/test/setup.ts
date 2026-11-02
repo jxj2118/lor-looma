@@ -3,7 +3,8 @@ import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 configure({
-  defaultIgnore: 'script, style, [data-lm-preview], [data-lm-preview] *',
+  defaultIgnore:
+    'script, style, [data-lm-preview], [data-lm-preview] *, [data-lm-inspector] option',
 });
 
 afterEach(() => cleanup());

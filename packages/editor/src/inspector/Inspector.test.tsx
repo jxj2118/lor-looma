@@ -404,6 +404,125 @@ describe('Inspector containers', () => {
   });
 });
 
+describe('Inspector card and document', () => {
+  it('sets and clears a card image, then switches solid and gradient backgrounds', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={documentWith([
+          { id: 'c_1', body: [{ id: 'b_1', type: 'paragraph', text: 'One' }] },
+        ])}
+      />,
+    );
+    const card = () => ref.current?.store.getDocument().cards[0];
+    await user.selectOptions(within(panel()).getByRole('combobox', { name: 'Card image' }), 'left');
+    expect(card()?.accent).toBeUndefined();
+    const url = within(panel()).getByRole('textbox', { name: 'Image URL' });
+    await user.type(url, 'https://example.com/accent.png');
+    await user.click(within(panel()).getByRole('button', { name: 'Replace image' }));
+    expect(card()?.accent?.position).toBe('left');
+    const assetId = card()?.accent?.assetId;
+    expect(assetId).toBeTruthy();
+    expect(ref.current?.store.getDocument().assets[assetId ?? '']?.src).toBe(
+      'https://example.com/accent.png',
+    );
+    await user.click(within(panel()).getByRole('button', { name: 'Remove image' }));
+    expect(card()?.accent).toBeUndefined();
+
+    await user.selectOptions(
+      within(panel()).getByRole('combobox', { name: 'Card background' }),
+      'color',
+    );
+    fireEvent.change(within(panel()).getByLabelText('Color'), { target: { value: '#ff0000' } });
+    expect(card()?.background).toEqual({ kind: 'color', value: '#ff0000' });
+
+    await user.selectOptions(
+      within(panel()).getByRole('combobox', { name: 'Card background' }),
+      'gradient',
+    );
+    fireEvent.change(within(panel()).getByLabelText('Angle'), { target: { value: '90' } });
+    expect(card()?.background).toMatchObject({ kind: 'gradient', angle: 90 });
+
+    await user.selectOptions(
+      within(panel()).getByRole('combobox', { name: 'Card background' }),
+      'image',
+    );
+    await user.type(
+      within(panel()).getByRole('textbox', { name: 'Image URL' }),
+      'https://example.com/bg.png',
+    );
+    await user.click(within(panel()).getByRole('button', { name: 'Replace image' }));
+    expect(card()?.background?.kind).toBe('image');
+  });
+
+  it('commits speaker notes on blur and merges a paused edit into one undo', async () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor ref={ref} document={documentWith([{ id: 'c_1', notes: 'Start', body: [] }])} />,
+    );
+    const notes = within(panel()).getByRole('textbox', { name: 'Speaker notes' });
+    fireEvent.change(notes, { target: { value: 'Hi' } });
+    fireEvent.blur(notes);
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Hi');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+    });
+
+    fireEvent.change(within(panel()).getByRole('textbox', { name: 'Speaker notes' }), {
+      target: { value: 'Hello' },
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    });
+    fireEvent.change(within(panel()).getByRole('textbox', { name: 'Speaker notes' }), {
+      target: { value: 'Hello there' },
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Hello there');
+    ref.current?.store.undo();
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Hi');
+    ref.current?.store.undo();
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Start');
+  });
+
+  it('edits theme overrides and resets them', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={documentWith([{ id: 'c_1', body: [] }])} />);
+    expect(within(panel()).getByRole('button', { name: 'Reset overrides' })).toBeDisabled();
+    fireEvent.change(within(panel()).getByLabelText('Primary color'), {
+      target: { value: '#112233' },
+    });
+    fireEvent.change(within(panel()).getByLabelText('Corner radius'), { target: { value: '4' } });
+    fireEvent.change(within(panel()).getByLabelText('Font scale'), { target: { value: '1.2' } });
+    fireEvent.change(within(panel()).getByLabelText('Spacing'), { target: { value: '1.25' } });
+    fireEvent.change(within(panel()).getByRole('combobox', { name: 'Theme preset' }), {
+      target: { value: 'dark' },
+    });
+    fireEvent.change(within(panel()).getByRole('combobox', { name: 'Format' }), {
+      target: { value: 'document' },
+    });
+    const doc = ref.current?.store.getDocument();
+    expect(doc?.format).toBe('document');
+    expect(doc?.theme.preset).toBe('dark');
+    expect(doc?.theme.overrides).toMatchObject({
+      colorPrimary: '#112233',
+      radius: 4,
+      fontScale: 1.2,
+      spacing: 1.25,
+    });
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Reset overrides' }));
+    const overrides = ref.current?.store.getDocument().theme.overrides;
+    expect(overrides?.colorPrimary).toBeUndefined();
+    expect(overrides?.radius).toBeUndefined();
+    expect(overrides?.fontScale).toBeUndefined();
+    expect(overrides?.spacing).toBeUndefined();
+  });
+});
+
 function fireSelect(ref: { current: LoomaEditorHandle | null }, id: string) {
   act(() => ref.current?.select([id]));
 }

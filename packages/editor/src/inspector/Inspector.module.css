@@ -39,6 +39,7 @@
 
 .field input,
 .field select,
+.field textarea,
 .asset input {
   width: 100%;
   padding: 6px 8px;
@@ -48,6 +49,11 @@
   color: inherit;
   font: inherit;
   font-size: 13px;
+}
+
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
 }
 
 .check {
