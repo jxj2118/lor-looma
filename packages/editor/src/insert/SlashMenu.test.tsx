@@ -225,4 +225,32 @@ describe('SlashMenu', () => {
     expect(screen.getByRole('textbox', { name: 'Search blocks' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Heading 1' })).toBeInTheDocument();
   });
+
+  it('closes the menu when clicking outside and resets image url mode on reopen', async () => {
+    const user = userEvent.setup();
+    render(
+      <div>
+        <div data-testid="outside">Outside</div>
+        <LoomaEditor
+          document={editorDocument({
+            cards: [{ id: 'c_1', body: [{ id: 'b_p', type: 'paragraph', text: 'Body' }] }],
+          })}
+        />
+      </div>,
+    );
+    const block = document.querySelector('[data-lm-editor-node="b_p"]');
+    if (!(block instanceof HTMLElement)) throw new Error('missing block');
+    fireEvent.pointerMove(block);
+    await user.click(plusButton(block));
+    await user.click(screen.getByRole('button', { name: 'Image' }));
+    expect(screen.getByRole('textbox', { name: 'https://' })).toBeInTheDocument();
+
+    fireEvent.pointerDown(screen.getByTestId('outside'));
+    await waitFor(() => expect(document.querySelector('[data-lm-slash]')).toBeNull());
+
+    fireEvent.pointerMove(block);
+    await user.click(plusButton(block));
+    expect(screen.queryByRole('textbox', { name: 'https://' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Heading 1' })).toBeInTheDocument();
+  });
 });

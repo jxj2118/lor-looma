@@ -2,17 +2,50 @@ import { createId, findNode, MAX_CONTAINER_DEPTH } from '@lor-looma/core';
 import * as Popover from '@radix-ui/react-popover';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useEditorContext, useViewState } from '../state/viewState';
+import type { SlashState } from '../state/viewState';
 import { filterCatalog, getCatalog } from './catalog';
 import type { CatalogItem } from './catalog';
 import { buildInsert, insertionDepth } from './insertNode';
 import styles from './SlashMenu.module.css';
 
+function slashIdentity(slash: SlashState): string {
+  const target =
+    slash.target.kind === 'card'
+      ? `card:${slash.target.cardId}`
+      : `${slash.target.kind}:${slash.target.nodeId}`;
+  return `${slash.source}:${target}`;
+}
+
 export function SlashMenu() {
   const slash = useViewState((state) => state.slash);
+  const { layerElement, viewState } = useEditorContext();
+
+  useEffect(() => {
+    if (!slash) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('[data-lm-slash]')) return;
+      viewState.set({ slash: null });
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+  }, [slash, viewState]);
+
+  if (!slash || !layerElement) return null;
+
+  return <SlashMenuPopover key={slashIdentity(slash)} slash={slash} layerElement={layerElement} />;
+}
+
+function SlashMenuPopover({
+  slash,
+  layerElement,
+}: {
+  slash: SlashState;
+  layerElement: HTMLDivElement;
+}) {
   const {
     store,
     messages,
-    layerElement,
     viewState,
     suppressCommitRef,
     slashActions,
@@ -23,22 +56,22 @@ export function SlashMenu() {
   const [urlMode, setUrlMode] = useState(false);
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
-  const [cursor, setCursor] = useState({ query: slash?.query ?? '', index: 0 });
-  const index = cursor.query === (slash?.query ?? '') ? cursor.index : 0;
+  const [cursor, setCursor] = useState({ query: slash.query, index: 0 });
+  const index = cursor.query === slash.query ? cursor.index : 0;
   const setIndex = (update: number | ((current: number) => number)) => {
     setCursor((current) => {
-      const query = slash?.query ?? '';
+      const query = slash.query;
       const base = current.query === query ? current.index : 0;
       return { query, index: typeof update === 'function' ? update(base) : update };
     });
   };
-  const depth = slash ? insertionDepth(store.getDocument(), slash.target) : 0;
+  const depth = insertionDepth(store.getDocument(), slash.target);
   const visible = useMemo(
     () =>
-      filterCatalog(getCatalog(messages), slash?.query ?? '', {
+      filterCatalog(getCatalog(messages), slash.query, {
         allowContainers: depth < MAX_CONTAINER_DEPTH,
       }),
-    [depth, messages, slash?.query],
+    [depth, messages, slash.query],
   );
 
   useEffect(() => {
@@ -59,8 +92,11 @@ export function SlashMenu() {
     };
   });
 
+  function close() {
+    viewState.set({ slash: null });
+  }
+
   function choose(item: CatalogItem) {
-    if (!slash) return;
     if (item.needsAsset) {
       if (uploadAsset) fileRef.current?.click();
       else setUrlMode(true);
@@ -73,7 +109,6 @@ export function SlashMenu() {
     template: unknown,
     assetCommand?: { id: string; src: string; alt?: string; width?: number; height?: number },
   ) {
-    if (!slash) return;
     const doc = store.getDocument();
     const result = buildInsert(doc, slash.target, template);
     const commands = assetCommand
@@ -121,8 +156,6 @@ export function SlashMenu() {
     });
   }
 
-  if (!slash || !layerElement) return null;
-
   const groups = ['text', 'media', 'layout'] as const;
 
   return (
@@ -143,7 +176,7 @@ export function SlashMenu() {
           onCloseAutoFocus={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => {
             event.preventDefault();
-            viewState.set({ slash: null });
+            close();
           }}
         >
           <input
@@ -197,7 +230,7 @@ export function SlashMenu() {
                   slashActions.current.confirm();
                 } else if (event.key === 'Escape') {
                   event.preventDefault();
-                  viewState.set({ slash: null });
+                  close();
                 }
               }}
             />
@@ -227,6 +260,12 @@ export function SlashMenu() {
                 value={url}
                 placeholder={messages.imageUrlPlaceholder}
                 onChange={(event) => setUrl(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    close();
+                  }
+                }}
               />
               {error ? <p className={styles.error}>{error}</p> : null}
             </form>
