@@ -69,6 +69,9 @@ for (const [preset, tokens] of Object.entries(themes)) {
 
     const card = page.locator('[data-lm-card-id]').first();
     await expect(card).toBeVisible();
-    await expect(card).toHaveScreenshot(`theme-${preset}.png`);
+    // Pixel baselines are captured on macOS Chromium. CSS variables above are the cross-platform check.
+    if (process.platform === 'darwin') {
+      await expect(card).toHaveScreenshot(`theme-${preset}.png`);
+    }
   });
 }
