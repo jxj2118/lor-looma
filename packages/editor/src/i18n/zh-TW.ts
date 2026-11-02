@@ -65,6 +65,7 @@ export const zhTW: Record<keyof Messages, string> = {
   moveUp: '上移',
   moveDown: '下移',
   duplicate: '複製',
+  splitCardHere: '在此處分割卡片',
   delete: '刪除',
   dragNode: '拖曳以移動',
   inspectorTitle: '屬性',

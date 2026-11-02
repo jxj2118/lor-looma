@@ -70,7 +70,7 @@ Do not use HTML. Do not use image markup. Do not use block Markdown: no \`#\` he
 
 ## Writing good slides
 
-In \`presentation\`, give each card one main idea. A title plus about six bullets, or two or three short paragraphs, is enough. If there is more to say, add another card. The viewer reports cards that overflow the 1280×720 frame, and the host may pass those ids back to you. Split an overflowing card instead of shrinking the copy.
+In \`presentation\`, give each card one main idea. A title plus about six bullets, or two or three short paragraphs, is enough. If there is more to say, add another card. The viewer reports cards that overflow the 1280×720 frame, and the host may pass those ids back to you. Split an overflowing card with \`splitCard\` instead of shrinking the copy. \`atNodeId\` must be a direct child of that card's body after the first node.
 
 Use \`columns\` for a comparison, \`grid\` for three to six peer ideas, and \`callout\` for the sentence the room should remember. Put the spoken script in \`notes\`, not in the body. Do not give every card the same layout.
 
@@ -91,6 +91,7 @@ Each line is the op, the fields a successful call must include, and what it does
 - \`updateCard\` — required: \`id\`, \`patch\` with at least one of \`accent\`, \`background\`, \`notes\`. Change a card's accent image, background, or speaker notes. null removes a field.
 - \`moveCard\` — required: \`id\`, \`to\`. Move a card to another position.
 - \`duplicateCard\` — required: \`id\`; optional \`newId\` for the copy's card id. Copy a card and all its content right after the original, with new ids.
+- \`splitCard\` — required: \`id\`, \`atNodeId\`; optional \`newId\`. Split an overflowing card at a top-level body node whose index is greater than 0. Nodes from that node onward move into a new card inserted immediately after, and they keep their ids.
 - \`deleteCard\` — required: \`id\`. Delete a card and everything in it.
 - \`insertNode\` — required: \`node\`, \`at\`. Insert a block or layout container at a location.
 - \`updateNode\` — required: \`id\`, \`patch\` with at least one field. Change some fields of an existing block or container (shallow merge). null removes an optional field. The patch cannot contain \`id\`, \`type\`, or \`children\`.
@@ -204,6 +205,7 @@ The examples use ids from a sample document (such as \`b_lead\` and \`c_review\`
 - Do not put a card id in \`before\` or \`after\`. Those keys name a node. To insert into a card, use \`{ "parent": "<cardId>" }\`.
 - Do not write \`#\` inside heading text. The \`level\` field is the heading. The \`text\` is the words only.
 - Do not build \`columns\` from a single node. On \`insertNode\`, \`widths\` is required: 2 to 4 positive numbers, one per column. \`wrapNodes\` into \`columns\` needs 2 to 4 adjacent siblings; its \`widths\` is optional and defaults to equal widths.
+- Do not pass a nested node to \`splitCard\`. \`atNodeId\` must be a top-level node in the card body, and it cannot be the first node.
 - Do not reference an asset id that no command has created and that the document does not already contain. \`putAsset\` in an earlier command of the same batch, then use the id.
 - Do not send several independent edits as several \`looma_apply\` calls when they are one intention. The user would have to undo each call separately. One batch is one undo step.
 `.trim();

@@ -130,6 +130,12 @@ export const LoomaCommandSchema = z.discriminatedUnion('op', [
     newId: IdSchema.optional(),
   }),
   z.strictObject({
+    op: z.literal('splitCard'),
+    id: IdSchema,
+    atNodeId: IdSchema,
+    newId: IdSchema.optional(),
+  }),
+  z.strictObject({
     op: z.literal('deleteCard'),
     id: IdSchema,
   }),
@@ -194,6 +200,7 @@ export const COMMAND_OPS = [
   'updateCard',
   'moveCard',
   'duplicateCard',
+  'splitCard',
   'deleteCard',
   'insertNode',
   'updateNode',

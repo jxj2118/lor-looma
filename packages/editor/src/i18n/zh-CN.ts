@@ -65,6 +65,7 @@ export const zhCN: Record<keyof Messages, string> = {
   moveUp: '上移',
   moveDown: '下移',
   duplicate: '复制',
+  splitCardHere: '在此处拆分卡片',
   delete: '删除',
   dragNode: '拖动以移动',
   inspectorTitle: '属性',

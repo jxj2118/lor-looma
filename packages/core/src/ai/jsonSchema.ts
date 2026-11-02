@@ -49,6 +49,8 @@ const COMMAND_DESCRIPTIONS: Record<CommandOp, string> = {
   updateCard: "Change a card's accent image, background or speaker notes. null removes a field.",
   moveCard: 'Move a card to another position.',
   duplicateCard: 'Copy a card and all its content right after the original, with new ids.',
+  splitCard:
+    'Split an overflowing card at a top-level node. Nodes from that node onward move into a new card inserted immediately after and keep their ids.',
   deleteCard: 'Delete a card and everything in it.',
   insertNode: 'Insert a block or layout container at a location.',
   updateNode: 'Change some fields of an existing block or container (shallow merge).',

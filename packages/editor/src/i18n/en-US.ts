@@ -63,6 +63,7 @@ export const enUS = {
   moveUp: 'Move up',
   moveDown: 'Move down',
   duplicate: 'Duplicate',
+  splitCardHere: 'Split card here',
   delete: 'Delete',
   dragNode: 'Drag to move',
   inspectorTitle: 'Properties',

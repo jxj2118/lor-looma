@@ -26,6 +26,7 @@ const VALID_COMMANDS = [
   { op: 'updateCard', id: 'c_1', patch: { accent: null, background: null } },
   { op: 'moveCard', id: 'c_1', to: { before: 'c_2' } },
   { op: 'duplicateCard', id: 'c_1', newId: 'c_copy' },
+  { op: 'splitCard', id: 'c_1', atNodeId: 'b_2', newId: 'c_split' },
   { op: 'deleteCard', id: 'c_1' },
   { op: 'insertNode', node: { type: 'paragraph', text: 'Hi' }, at: { before: 'b_1' } },
   { op: 'updateNode', id: 'b_1', patch: { text: 'Updated' } },
@@ -94,7 +95,7 @@ describe('location schemas', () => {
 });
 
 describe('COMMAND_OPS', () => {
-  it('lists the 19 command ops in order', () => {
+  it('lists the 20 command ops in order', () => {
     expect(COMMAND_OPS).toEqual([
       'setTitle',
       'setFormat',
@@ -105,6 +106,7 @@ describe('COMMAND_OPS', () => {
       'updateCard',
       'moveCard',
       'duplicateCard',
+      'splitCard',
       'deleteCard',
       'insertNode',
       'updateNode',
@@ -116,7 +118,7 @@ describe('COMMAND_OPS', () => {
       'insertColumn',
       'deleteColumn',
     ]);
-    expect(COMMAND_OPS).toHaveLength(19);
+    expect(COMMAND_OPS).toHaveLength(20);
   });
 
   it('matches CommandOp', () => {
@@ -140,6 +142,7 @@ const TOP_LEVEL_ARGS: Record<(typeof COMMAND_OPS)[number], readonly string[]> = 
   updateCard: ['id', 'patch'],
   moveCard: ['id', 'to'],
   duplicateCard: ['id', 'newId'],
+  splitCard: ['id', 'atNodeId', 'newId'],
   deleteCard: ['id'],
   insertNode: ['node', 'at'],
   updateNode: ['id', 'patch'],

@@ -222,6 +222,43 @@ describe('Inspector blocks', () => {
     await user.click(within(panel()).getByRole('button', { name: 'Delete' }));
     expect(body(ref).map((node) => node.id)).not.toContain('b_1');
   });
+
+  it('splits at the top-level container when a nested block is selected', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={documentWith([
+          {
+            id: 'c_1',
+            body: [
+              { id: 'b_1', type: 'paragraph', text: 'One' },
+              { id: 'b_2', type: 'paragraph', text: 'Two' },
+              {
+                id: 'n_cols',
+                type: 'columns',
+                widths: [1, 1],
+                children: [[{ id: 'b_left', type: 'paragraph', text: 'Left' }], []],
+              },
+            ],
+          },
+        ])}
+      />,
+    );
+    act(() => ref.current?.select(['b_1']));
+    expect(within(panel()).queryByRole('button', { name: 'Split card here' })).toBeNull();
+    act(() => ref.current?.select(['b_left']));
+    await user.click(within(panel()).getByRole('button', { name: 'Split card here' }));
+    const cards = ref.current?.store.getDocument().cards ?? [];
+    expect(cards[0]?.body.map((node) => node.id)).toEqual(['b_1', 'b_2']);
+    expect(cards[1]?.body.map((node) => node.id)).toEqual(['n_cols']);
+    expect(cards[1]?.body[0]).toMatchObject({
+      children: [[{ id: 'b_left', type: 'paragraph', text: 'Left' }], []],
+    });
+    expect(ref.current?.getSelection().cardId).toBe(cards[1]?.id);
+    expect(ref.current?.getSelection().nodeIds).toEqual([]);
+  });
 });
 
 describe('Inspector containers', () => {

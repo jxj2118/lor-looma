@@ -30,6 +30,8 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   updateCard: "Change a card's accent image, background or speaker notes. null removes a field.",
   moveCard: 'Move a card to another position.',
   duplicateCard: 'Copy a card and all its content right after the original, with new ids.',
+  splitCard:
+    'Split an overflowing card at a top-level node. Nodes from that node onward move into a new card inserted immediately after and keep their ids.',
   deleteCard: 'Delete a card and everything in it.',
   insertNode: 'Insert a block or layout container at a location.',
   updateNode: 'Change some fields of an existing block or container (shallow merge).',
@@ -127,6 +129,8 @@ const VALID_COMMANDS: unknown[] = [
   { op: 'moveCard', id: 'c_inside', to: { index: 0 } },
   { op: 'duplicateCard', id: 'c_title' },
   { op: 'duplicateCard', id: 'c_process', newId: 'c_process_copy' },
+  { op: 'splitCard', id: 'c_title', atNodeId: 'b_lead' },
+  { op: 'splitCard', id: 'c_title', atNodeId: 'b_quote', newId: 'c_title_rest' },
   { op: 'deleteCard', id: 'c_review' },
   {
     op: 'insertNode',

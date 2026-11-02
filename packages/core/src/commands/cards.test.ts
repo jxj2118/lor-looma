@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseDocument } from '../parse';
 import type { LoomaDocument } from '../schema';
-import { applyCommands } from './applyCommands';
+import { createLoomaStore } from '../store';
 import { collectIds } from '../tree/tree';
+import { applyCommands } from './applyCommands';
 
 function document(): LoomaDocument {
   const parsed = parseDocument({
@@ -194,6 +195,128 @@ describe('card commands', () => {
     expect(result.doc.cards.map((card) => card.id)).toEqual(['c_2', 'c_3']);
     expect(result.removedIds).toEqual(['c_1', 'b_1', 'b_2', 'n_cols', 'b_left', 'b_right']);
     expect(result.touchedIds).toEqual([]);
+  });
+
+  it('splits a card at a top-level node and keeps the moved node ids', () => {
+    const doc = document();
+    const result = applyCommands(doc, [
+      { op: 'splitCard', id: 'c_1', atNodeId: 'b_2', newId: 'c_split' },
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.doc.cards.map((card) => card.id)).toEqual(['c_1', 'c_split', 'c_2', 'c_3']);
+    expect(result.doc.cards[0]?.body.map((node) => node.id)).toEqual(['b_1']);
+    expect(result.doc.cards[0]?.notes).toBe('Speak slowly');
+    expect(result.doc.cards[0]?.accent).toEqual({ position: 'right', assetId: 'img_1' });
+    expect(result.doc.cards[1]).toEqual({
+      id: 'c_split',
+      body: [
+        { id: 'b_2', type: 'paragraph', text: 'Hello', align: 'left' },
+        {
+          id: 'n_cols',
+          type: 'columns',
+          widths: [1, 1],
+          children: [
+            [{ id: 'b_left', type: 'paragraph', text: 'Left' }],
+            [{ id: 'b_right', type: 'paragraph', text: 'Right' }],
+          ],
+        },
+      ],
+    });
+    expect(result.createdIds).toEqual(['c_split']);
+    expect(result.touchedIds).toEqual(['c_1', 'c_split']);
+    expect(doc.cards).toHaveLength(3);
+  });
+
+  it('generates a card id when splitCard omits newId', () => {
+    const result = applyCommands(document(), [{ op: 'splitCard', id: 'c_1', atNodeId: 'n_cols' }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const created = result.createdIds[0];
+    expect(created).toMatch(/^c_[0-9a-z]{8}$/);
+    expect(result.doc.cards[1]?.id).toBe(created);
+    expect(result.doc.cards[1]?.body.map((node) => node.id)).toEqual(['n_cols']);
+    expect(result.doc.cards[0]?.body.map((node) => node.id)).toEqual(['b_1', 'b_2']);
+  });
+
+  it('rejects splitCard when the card, the split point, or the new id is invalid', () => {
+    expect(
+      applyCommands(document(), [{ op: 'splitCard', id: 'c_missing', atNodeId: 'b_2' }]),
+    ).toEqual({
+      ok: false,
+      errors: [{ commandIndex: 0, path: 'id', message: 'card "c_missing" does not exist' }],
+    });
+    expect(applyCommands(document(), [{ op: 'splitCard', id: 'c_1', atNodeId: 'b_left' }])).toEqual(
+      {
+        ok: false,
+        errors: [
+          {
+            commandIndex: 0,
+            path: 'atNodeId',
+            message: 'atNodeId "b_left" must be a top-level node in card "c_1"',
+          },
+        ],
+      },
+    );
+    expect(applyCommands(document(), [{ op: 'splitCard', id: 'c_1', atNodeId: 'b_3' }])).toEqual({
+      ok: false,
+      errors: [
+        {
+          commandIndex: 0,
+          path: 'atNodeId',
+          message: 'atNodeId "b_3" must be a top-level node in card "c_1"',
+        },
+      ],
+    });
+    expect(applyCommands(document(), [{ op: 'splitCard', id: 'c_1', atNodeId: 'b_1' }])).toEqual({
+      ok: false,
+      errors: [
+        {
+          commandIndex: 0,
+          path: 'atNodeId',
+          message: 'cannot split card "c_1" at its first node; choose a node after index 0',
+        },
+      ],
+    });
+    expect(
+      applyCommands(document(), [{ op: 'splitCard', id: 'c_1', atNodeId: 'b_2', newId: 'c_2' }]),
+    ).toEqual({
+      ok: false,
+      errors: [
+        {
+          commandIndex: 0,
+          path: 'newId',
+          message: 'id "c_2" is already in use; omit it to let Looma generate one',
+        },
+      ],
+    });
+  });
+
+  it('undoes and redoes splitCard', () => {
+    const store = createLoomaStore(document());
+    const applied = store.apply([
+      { op: 'splitCard', id: 'c_1', atNodeId: 'b_2', newId: 'c_split' },
+    ]);
+    expect(applied.ok).toBe(true);
+    expect(store.getDocument().cards.map((card) => card.id)).toEqual([
+      'c_1',
+      'c_split',
+      'c_2',
+      'c_3',
+    ]);
+    expect(store.undo()).toBe(true);
+    expect(store.getDocument().cards.map((card) => card.id)).toEqual(['c_1', 'c_2', 'c_3']);
+    expect(store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_1',
+      'b_2',
+      'n_cols',
+    ]);
+    expect(store.redo()).toBe(true);
+    expect(store.getDocument().cards[1]?.body.map((node) => node.id)).toEqual(['b_2', 'n_cols']);
+    expect(store.getDocument().cards[1]?.body[1]).toMatchObject({
+      id: 'n_cols',
+      children: [[{ id: 'b_left' }], [{ id: 'b_right' }]],
+    });
   });
 
   it('rejects deleteCard when the card does not exist', () => {

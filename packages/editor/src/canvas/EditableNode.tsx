@@ -3,7 +3,8 @@ import type { FoundNode, LoomaDocument, LoomaNode } from '@lor-looma/core';
 import { useEffect, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { selectionAfterDelete } from '../state/selection';
+import { selectCard, selectionAfterDelete } from '../state/selection';
+import { topLevelSplitTarget } from '../state/splitTarget';
 import { duplicateSelection, duplicatedNodeIds, moveSelection } from '../state/shortcuts';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { canDropNode } from './dnd/dropTarget';
@@ -181,6 +182,7 @@ function NodeContextMenu({
   const atStart = found.index <= 0;
   const atEnd = !list || found.index >= list.length - 1;
   const selection = { cardId: found.cardId, nodeIds: [nodeId] };
+  const splitTarget = topLevelSplitTarget(doc, nodeId);
 
   function move(direction: 'up' | 'down') {
     const commands = moveSelection(store.getDocument(), selection, direction);
@@ -211,6 +213,18 @@ function NodeContextMenu({
       label: 'Delete',
     });
     if (applied.ok) viewState.set({ selection: next });
+    onClose();
+  }
+
+  function splitHere() {
+    if (!splitTarget) return;
+    const applied = store.apply(
+      [{ op: 'splitCard', id: splitTarget.cardId, atNodeId: splitTarget.topNodeId }],
+      { origin: 'user', label: 'Split card' },
+    );
+    if (!applied.ok) return;
+    const newCardId = applied.createdIds[0];
+    if (newCardId) viewState.set({ selection: selectCard(newCardId), editing: null });
     onClose();
   }
 
@@ -245,6 +259,11 @@ function NodeContextMenu({
       <button type="button" role="menuitem" disabled={atEnd} onClick={() => move('down')}>
         {messages.moveDown}
       </button>
+      {splitTarget ? (
+        <button type="button" role="menuitem" onClick={splitHere}>
+          {messages.splitCardHere}
+        </button>
+      ) : null}
       {isContainer ? (
         <button type="button" role="menuitem" onClick={unwrap}>
           {messages.unwrapContainer}

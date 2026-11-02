@@ -6,7 +6,14 @@ import { validateDocumentSemantics } from '../parse/semantics';
 import type { LoomaDocument } from '../schema';
 import { collectIds } from '../tree/tree';
 import { CommandFailure, createCommandContext } from './context';
-import { deleteCard, duplicateCard, insertCard, moveCard, updateCard } from './handlers/cards';
+import {
+  deleteCard,
+  duplicateCard,
+  insertCard,
+  moveCard,
+  splitCard,
+  updateCard,
+} from './handlers/cards';
 import { putAsset, removeAsset, setFormat, setTheme, setTitle } from './handlers/document';
 import { deleteColumn, insertColumn, unwrapNode, wrapNodes } from './handlers/layout';
 import { deleteNode, insertNode, moveNode, replaceNode, updateNode } from './handlers/nodes';
@@ -69,6 +76,8 @@ function dispatch(ctx: ReturnType<typeof createCommandContext>, command: ParsedL
       return moveCard(ctx, command);
     case 'duplicateCard':
       return duplicateCard(ctx, command);
+    case 'splitCard':
+      return splitCard(ctx, command);
     case 'deleteCard':
       return deleteCard(ctx, command);
     case 'insertNode':

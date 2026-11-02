@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createId, isValidId } from '../../ids';
 import { zodIssuesToParseIssues } from '../../parse/issues';
 import { cloneJson, isPlainObject } from '../../parse/repair';
 import { CardAccentSchema, CardBackgroundSchema } from '../../schema';
@@ -7,6 +8,8 @@ import { failIssues, prefixed, type CommandContext } from '../context';
 import { resolveCardLocation } from '../locate';
 import { materializeCard } from '../materialize';
 import type { LoomaCommand } from '../schema';
+
+const ID_IN_USE = (id: string) => `id "${id}" is already in use; omit it to let Looma generate one`;
 
 type CommandOf<Op extends LoomaCommand['op']> = Extract<LoomaCommand, { op: Op }>;
 
@@ -109,6 +112,39 @@ export function duplicateCard(ctx: CommandContext, command: CommandOf<'duplicate
   }
   ctx.draft.cards.splice(found.index + 1, 0, card.value);
   ctx.touch(card.value.id);
+}
+
+export function splitCard(ctx: CommandContext, command: CommandOf<'splitCard'>): void {
+  const found = findCard(ctx.draft, command.id);
+  if (!found) ctx.fail('id', `card "${command.id}" does not exist`);
+  const index = found.card.body.findIndex((node) => node.id === command.atNodeId);
+  if (index < 0) {
+    ctx.fail(
+      'atNodeId',
+      `atNodeId "${command.atNodeId}" must be a top-level node in card "${command.id}"`,
+    );
+  }
+  if (index === 0) {
+    ctx.fail(
+      'atNodeId',
+      `cannot split card "${command.id}" at its first node; choose a node after index 0`,
+    );
+  }
+  let newCardId = command.newId;
+  if (newCardId === undefined) newCardId = createId('card', ctx.taken);
+  if (!isValidId(newCardId)) {
+    ctx.fail(
+      'newId',
+      'must be a valid id (letter first, then letters, digits, "_" or "-", max 64 chars)',
+    );
+  }
+  if (ctx.taken.has(newCardId)) ctx.fail('newId', ID_IN_USE(newCardId));
+  const moved = found.card.body.splice(index);
+  ctx.draft.cards.splice(found.index + 1, 0, { id: newCardId, body: moved });
+  ctx.taken.add(newCardId);
+  ctx.createdIds.push(newCardId);
+  ctx.touch(found.card.id);
+  ctx.touch(newCardId);
 }
 
 export function deleteCard(ctx: CommandContext, command: CommandOf<'deleteCard'>): void {

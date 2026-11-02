@@ -69,8 +69,36 @@ describe('Canvas', () => {
     await user.click(handle);
     const menu = document.querySelector('[data-lm-node-menu]');
     expect(menu).not.toBeNull();
+    expect(
+      within(menu as HTMLElement).queryByRole('menuitem', { name: 'Split card here' }),
+    ).toBeNull();
     await user.click(within(menu as HTMLElement).getByRole('menuitem', { name: 'Duplicate' }));
     expect(ref.current?.store.getDocument().cards[0]?.body).toHaveLength(3);
+    expect(document.querySelector('[data-lm-node-menu]')).toBeNull();
+  });
+
+  it('splits the card from a later block and selects the new card', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={editorDocument()} />);
+    const node = document.querySelector('[data-lm-editor-node="b_p"]');
+    fireEvent.pointerMove(within(node as HTMLElement).getByText('Body'));
+    const handle = node?.querySelector('[aria-label="Drag to move"]');
+    if (!(handle instanceof HTMLElement)) throw new Error('missing handle');
+    await user.click(handle);
+    const menu = document.querySelector('[data-lm-node-menu]');
+    expect(menu).not.toBeNull();
+    await user.click(
+      within(menu as HTMLElement).getByRole('menuitem', { name: 'Split card here' }),
+    );
+    const cards = ref.current?.store.getDocument().cards ?? [];
+    expect(cards.map((card) => card.body.map((block) => block.id))).toEqual([
+      ['b_h'],
+      ['b_p'],
+      ['b_2'],
+    ]);
+    expect(ref.current?.getSelection().cardId).toBe(cards[1]?.id);
+    expect(ref.current?.getSelection().nodeIds).toEqual([]);
     expect(document.querySelector('[data-lm-node-menu]')).toBeNull();
   });
 
