@@ -6,12 +6,12 @@
   "author": "lor-looma contributors",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lor-looma/looma.git",
+    "url": "git+https://github.com/jxj2118/lor-looma.git",
     "directory": "packages/viewer"
   },
-  "homepage": "https://github.com/lor-looma/looma/tree/main/packages/viewer#readme",
+  "homepage": "https://github.com/jxj2118/lor-looma/tree/main/packages/viewer#readme",
   "bugs": {
-    "url": "https://github.com/lor-looma/looma/issues"
+    "url": "https://github.com/jxj2118/lor-looma/issues"
   },
   "keywords": [
     "looma",
