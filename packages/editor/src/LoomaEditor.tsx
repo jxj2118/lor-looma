@@ -25,6 +25,7 @@ import {
   selectCard,
   selectionAfterDelete,
 } from './state/selection';
+import { duplicateSelection, duplicatedNodeIds, moveSelection } from './state/shortcuts';
 import { EditorContext, createViewState } from './state/viewState';
 import { defaultSlot, readSlot } from './text/slots';
 import type { EditorSelection, ViewStateStore } from './state/viewState';
@@ -284,6 +285,33 @@ function onEditorKeyDown(
   }
 
   const selection = viewState.get().selection;
+  if (meta && key === 'd' && !event.altKey && !event.shiftKey) {
+    event.preventDefault();
+    const plan = duplicateSelection(store.getDocument(), selection);
+    if (!plan) return;
+    const applied = store.apply(plan.commands, { origin: 'user', label: 'Duplicate' });
+    if (!applied.ok) return;
+    if (plan.selectKind === 'card') {
+      const cardId = applied.createdIds.find((id) => findCard(applied.doc, id));
+      if (cardId) viewState.set({ selection: selectCard(cardId) });
+      return;
+    }
+    const nodeIds = duplicatedNodeIds(applied.doc, applied.createdIds);
+    const anchor = nodeIds[0];
+    const cardId = anchor
+      ? (findNode(applied.doc, anchor)?.cardId ?? selection.cardId)
+      : selection.cardId;
+    viewState.set({ selection: { cardId, nodeIds } });
+    return;
+  }
+  if (meta && !event.altKey && !event.shiftKey && (key === 'arrowup' || key === 'arrowdown')) {
+    event.preventDefault();
+    const direction = key === 'arrowup' ? 'up' : 'down';
+    const commands = moveSelection(store.getDocument(), selection, direction);
+    if (!commands) return;
+    store.apply(commands, { origin: 'user', label: direction === 'up' ? 'Move up' : 'Move down' });
+    return;
+  }
   if (event.key === 'Escape') {
     event.preventDefault();
     const nodeId = selection.nodeIds[0];

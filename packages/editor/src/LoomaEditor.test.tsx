@@ -369,6 +369,88 @@ describe('LoomaEditor', () => {
     }
   });
 
+  it('duplicates and moves the selection from the keyboard, then undoes it', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(<LoomaEditor ref={ref} document={layoutDocument()} />);
+    fireEvent.click(screen.getByText('One'));
+    fireEvent.click(screen.getByText('Two'), { shiftKey: true });
+    const root = editorRoot();
+    fireEvent.keyDown(root, { key: 'd', metaKey: true });
+    const body = ref.current?.store.getDocument().cards[0]?.body ?? [];
+    expect(body.slice(2, 4).map((node) => ('text' in node ? node.text : ''))).toEqual([
+      'One',
+      'Two',
+    ]);
+    expect(ref.current?.getSelection().nodeIds).toEqual([body[2]?.id, body[3]?.id]);
+    fireEvent.keyDown(root, { key: 'z', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_1',
+      'b_2',
+      'b_3',
+      'n_cols',
+    ]);
+
+    fireEvent.click(screen.getByText('Two'));
+    fireEvent.keyDown(root, { key: 'ArrowUp', ctrlKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_2',
+      'b_1',
+      'b_3',
+      'n_cols',
+    ]);
+    expect(ref.current?.getSelection().nodeIds).toEqual(['b_2']);
+    fireEvent.keyDown(root, { key: 'ArrowDown', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_1',
+      'b_2',
+      'b_3',
+      'n_cols',
+    ]);
+
+    const card = document.querySelector('[data-lm-card-id="c_2"]');
+    if (!(card instanceof HTMLElement)) throw new Error('missing card');
+    fireEvent.click(card);
+    fireEvent.keyDown(root, { key: 'd', ctrlKey: true });
+    const cards = ref.current?.store.getDocument().cards ?? [];
+    expect(cards).toHaveLength(3);
+    expect(cards[2]?.body[0]).toMatchObject({ type: 'paragraph', text: 'Other' });
+    expect(ref.current?.getSelection()).toMatchObject({ cardId: cards[2]?.id, nodeIds: [] });
+    fireEvent.keyDown(root, { key: 'ArrowUp', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[1]?.id).toBe(cards[2]?.id);
+  });
+
+  it('ignores duplicate and move while read only, editing, or typing in a field', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    const { rerender } = render(<LoomaEditor ref={ref} document={layoutDocument()} readOnly />);
+    act(() => {
+      ref.current?.select(['b_2']);
+    });
+    fireEvent.keyDown(editorRoot(), { key: 'd', metaKey: true });
+    fireEvent.keyDown(editorRoot(), { key: 'ArrowUp', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_1',
+      'b_2',
+      'b_3',
+      'n_cols',
+    ]);
+
+    rerender(<LoomaEditor ref={ref} document={layoutDocument()} />);
+    fireEvent.dblClick(screen.getByText('One'));
+    fireEvent.keyDown(editorRoot(), { key: 'd', metaKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body).toHaveLength(4);
+
+    const title = screen.getByRole('textbox', { name: 'Title' });
+    fireEvent.pointerDown(title);
+    fireEvent.keyDown(title, { key: 'd', metaKey: true });
+    fireEvent.keyDown(title, { key: 'ArrowDown', ctrlKey: true });
+    expect(ref.current?.store.getDocument().cards[0]?.body.map((node) => node.id)).toEqual([
+      'b_1',
+      'b_2',
+      'b_3',
+      'n_cols',
+    ]);
+  });
+
   it('does not select or delete while read only', () => {
     const ref = createRef<LoomaEditorHandle>();
     render(<LoomaEditor ref={ref} document={layoutDocument()} readOnly />);
