@@ -1,5 +1,5 @@
 import type * as ViewerTypes from '@lor-looma/viewer';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import type { ComponentProps } from 'react';
@@ -25,7 +25,9 @@ describe('Canvas', () => {
     const ref = createRef<LoomaEditorHandle>();
     render(<LoomaEditor ref={ref} document={editorDocument({ cards: [] })} />);
     expect(screen.getByText('This document has no cards.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add card' }));
+    const canvas = document.querySelector('[data-lm-editor-canvas]');
+    if (!(canvas instanceof HTMLElement)) throw new Error('missing canvas');
+    await user.click(within(canvas).getByRole('button', { name: 'Add card' }));
     expect(ref.current?.store.getDocument().cards).toHaveLength(1);
     expect(screen.queryByText('This document has no cards.')).toBeNull();
   });

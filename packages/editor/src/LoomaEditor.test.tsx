@@ -1,5 +1,5 @@
 import { createLoomaStore } from '@lor-looma/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -42,6 +42,12 @@ function editorRoot(): HTMLElement {
   const root = document.querySelector('[data-looma-root]');
   if (!(root instanceof HTMLElement)) throw new Error('missing editor root');
   return root;
+}
+
+function canvas(): HTMLElement {
+  const element = document.querySelector('[data-lm-editor-canvas]');
+  if (!(element instanceof HTMLElement)) throw new Error('missing canvas');
+  return element;
 }
 
 describe('LoomaEditor', () => {
@@ -125,7 +131,7 @@ describe('LoomaEditor', () => {
     const ref = createRef<LoomaEditorHandle>();
     render(<LoomaEditor ref={ref} document={editorDocument()} />);
     ref.current?.select(['c_1']);
-    await user.click(screen.getByRole('button', { name: 'Add card' }));
+    await user.click(within(canvas()).getByRole('button', { name: 'Add card' }));
     const cards = ref.current?.store.getDocument().cards ?? [];
     expect(cards).toHaveLength(3);
     expect(cards[1]?.id).not.toBe('c_2');
@@ -359,11 +365,11 @@ describe('LoomaEditor', () => {
           origin: 'ai',
         });
       });
-      expect(screen.getByRole('status')).toHaveTextContent(/changed elsewhere/i);
+      expect(screen.getByRole('status', { name: /changed elsewhere/i })).toBeInTheDocument();
       act(() => {
         vi.advanceTimersByTime(4000);
       });
-      expect(screen.queryByRole('status')).toBeNull();
+      expect(screen.queryByRole('status', { name: /changed elsewhere/i })).toBeNull();
     } finally {
       vi.useRealTimers();
     }

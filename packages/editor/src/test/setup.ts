@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
+
+configure({
+  defaultIgnore: 'script, style, [data-lm-preview], [data-lm-preview] *',
+});
 
 afterEach(() => cleanup());
 

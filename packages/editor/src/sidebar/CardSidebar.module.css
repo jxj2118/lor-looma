@@ -1,0 +1,154 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: 200px;
+  min-height: 0;
+  border-right: 1px solid var(--lm-editor-chrome-border);
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+}
+
+.heading {
+  margin: 0;
+  padding: 10px 12px 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 8px;
+  background: #f6f8fa;
+  cursor: pointer;
+}
+
+.card[data-active] {
+  border-color: var(--lm-editor-accent);
+  box-shadow: 0 0 0 1px var(--lm-editor-accent);
+}
+
+.card[data-dragging] {
+  z-index: 2;
+  opacity: 0.72;
+}
+
+.preview,
+.preview * {
+  pointer-events: none;
+}
+
+.index,
+.badge {
+  position: absolute;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.index {
+  top: 4px;
+  left: 4px;
+}
+
+.badge {
+  top: 4px;
+  right: 4px;
+  background: var(--lm-editor-flash);
+}
+
+.actions {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+}
+
+.card:hover + .actions,
+.item:focus-within .actions,
+.item:hover .actions,
+.card[data-active] + .actions {
+  opacity: 1;
+}
+
+.actions button,
+.menu button,
+.add {
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 6px;
+  background: var(--lm-editor-chrome-bg);
+  color: var(--lm-editor-chrome-fg);
+  font: inherit;
+}
+
+.actions button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.actions button:disabled,
+.menu button:disabled {
+  opacity: 0.4;
+}
+
+.add {
+  margin: 0 8px 8px;
+  height: 32px;
+  border-style: dashed;
+  font-size: 13px;
+}
+
+.menu {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--lm-editor-chrome-border);
+  border-radius: 8px;
+  background: var(--lm-editor-chrome-bg);
+  box-shadow: 0 8px 24px rgb(31 35 40 / 16%);
+  pointer-events: auto;
+}
+
+.menu button {
+  padding: 6px 8px;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+}
+
+.menu button:hover:not(:disabled) {
+  background: #f6f8fa;
+}

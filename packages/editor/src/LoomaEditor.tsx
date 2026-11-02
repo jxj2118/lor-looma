@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Canvas } from './canvas/Canvas';
+import { CardSidebar } from './sidebar/CardSidebar';
 import { SlashMenu } from './insert/SlashMenu';
 import { armFlash, clearFlash } from './canvas/flash';
 import { Notice } from './chrome/Notice';
@@ -188,8 +189,9 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         viewState.set({ selection: normalizeSelectIds(store.getDocument(), ids) });
       },
       scrollTo(id) {
-        const target = rootRef.current?.querySelector(
-          `[data-lm-card-id="${id}"], [data-lm-node-id="${id}"]`,
+        const scope = rootRef.current?.querySelector('[data-lm-editor-canvas]') ?? rootRef.current;
+        const target = scope?.querySelector(
+          `[data-lm-card-id="${id}"], [data-lm-node-id="${id}"], [data-lm-editor-node="${id}"]`,
         );
         if (target instanceof HTMLElement && typeof target.scrollIntoView === 'function') {
           target.scrollIntoView({ block: 'center' });
@@ -242,7 +244,10 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         onKeyDown={(event) => onEditorKeyDown(event, { readOnly, store, viewState })}
       >
         <Topbar onPlay={openPlay} />
-        <Canvas />
+        <div className={styles.workspace}>
+          {readOnly ? null : <CardSidebar />}
+          <Canvas />
+        </div>
         <div ref={setLayer} className={styles.layer}>
           <Notice />
           <SlashMenu />

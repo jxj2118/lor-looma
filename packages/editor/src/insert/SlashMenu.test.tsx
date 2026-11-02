@@ -166,7 +166,7 @@ describe('SlashMenu', () => {
     if (!(again instanceof HTMLInputElement)) throw new Error('missing file input');
     fireEvent.change(again, { target: { files: [file] } });
     await waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent('Image upload failed');
+      expect(screen.getByRole('status', { name: 'Image upload failed' })).toBeInTheDocument();
     });
   });
 

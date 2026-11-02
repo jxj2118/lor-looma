@@ -17,7 +17,7 @@ export function Notice() {
 
   if (!notice) return null;
   return (
-    <div className={styles.notice} role="status">
+    <div className={styles.notice} role="status" aria-label={notice.message}>
       {notice.message}
     </div>
   );

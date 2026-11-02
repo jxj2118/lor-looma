@@ -188,7 +188,9 @@ describe('InlineEditor', () => {
     await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
     await user.type(editable(), 'Z');
     store.apply([{ op: 'updateNode', id: 'b_p', patch: { text: 'From AI' } }], { origin: 'ai' });
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/changed elsewhere/i));
+    await waitFor(() =>
+      expect(screen.getByRole('status', { name: /changed elsewhere/i })).toBeInTheDocument(),
+    );
     expect(editable().textContent).toContain('From AI');
 
     store.apply([{ op: 'deleteNode', id: 'b_p' }], { origin: 'ai' });

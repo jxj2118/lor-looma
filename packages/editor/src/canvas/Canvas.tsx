@@ -116,6 +116,7 @@ export function Canvas() {
     <div
       ref={canvasRef}
       className={styles.canvas}
+      data-lm-editor-canvas=""
       onPointerMove={onPointerMove}
       onPointerLeave={() => {
         if (viewState.get().hoverId !== null) viewState.set({ hoverId: null });
