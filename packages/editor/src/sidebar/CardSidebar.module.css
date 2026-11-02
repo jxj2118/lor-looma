@@ -25,6 +25,7 @@
   margin: 0;
   padding: 8px;
   overflow: auto;
+  scrollbar-gutter: stable;
   list-style: none;
 }
 

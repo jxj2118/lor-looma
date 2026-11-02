@@ -1,6 +1,7 @@
 .root {
   height: 100%;
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--lm-color-bg);
   color: var(--lm-color-fg);
 }
