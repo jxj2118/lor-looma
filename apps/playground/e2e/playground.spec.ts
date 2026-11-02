@@ -138,6 +138,32 @@ test.describe('playground', () => {
     await locale.selectOption('en-US');
     await expect(page.getByRole('button', { name: 'AI Console' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Export `.looma`' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Print / PDF' })).toBeVisible();
     await expect(locale).toBeVisible();
+  });
+
+  test('splits a card and edits the table around the clicked cell', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('View').selectOption('editor');
+    const sidebar = page.getByRole('complementary', { name: 'Cards' });
+    const before = await sidebar.locator('[data-lm-sidebar-card]').count();
+    const lead = page.locator('[data-lm-editor-node="b_lead"]');
+    await lead.getByRole('button', { name: 'Drag to move' }).click({ force: true });
+    await page.getByRole('menuitem', { name: 'Split card here' }).click();
+    await expect(sidebar.locator('[data-lm-sidebar-card]')).toHaveCount(before + 1);
+
+    const table = page.locator('[data-lm-editor-node="b_stages"] table');
+    await expect(table.locator('tr')).toHaveCount(3);
+    await table.getByText('Calvin cycle').click({ force: true });
+    await expect(page.getByText('Row 3, Column 1')).toBeVisible();
+    await page.getByRole('button', { name: 'Insert row above' }).click();
+    await page.getByRole('button', { name: 'Insert column left' }).click();
+    await expect(table.locator('tr')).toHaveCount(4);
+    await expect(table.locator('tr').first().locator('th')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: 'Delete row' })).toBeEnabled();
+
+    const code = page.locator('[data-lm-editor-node="b_equation"]');
+    await expect(code.locator('[data-lm-token="plain"]')).toHaveCount(1);
+    await expect(code.getByRole('button', { name: 'Copy code' })).toBeVisible();
   });
 });

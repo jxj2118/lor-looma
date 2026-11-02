@@ -321,6 +321,15 @@ function Playground({ initial }: { initial: ReadySample }) {
           <button type="button" onClick={exportDocument}>
             {messages.exportLooma}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              editorRef.current?.flush();
+              window.print();
+            }}
+          >
+            {messages.printPdf}
+          </button>
           <button type="button" aria-pressed={aiOpen} onClick={() => setAiOpen((open) => !open)}>
             {messages.aiConsole}
           </button>

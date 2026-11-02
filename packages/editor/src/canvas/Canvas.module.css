@@ -73,6 +73,34 @@
   outline-offset: -4px;
 }
 
+@media print {
+  .canvas {
+    overflow: visible;
+    height: auto;
+    padding: 0;
+    background: transparent;
+  }
+
+  .list {
+    max-width: none;
+  }
+
+  .badge,
+  .add,
+  .canvas button {
+    display: none !important;
+  }
+
+  .card,
+  .card[data-selected] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    outline: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
 .add {
   align-self: center;
   height: 36px;

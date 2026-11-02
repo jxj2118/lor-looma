@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Split a card from the block menu or the inspector.
+- Insert and delete table rows and columns around the active cell.
+- Drag the divider between columns to resize them, and move between text slots with the arrow keys.
+- Hide editor chrome when printing.
+
 ## 0.1.0
 
 First public release of `@lor-looma/editor`.

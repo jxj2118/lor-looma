@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Add `splitCard` to move the tail of a card onto a new card without copying node ids.
+- Document `splitCard` in the model guide and the generated tool schema.
+
 ## 0.1.0
 
 First public release of `@lor-looma/core`.

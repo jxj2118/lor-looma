@@ -26,3 +26,23 @@
   z-index: 20;
   pointer-events: none;
 }
+
+@media print {
+  .root,
+  .workspace {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .layer,
+  :global([data-lm-topbar]),
+  :global([data-lm-sidebar]),
+  :global([data-lm-inspector]),
+  :global([data-lm-node-menu]),
+  :global([data-lm-slash]),
+  :global([data-lm-format-toolbar]),
+  :global([data-lm-column-resizer]) {
+    display: none !important;
+  }
+}

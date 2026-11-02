@@ -35,6 +35,8 @@ export function Reader() {
 
 `mode="scroll"` is the default. Cards stack vertically. Document-format cards use their natural height. Presentation cards stay at 16:9 and scale down to the container width.
 
+Code blocks show a language badge when `language` is set, a Copy button, and lightweight syntax coloring for common languages. `text` and `plaintext` stay uncolored. The coloring uses theme colors, so it follows the active preset.
+
 ## Present
 
 Control the page yourself, or let the viewer keep it.
@@ -74,7 +76,7 @@ export function Show({ doc }) {
 
 `onOverflow` lists presentation cards whose content is taller than 720 logical pixels. Split those cards instead of shrinking the type. The callback does not fire for `document` format.
 
-Keyboard page turns work after the present view is focused: Arrow keys, Space, Page Up, Page Down, Home, and End.
+Keyboard page turns work after the present view is focused: Arrow keys, Space, Page Up, Page Down, Home, and End. Press `n` or `N`, or the Notes button beside the page number, to open the current card's speaker notes. The notes use the same inline text as the slide. Clicking the notes panel does not turn the page. A card with no notes shows an empty message.
 
 ## Editor
 
@@ -184,3 +186,9 @@ The playground is a host, not a library API, but it is the reference for round-t
 3. Repair warnings and validation errors are shown above the canvas. `load` itself does not repair; do that before calling it.
 
 Use the same two steps in your own save dialog.
+
+## Print and PDF
+
+Looma prints through the browser. `@media print` hides the editor chrome (top bar, sidebar, inspector, block handles, and overflow badges), the playground toolbar, and the code-block copy button. Cards keep their colors (`print-color-adjust: exact`) and avoid breaking in the middle of a card.
+
+In the playground, **Print / PDF** calls `editorRef.current?.flush()` and then `window.print()`. Choose "Save as PDF" in the system dialog for a vector PDF. Call `flush()` yourself before `window.print()` in your own host so a debounced edit is included.

@@ -10,7 +10,7 @@ export function Topbar({ onPlay }: { onPlay: () => void }) {
   const document = useLoomaDocument({ store });
 
   return (
-    <div className={styles.bar}>
+    <div className={styles.bar} data-lm-topbar="">
       <Title title={document.title} readOnly={readOnly} />
       {readOnly ? null : (
         <div className={styles.group}>

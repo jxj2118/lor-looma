@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Highlight code blocks with a built-in tokenizer and add a language badge plus a Copy button.
+- Show speaker notes in present mode from the Notes button or the N key.
+- Print cards with their theme colors and hide present chrome.
+
 ## 0.1.0
 
 First public release of `@lor-looma/viewer`.

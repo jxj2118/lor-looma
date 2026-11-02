@@ -55,3 +55,24 @@
   font-family: var(--lm-font-body);
   text-align: center;
 }
+
+@media print {
+  .root,
+  .scroll {
+    height: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .badge,
+  .fade {
+    display: none !important;
+  }
+
+  .slide {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

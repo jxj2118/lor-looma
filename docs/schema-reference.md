@@ -134,4 +134,6 @@ Card locations, used by `insertCard` and `moveCard`:
 
 `duplicateCard` copies a card to the slot after the original and assigns new ids. `deleteCard` removes the card and its nodes. Assets are left in place until something removes them.
 
+`splitCard` divides a card at a top-level body node. `id` is the card. `atNodeId` must be a direct child of that card's body, and it cannot be the first node. Nodes from `atNodeId` onward move into a new card inserted immediately after. Those nodes keep their ids. Omit `newId` to let Looma generate the new card id. Use this when a presentation card overflows the slide.
+
 The full command list and the error strings a model sees are in [AI integration](ai-integration.md).

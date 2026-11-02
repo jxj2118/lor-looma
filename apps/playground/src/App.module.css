@@ -130,3 +130,25 @@
 .errors li {
   margin: 8px 0;
 }
+
+@media print {
+  :global(html),
+  :global(body),
+  :global(#root),
+  .app,
+  .body,
+  .stage,
+  .viewer {
+    height: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .toolbar,
+  .overflow,
+  .banner,
+  .bannerError,
+  :global([data-testid='ai-panel']) {
+    display: none !important;
+  }
+}

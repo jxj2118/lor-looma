@@ -65,3 +65,14 @@
   position: relative;
   z-index: 1;
 }
+
+@media print {
+  .card,
+  .card[data-lm-format='presentation'] .content {
+    overflow: visible;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
