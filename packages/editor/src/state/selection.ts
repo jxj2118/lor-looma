@@ -16,7 +16,9 @@ function siblings(doc: LoomaDocument, nodeId: string): LoomaNode[] | null {
     if (found.slot === null) return null;
     return parent.node.children[found.slot] ?? null;
   }
-  if (parent.node.type === 'stack' || parent.node.type === 'grid') return parent.node.children;
+  if (parent.node.type === 'stack' || parent.node.type === 'grid' || parent.node.type === 'steps') {
+    return parent.node.children;
+  }
   return null;
 }
 

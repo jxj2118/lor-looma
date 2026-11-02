@@ -14,7 +14,14 @@ interface Placement {
 }
 
 export function subtreeContainerDepth(node: LoomaNode): number {
-  if (node.type !== 'stack' && node.type !== 'columns' && node.type !== 'grid') return 0;
+  if (
+    node.type !== 'stack' &&
+    node.type !== 'columns' &&
+    node.type !== 'grid' &&
+    node.type !== 'steps'
+  ) {
+    return 0;
+  }
   const children = node.type === 'columns' ? node.children.flat() : node.children;
   let nested = 0;
   for (const child of children) nested = Math.max(nested, subtreeContainerDepth(child));
@@ -26,7 +33,7 @@ function containsId(node: LoomaNode, id: string): boolean {
   if (node.type === 'columns') {
     return node.children.some((column) => column.some((child) => containsId(child, id)));
   }
-  if (node.type === 'stack' || node.type === 'grid') {
+  if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
     return node.children.some((child) => containsId(child, id));
   }
   return false;
@@ -67,7 +74,9 @@ function placement(doc: LoomaDocument, target: DropTarget): Placement | null {
       depth: parent.depth + 1,
     };
   }
-  if (parent.node.type !== 'stack' && parent.node.type !== 'grid') return null;
+  if (parent.node.type !== 'stack' && parent.node.type !== 'grid' && parent.node.type !== 'steps') {
+    return null;
+  }
   if (target.slot !== undefined) return null;
   const index = target.index ?? parent.node.children.length;
   if (index < 0 || index > parent.node.children.length) return null;

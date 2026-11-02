@@ -4,7 +4,17 @@ import { parseSlotKey } from '@lor-looma/viewer';
 import type { SlotKey } from '@lor-looma/viewer';
 import type { EditorMode } from './markdown';
 
-const TEXT_TYPES = new Set(['heading', 'paragraph', 'list', 'table', 'callout', 'quote', 'code']);
+const TEXT_TYPES = new Set([
+  'heading',
+  'paragraph',
+  'list',
+  'table',
+  'callout',
+  'quote',
+  'code',
+  'stat',
+  'math',
+]);
 
 export function isTextNodeType(type: string): boolean {
   return TEXT_TYPES.has(type);
@@ -22,14 +32,25 @@ export function defaultSlot(node: LoomaNode): SlotKey | null {
     case 'table':
       return 'cell:0:0';
     case 'code':
+    case 'math':
       return 'code';
+    case 'stat':
+      return 'stat:value';
     default:
       return null;
   }
 }
 
-export function slotMode(node: LoomaNode, _slot: SlotKey): EditorMode | 'code' {
+export function slotMode(node: LoomaNode, slot: SlotKey): EditorMode | 'code' {
+  if (node.type === 'math' && slot === 'code') return 'code';
   if (node.type === 'code') return 'code';
+  if (
+    node.type === 'stat' &&
+    (slot === 'stat:value' || slot === 'stat:label' || slot === 'stat:detail')
+  ) {
+    return 'single';
+  }
+  if (node.type === 'stat') return 'single';
   if (node.type === 'callout' || node.type === 'quote') return 'multi';
   return 'single';
 }
@@ -87,13 +108,18 @@ export function readSlot(node: LoomaNode, slot: SlotKey): string | undefined {
       }
       return undefined;
     case 'code':
-      return node.type === 'code' ? node.code : undefined;
+      if (node.type === 'code') return node.code;
+      if (node.type === 'math') return node.tex;
+      return undefined;
     case 'item':
       return node.type === 'list' ? readItem(node.items, parsed.path) : undefined;
     case 'cell':
       return node.type === 'table' ? node.rows[parsed.row]?.[parsed.col] : undefined;
     case 'stat':
-      return undefined;
+      if (node.type !== 'stat') return undefined;
+      if (parsed.field === 'value') return node.value;
+      if (parsed.field === 'label') return node.label;
+      return node.detail ?? '';
     default: {
       const unreachable: never = parsed;
       return unreachable;
@@ -120,7 +146,9 @@ export function slotPatch(
       }
       return null;
     case 'code':
-      return node.type === 'code' ? { code: text } : null;
+      if (node.type === 'code') return { code: text };
+      if (node.type === 'math') return { tex: text };
+      return null;
     case 'item': {
       if (node.type !== 'list') return null;
       const items = writeItem(node.items, parsed.path, text);
@@ -139,7 +167,10 @@ export function slotPatch(
       };
     }
     case 'stat':
-      return null;
+      if (node.type !== 'stat') return null;
+      if (parsed.field === 'value') return { value: text };
+      if (parsed.field === 'label') return { label: text };
+      return { detail: text === '' ? null : text };
     default: {
       const unreachable: never = parsed;
       return unreachable;

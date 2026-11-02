@@ -23,7 +23,11 @@ function stamp(value: unknown, forcedId?: string): unknown {
   if (!value || typeof value !== 'object') return value;
   const record = { ...(value as Record<string, unknown>) };
   if (typeof record.type !== 'string') return record;
-  const container = record.type === 'columns' || record.type === 'stack' || record.type === 'grid';
+  const container =
+    record.type === 'columns' ||
+    record.type === 'stack' ||
+    record.type === 'grid' ||
+    record.type === 'steps';
   record.id = forcedId ?? createId(container ? 'container' : 'block');
   if (Array.isArray(record.children)) record.children = stamp(record.children) as unknown[];
   return record;

@@ -8,7 +8,12 @@ import { ContainerInspector, MultiInspector } from './ContainerInspector';
 import styles from './Inspector.module.css';
 
 function isContainer(node: { type: string }): node is LoomaContainer {
-  return node.type === 'stack' || node.type === 'columns' || node.type === 'grid';
+  return (
+    node.type === 'stack' ||
+    node.type === 'columns' ||
+    node.type === 'grid' ||
+    node.type === 'steps'
+  );
 }
 
 export function Inspector() {

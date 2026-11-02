@@ -20,6 +20,7 @@ describe('filterCatalog', () => {
     expect(ids).not.toContain('columns2');
     expect(ids).not.toContain('columns3');
     expect(ids).not.toContain('grid2');
+    expect(ids).not.toContain('steps');
     expect(ids).toContain('paragraph');
   });
 
@@ -53,6 +54,22 @@ describe('filterCatalog', () => {
     expect(byId.columns2).toMatchObject({ type: 'columns', widths: [1, 1] });
     expect(byId.columns3).toMatchObject({ type: 'columns', widths: [1, 1, 1] });
     expect(byId.grid2).toMatchObject({ type: 'grid', columns: 2 });
+    expect(byId.stat).toEqual({
+      type: 'stat',
+      value: '98%',
+      label: 'Completion rate',
+      detail: '+12% this week',
+      tone: 'info',
+    });
+    expect(byId.math).toEqual({ type: 'math', tex: 'E = mc^2' });
+    expect(byId.steps).toMatchObject({
+      type: 'steps',
+      children: [
+        { type: 'paragraph', text: '' },
+        { type: 'paragraph', text: '' },
+        { type: 'paragraph', text: '' },
+      ],
+    });
 
     const image = items.find((item) => item.id === 'image');
     expect(image?.needsAsset).toBe(true);

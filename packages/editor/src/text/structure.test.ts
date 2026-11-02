@@ -472,4 +472,35 @@ describe('structure commands', () => {
     const doc = document([{ id: 'b_list', type: 'list', style: 'bullet', items: ['Stay', 'Go'] }]);
     expect(exitList(doc, 'b_list', [9])).toBeNull();
   });
+
+  it('moves from a stat value through its detail and into a math block inside steps', () => {
+    const doc = document([
+      { id: 'b_stat', type: 'stat', value: '98%', label: 'Done', detail: '+1' },
+      {
+        id: 'n_steps',
+        type: 'steps',
+        children: [{ id: 'b_math', type: 'math', tex: 'E = mc^2' }],
+      },
+    ]);
+    expect(adjacentTextSlot(doc, 'b_stat', 'stat:value', 'next')).toEqual({
+      nodeId: 'b_stat',
+      slot: 'stat:label',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_stat', 'stat:label', 'next')).toEqual({
+      nodeId: 'b_stat',
+      slot: 'stat:detail',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_stat', 'stat:detail', 'next')).toEqual({
+      nodeId: 'b_math',
+      slot: 'code',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_math', 'code', 'prev')).toEqual({
+      nodeId: 'b_stat',
+      slot: 'stat:detail',
+      caret: 'end',
+    });
+  });
 });

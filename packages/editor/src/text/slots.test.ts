@@ -138,13 +138,21 @@ describe('slot defaults', () => {
     expect(defaultSlot(node(doc, 'b_list'))).toBe('item:0');
     expect(defaultSlot(node(doc, 'b_table'))).toBe('cell:0:0');
     expect(defaultSlot(node(doc, 'b_code'))).toBe('code');
+    expect(defaultSlot({ id: 'b_stat', type: 'stat', value: '', label: '' })).toBe('stat:value');
+    expect(defaultSlot({ id: 'b_math', type: 'math', tex: '' })).toBe('code');
     expect(defaultSlot(divider)).toBeNull();
 
     expect(slotMode(node(doc, 'b_code'), 'code')).toBe('code');
     expect(slotMode(node(doc, 'b_call'), 'text')).toBe('multi');
     expect(slotMode(quote, 'text')).toBe('multi');
     expect(slotMode(node(doc, 'b_h'), 'text')).toBe('single');
+    expect(slotMode({ id: 'b_math', type: 'math', tex: 'x' }, 'code')).toBe('code');
+    expect(slotMode({ id: 'b_stat', type: 'stat', value: '1', label: 'L' }, 'stat:detail')).toBe(
+      'single',
+    );
     expect(isTextNodeType('paragraph')).toBe(true);
+    expect(isTextNodeType('stat')).toBe(true);
+    expect(isTextNodeType('math')).toBe(true);
     expect(isTextNodeType('divider')).toBe(false);
     expect(isTextNodeType('image')).toBe(false);
   });
@@ -167,6 +175,17 @@ describe('slot defaults', () => {
     expect(slotPatch(heading, 'item:0', 'x')).toBeNull();
     expect(slotPatch(heading, 'cell:0:0', 'x')).toBeNull();
     expect(slotPatch(list, 'item:0.0', 'x')).toBeNull();
+    const stat = { id: 'b_stat', type: 'stat' as const, value: '9', label: 'N', detail: 'd' };
+    expect(readSlot(stat, 'stat:value')).toBe('9');
+    expect(readSlot(stat, 'stat:label')).toBe('N');
+    expect(readSlot(stat, 'stat:detail')).toBe('d');
+    expect(readSlot({ id: 'b_stat', type: 'stat', value: '', label: '' }, 'stat:detail')).toBe('');
+    expect(slotPatch(stat, 'stat:label', 'Name')).toEqual({ label: 'Name' });
+    expect(slotPatch(stat, 'stat:detail', '')).toEqual({ detail: null });
+    const math = { id: 'b_math', type: 'math' as const, tex: 'x' };
+    expect(readSlot(math, 'code')).toBe('x');
+    expect(slotPatch(math, 'code', 'y^2')).toEqual({ tex: 'y^2' });
+
     expect(slotPatch(quoteNode(), 'text', 'Again')).toEqual({ text: 'Again' });
     expect(slotPatch(heading, 'nope' as 'text', 'x')).toBeNull();
     expect(slotPatch(list, 'item:1.0.9', 'x')).toBeNull();

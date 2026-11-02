@@ -11,7 +11,7 @@ import styles from './Inspector.module.css';
 export function canWrapNodes(
   doc: LoomaDocument,
   ids: readonly string[],
-  type: 'columns' | 'grid' | 'stack',
+  type: 'columns' | 'grid' | 'stack' | 'steps',
 ): boolean {
   if (ids.length === 0) return false;
   if (type === 'columns' && (ids.length < 2 || ids.length > 4)) return false;
@@ -68,7 +68,9 @@ export function ContainerInspector({ found }: { found: FoundNode & { node: Looma
           ? messages.stack
           : node.type === 'columns'
             ? messages.columns
-            : messages.grid}
+            : node.type === 'grid'
+              ? messages.grid
+              : messages.steps}
       </p>
       <label className={styles.field}>
         {messages.gap}
@@ -87,6 +89,23 @@ export function ContainerInspector({ found }: { found: FoundNode & { node: Looma
           <option value="lg">{messages.gapLarge}</option>
         </select>
       </label>
+      {node.type === 'steps' ? (
+        <label className={styles.field}>
+          {messages.stepsDirection}
+          <select
+            aria-label={messages.stepsDirection}
+            value={node.direction ?? 'vertical'}
+            onChange={(event) => {
+              const direction = event.target.value;
+              if (direction !== 'vertical' && direction !== 'horizontal') return;
+              patch({ direction });
+            }}
+          >
+            <option value="vertical">{messages.directionVertical}</option>
+            <option value="horizontal">{messages.directionHorizontal}</option>
+          </select>
+        </label>
+      ) : null}
       {node.type === 'columns' ? <ColumnFields node={node} patch={patch} /> : null}
       {node.type === 'grid' ? (
         <label className={styles.field}>
@@ -214,7 +233,7 @@ export function MultiInspector({ ids }: { ids: string[] }) {
   const doc = useLoomaDocument({ store });
   const anchor = findNode(doc, ids[0] ?? '');
 
-  function wrap(type: 'columns' | 'grid' | 'stack') {
+  function wrap(type: 'columns' | 'grid' | 'stack' | 'steps') {
     const applied = store.apply([{ op: 'wrapNodes', ids, container: { type } }], {
       origin: 'user',
       label: 'Wrap',
@@ -260,6 +279,13 @@ export function MultiInspector({ ids }: { ids: string[] }) {
           onClick={() => wrap('stack')}
         >
           {messages.wrapStack}
+        </button>
+        <button
+          type="button"
+          disabled={!canWrapNodes(doc, ids, 'steps')}
+          onClick={() => wrap('steps')}
+        >
+          {messages.wrapSteps}
         </button>
         <button type="button" onClick={remove}>
           {messages.deleteSelected}

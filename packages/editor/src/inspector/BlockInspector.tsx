@@ -11,6 +11,7 @@ import {
   insertTableRow,
 } from '../text/structure';
 import { AssetInput } from './AssetInput';
+import { FocalPointFields } from './FocalPointFields';
 import type { PickedAsset } from './AssetInput';
 import { NodeActions } from './NodeActions';
 import styles from './Inspector.module.css';
@@ -42,9 +43,9 @@ function blockLabel(node: LoomaBlock, messages: Messages): string {
     case 'divider':
       return messages.divider;
     case 'stat':
-      return node.type;
+      return messages.stat;
     case 'math':
-      return node.type;
+      return messages.math;
     case 'unknown':
       return messages.unsupported;
     default: {
@@ -261,13 +262,101 @@ function BlockFields({
               }
             />
           </label>
+          <FocalPointFields
+            focal={node.focalPoint}
+            onChange={(focalPoint) => patch({ focalPoint })}
+          />
           <AssetInput onPick={replaceImage} />
+        </>
+      );
+    case 'stat':
+      return (
+        <>
+          <label className={styles.field}>
+            {messages.tone}
+            <select
+              aria-label={messages.tone}
+              value={node.tone ?? ''}
+              onChange={(event) => {
+                const tone = event.target.value;
+                if (tone === '') {
+                  patch({ tone: null });
+                  return;
+                }
+                if (
+                  tone !== 'info' &&
+                  tone !== 'success' &&
+                  tone !== 'warning' &&
+                  tone !== 'danger' &&
+                  tone !== 'note'
+                ) {
+                  return;
+                }
+                patch({ tone });
+              }}
+            >
+              <option value="">{messages.defaultColor}</option>
+              <option value="info">{messages.toneInfo}</option>
+              <option value="success">{messages.toneSuccess}</option>
+              <option value="warning">{messages.toneWarning}</option>
+              <option value="danger">{messages.toneDanger}</option>
+              <option value="note">{messages.toneNote}</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            {messages.statValue}
+            <input
+              aria-label={messages.statValue}
+              value={node.value}
+              onChange={(event) => patch({ value: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            {messages.statLabel}
+            <input
+              aria-label={messages.statLabel}
+              value={node.label}
+              onChange={(event) => patch({ label: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            {messages.statDetail}
+            <input
+              aria-label={messages.statDetail}
+              value={node.detail ?? ''}
+              onChange={(event) =>
+                patch({ detail: event.target.value === '' ? null : event.target.value })
+              }
+            />
+          </label>
+        </>
+      );
+    case 'math':
+      return (
+        <>
+          <label className={styles.field}>
+            {messages.mathTex}
+            <textarea
+              aria-label={messages.mathTex}
+              rows={4}
+              value={node.tex}
+              onChange={(event) => patch({ tex: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            {messages.caption}
+            <input
+              aria-label={messages.caption}
+              value={node.caption ?? ''}
+              onChange={(event) =>
+                patch({ caption: event.target.value === '' ? null : event.target.value })
+              }
+            />
+          </label>
         </>
       );
     case 'table':
       return <TableFields node={node} patch={patch} />;
-    case 'stat':
-    case 'math':
     case 'divider':
     case 'unknown':
       return null;

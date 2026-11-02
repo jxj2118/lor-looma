@@ -15,9 +15,12 @@ export interface CatalogItem {
     | 'divider'
     | 'table'
     | 'image'
+    | 'stat'
+    | 'math'
     | 'columns2'
     | 'columns3'
-    | 'grid2';
+    | 'grid2'
+    | 'steps';
   group: 'text' | 'media' | 'layout';
   label: string;
   keywords: string[];
@@ -71,6 +74,17 @@ export function getCatalog(messages: Messages): CatalogItem[] {
       tone: 'info',
       text: '',
     })),
+    item('stat', 'text', messages.stat, ['metric', 'number', 'stat'], false, () => ({
+      type: 'stat',
+      value: '98%',
+      label: 'Completion rate',
+      detail: '+12% this week',
+      tone: 'info',
+    })),
+    item('math', 'text', messages.math, ['latex', 'formula', 'equation'], false, () => ({
+      type: 'math',
+      tex: 'E = mc^2',
+    })),
     item('code', 'text', messages.code, ['pre', 'snippet'], false, () => ({
       type: 'code',
       language: 'text',
@@ -118,6 +132,14 @@ export function getCatalog(messages: Messages): CatalogItem[] {
       type: 'grid',
       columns: 2,
       children: [
+        { type: 'paragraph', text: '' },
+        { type: 'paragraph', text: '' },
+      ],
+    })),
+    item('steps', 'layout', messages.steps, ['steps', 'timeline', 'sequence'], true, () => ({
+      type: 'steps',
+      children: [
+        { type: 'paragraph', text: '' },
         { type: 'paragraph', text: '' },
         { type: 'paragraph', text: '' },
       ],

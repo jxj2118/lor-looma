@@ -28,7 +28,9 @@ function siblingList(doc: LoomaDocument, found: FoundNode): LoomaNode[] | null {
     if (found.slot === null) return null;
     return parent.node.children[found.slot] ?? null;
   }
-  if (parent.node.type === 'stack' || parent.node.type === 'grid') return parent.node.children;
+  if (parent.node.type === 'stack' || parent.node.type === 'grid' || parent.node.type === 'steps') {
+    return parent.node.children;
+  }
   return null;
 }
 
@@ -251,7 +253,10 @@ function NodeContextMenu({
   }
 
   const isContainer =
-    found.node.type === 'stack' || found.node.type === 'columns' || found.node.type === 'grid';
+    found.node.type === 'stack' ||
+    found.node.type === 'columns' ||
+    found.node.type === 'grid' ||
+    found.node.type === 'steps';
 
   return (
     <div className={styles.menu} data-lm-node-menu="" role="menu" style={{ left: x, top: y }}>
@@ -426,7 +431,10 @@ function EmptyContainerDrop({
       </div>
     );
   }
-  if ((node.type === 'stack' || node.type === 'grid') && node.children.length === 0) {
+  if (
+    (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') &&
+    node.children.length === 0
+  ) {
     return (
       <InsideDrop
         draggedId={draggedId}

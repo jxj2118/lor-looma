@@ -18,7 +18,9 @@ function siblingsOf(doc: LoomaDocument, nodeId: string): LoomaNode[] {
   if (parent.node.type === 'columns') {
     return found.slot === null ? [] : (parent.node.children[found.slot] ?? []);
   }
-  if (parent.node.type === 'stack' || parent.node.type === 'grid') return parent.node.children;
+  if (parent.node.type === 'stack' || parent.node.type === 'grid' || parent.node.type === 'steps') {
+    return parent.node.children;
+  }
   return [];
 }
 
@@ -342,7 +344,13 @@ function appendEditableSlots(
         slots.push({ nodeId: node.id, slot: 'text' });
         break;
       case 'code':
+      case 'math':
         slots.push({ nodeId: node.id, slot: 'code' });
+        break;
+      case 'stat':
+        slots.push({ nodeId: node.id, slot: 'stat:value' });
+        slots.push({ nodeId: node.id, slot: 'stat:label' });
+        slots.push({ nodeId: node.id, slot: 'stat:detail' });
         break;
       case 'list':
         appendListSlots(slots, node.id, node.items, []);
@@ -356,6 +364,7 @@ function appendEditableSlots(
         break;
       case 'stack':
       case 'grid':
+      case 'steps':
         appendEditableSlots(slots, node.children);
         break;
       case 'columns':

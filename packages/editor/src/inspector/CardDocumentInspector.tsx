@@ -4,6 +4,7 @@ import { useLoomaDocument } from '@lor-looma/viewer';
 import { useEffect, useRef, useState } from 'react';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { AssetInput } from './AssetInput';
+import { FocalPointFields } from './FocalPointFields';
 import styles from './Inspector.module.css';
 
 type AccentPosition = 'left' | 'right' | 'top' | 'background';
@@ -35,7 +36,11 @@ function CardFields({ card }: { card: LoomaCard }) {
   const backgroundKind = pendingImage ? 'image' : (card.background?.kind ?? 'default');
 
   function update(patch: {
-    accent?: { position: AccentPosition; assetId: string } | null;
+    accent?: {
+      position: AccentPosition;
+      assetId: string;
+      focalPoint?: { x: number; y: number };
+    } | null;
     background?: LoomaCard['background'] | null;
     notes?: string | null;
   }) {
@@ -58,8 +63,15 @@ function CardFields({ card }: { card: LoomaCard }) {
               return;
             }
             if (!isAccentPosition(next)) return;
-            if (card.accent) update({ accent: { position: next, assetId: card.accent.assetId } });
-            else setPendingAccent(next);
+            if (card.accent) {
+              update({
+                accent: {
+                  position: next,
+                  assetId: card.accent.assetId,
+                  ...(card.accent.focalPoint ? { focalPoint: card.accent.focalPoint } : {}),
+                },
+              });
+            } else setPendingAccent(next);
           }}
         >
           <option value="none">{messages.accentNone}</option>
@@ -91,7 +103,13 @@ function CardFields({ card }: { card: LoomaCard }) {
                 {
                   op: 'updateCard',
                   id: card.id,
-                  patch: { accent: { position, assetId: id } },
+                  patch: {
+                    accent: {
+                      position,
+                      assetId: id,
+                      ...(card.accent?.focalPoint ? { focalPoint: card.accent.focalPoint } : {}),
+                    },
+                  },
                 },
               ],
               { origin: 'user', label: 'Card image' },
@@ -101,9 +119,26 @@ function CardFields({ card }: { card: LoomaCard }) {
         />
       ) : null}
       {card.accent ? (
-        <button type="button" onClick={() => update({ accent: null })}>
-          {messages.removeAccent}
-        </button>
+        <>
+          <FocalPointFields
+            focal={card.accent.focalPoint}
+            onChange={(focalPoint) => {
+              if (!card.accent) return;
+              update({
+                accent: focalPoint
+                  ? {
+                      position: card.accent.position,
+                      assetId: card.accent.assetId,
+                      focalPoint,
+                    }
+                  : { position: card.accent.position, assetId: card.accent.assetId },
+              });
+            }}
+          />
+          <button type="button" onClick={() => update({ accent: null })}>
+            {messages.removeAccent}
+          </button>
+        </>
       ) : null}
 
       <p className={styles.kind}>{messages.cardBackground}</p>

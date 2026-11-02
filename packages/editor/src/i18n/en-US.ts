@@ -157,6 +157,21 @@ export const enUS = {
   spacing: 'Spacing',
   resetOverrides: 'Reset overrides',
   columnLabel: 'Column {n}',
+  steps: 'Steps',
+  stepsDirection: 'Direction',
+  directionVertical: 'Vertical',
+  directionHorizontal: 'Horizontal',
+  wrapSteps: 'Wrap in steps',
+  stat: 'Stat metric',
+  statValue: 'Value',
+  statLabel: 'Label',
+  statDetail: 'Detail',
+  math: 'Math formula',
+  mathTex: 'LaTeX formula',
+  focalPoint: 'Focal point',
+  focalX: 'Horizontal X (%)',
+  focalY: 'Vertical Y (%)',
+  resetFocalPoint: 'Center focal point',
 } as const;
 
 export type Messages = Record<keyof typeof enUS, string>;
