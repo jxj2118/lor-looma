@@ -1,7 +1,7 @@
 import type { LoomaAsset, LoomaDocument } from '@lor-looma/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NodeRenderProvider } from '../nodes/context';
 import { Callout } from './Callout';
 import { Code } from './Code';
@@ -236,7 +236,14 @@ describe('blocks', () => {
     expect(quote?.querySelector('cite')?.textContent).toBe('Classroom notes');
   });
 
-  it('renders a divider and a code block without highlighting', () => {
+  it('renders a divider and a plain code block with a copy button', () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const code = '6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2';
     const { container, rerender } = render(<Divider block={{ id: 'b_rule', type: 'divider' }} />);
     expect(container.querySelector('hr')).not.toBeNull();
     rerender(
@@ -245,14 +252,38 @@ describe('blocks', () => {
           id: 'b_code',
           type: 'code',
           language: 'text',
-          code: '6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2',
+          code,
         }}
       />,
     );
     const pre = container.querySelector('pre');
     expect(pre).toHaveAttribute('data-language', 'text');
-    expect(pre?.querySelector('code')?.textContent).toBe('6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2');
-    expect(pre?.querySelector('span')).toBeNull();
+    expect(pre?.querySelector('code')?.textContent).toBe(code);
+    expect(pre?.querySelectorAll('code [data-lm-token="plain"]')).toHaveLength(1);
+    expect(screen.getByText('text')).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Copy code' });
+    expect(button).toHaveTextContent('Copy');
+    fireEvent.click(button);
+    expect(writeText).toHaveBeenCalledWith(code);
+    expect(button).toHaveTextContent('Copied');
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(button).toHaveTextContent('Copy');
+    vi.useRealTimers();
+
+    rerender(
+      <Code
+        block={{
+          id: 'b_ts',
+          type: 'code',
+          language: 'ts',
+          code: 'const n = 1',
+        }}
+      />,
+    );
+    expect(container.querySelector('[data-lm-token="keyword"]')?.textContent).toBe('const');
+    expect(container.querySelector('[data-lm-token="number"]')?.textContent).toBe('1');
   });
 
   it('shows the original type of an unknown block', () => {
