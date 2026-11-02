@@ -1,12 +1,32 @@
 {
   "name": "@lor-looma/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Looma document model, validation, commands and undo/redo. No UI dependencies.",
   "license": "MIT",
+  "author": "lor-looma contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lor-looma/looma.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/lor-looma/looma/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/lor-looma/looma/issues"
+  },
+  "keywords": [
+    "looma",
+    "document",
+    "schema",
+    "presentation",
+    "undo",
+    "editor"
+  ],
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "exports": {
     ".": {

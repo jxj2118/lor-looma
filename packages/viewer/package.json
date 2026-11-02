@@ -1,14 +1,33 @@
 {
   "name": "@lor-looma/viewer",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React component for rendering and presenting Looma documents.",
   "license": "MIT",
+  "author": "lor-looma contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lor-looma/looma.git",
+    "directory": "packages/viewer"
+  },
+  "homepage": "https://github.com/lor-looma/looma/tree/main/packages/viewer#readme",
+  "bugs": {
+    "url": "https://github.com/lor-looma/looma/issues"
+  },
+  "keywords": [
+    "looma",
+    "react",
+    "presentation",
+    "viewer",
+    "slides"
+  ],
   "type": "module",
   "sideEffects": [
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "exports": {
     ".": {

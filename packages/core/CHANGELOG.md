@@ -1,0 +1,11 @@
+# Changelog
+
+## 0.1.0
+
+First public release of `@lor-looma/core`.
+
+- `.looma` v1 document model: cards, three containers, nine blocks, inline text, and four theme presets.
+- `parseDocument` with optional repair, semantic checks, and structured issues.
+- Atomic command batches and a 200-step undo stack with a merge window.
+- `getOutline` and `getCards` for compact and full reads.
+- `@lor-looma/core/ai`: `LOOMA_AI_GUIDE`, `getToolDefinitions` for OpenAI, Anthropic, and JSON Schema, and `createToolHandler`.
