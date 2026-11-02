@@ -78,6 +78,8 @@ export function Show({ doc }) {
 
 Keyboard page turns work after the present view is focused: Arrow keys, Space, Page Up, Page Down, Home, and End. Press `n` or `N`, or the Notes button beside the page number, to open the current card's speaker notes. The notes use the same inline text as the slide. Clicking the notes panel does not turn the page. A card with no notes shows an empty message.
 
+In the viewer and in present mode, clicking an image opens a fullscreen preview. The click does not turn the page. Press Escape, click the backdrop, or use the close button to dismiss it. The editor canvas does not open this preview, so a click there still selects the block.
+
 ## Editor
 
 An uncontrolled editor owns its store. A controlled editor uses a store you created, which is what you want when a viewer, a save function, and an agent share one document.
@@ -153,6 +155,8 @@ The other handle methods are `select(ids)`, `scrollTo(id)`, and `getSelection()`
 ```
 
 `src` must start with `http://`, `https://`, or `data:image/`. The editor stores the asset with `putAsset` and points the block or card accent at the new id.
+
+An image block and a card accent can set `focalPoint` to `{ "x", "y" }` in the 0–100 range. The viewer uses that point as `object-position` (or `background-position` when the accent is a background). The inspector exposes Horizontal X and Vertical Y, and a button that clears the point back to the center.
 
 ### External edits
 

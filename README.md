@@ -2,7 +2,7 @@
 
 Looma is a card-based editor and viewer for presentations and long-form documents. People and external agents edit the same `.looma` document through the same command channel. The library does not call a model, store a prompt, or depend on a particular provider.
 
-A document is a sequence of cards. In `presentation` format each card is one 16:9 slide. In `document` format each card is one flowing page. Inside a card, three layout containers arrange nine kinds of blocks. Inline text uses a small Markdown subset, not HTML.
+A document is a sequence of cards. In `presentation` format each card is one 16:9 slide. In `document` format each card is one flowing page. Inside a card, four layout containers arrange eleven kinds of blocks. Inline text uses a small Markdown subset, not HTML.
 
 ## Design
 
@@ -82,7 +82,7 @@ callTool('looma_apply', {
 
 ## Playground
 
-`apps/playground` loads three sample decks and can switch among the viewer, the editor, four theme presets, and the three locales. The toolbar imports and exports `.looma` JSON. Export calls `editor.flush()` first so a title, speaker notes, or inline edit that is still inside its debounce window is included. The AI Console runs the public tool handler against the live store: apply commands, read the outline, read cards as JSON or Markdown, print the tool schemas, and load a full document.
+`apps/playground` loads three sample decks and can switch among the viewer, the editor, four theme presets, and the three locales. The toolbar imports and exports `.looma` JSON. Export calls `editor.flush()` first so a title, speaker notes, or inline edit that is still inside its debounce window is included. The AI Console runs the public tool handler against the live store: apply commands, read the outline, read cards as JSON or Markdown, print the tool schemas, and load a full document. One preset inserts a steps container, a stat metric, and a math formula.
 
 ```bash
 bun install

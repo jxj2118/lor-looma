@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Render a `steps` container, a `stat` metric, and LaTeX `math` without an extra runtime dependency.
+- Honor `focalPoint` on images and card accents.
+- Open a fullscreen image preview from the viewer and from present mode. The click does not turn the page.
+
 ## 0.2.0
 
 - Highlight code blocks with a built-in tokenizer and add a language badge plus a Copy button.

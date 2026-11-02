@@ -28,7 +28,7 @@ An image asset is `{ "kind": "image", "src", "alt"?, "width"?, "height"? }`. `sr
 | `accent`     | accent     | Decorative image. `{ "position", "assetId" }`.                   |
 | `background` | background | Fill behind the card content.                                    |
 
-`accent.position` is `left`, `right`, `top`, or `background`. `assetId` must name an image in `assets`.
+`accent.position` is `left`, `right`, `top`, or `background`. `assetId` must name an image in `assets`. Optional `focalPoint` is `{ "x", "y" }` with each number from 0 to 100. It is the point that stays in frame when the accent image is cropped. `(0, 0)` is the top-left and `(100, 100)` is the bottom-right. Omit it to keep the center.
 
 `background` is one of:
 
@@ -47,24 +47,27 @@ A card body is depth 0. Containers may sit at depth 0 and depth 1 only, so the t
 | `stack`   | `children` (flat list). Optional `gap`: `none`, `sm`, `md`, `lg`.                                                                                             |
 | `columns` | `widths` (2 to 4 positive numbers) and `children` (one array per column, same length). Optional `gap`. Optional `align`: `start`, `center`, `end`, `stretch`. |
 | `grid`    | `children` (flat list). `columns` is 2, 3, or 4 and defaults to 2. Optional `gap`.                                                                            |
+| `steps`   | `children` (flat list, drawn in order with a numbered badge). Optional `direction`: `vertical` (default) or `horizontal`. Optional `gap`.                     |
 
-`wrapNodes` into `columns` needs 2 to 4 adjacent siblings. Its `widths` are optional and default to equal columns. `insertNode` of a `columns` node must include `widths`.
+`wrapNodes` into `columns` needs 2 to 4 adjacent siblings. Its `widths` are optional and default to equal columns. `insertNode` of a `columns` node must include `widths`. `wrapNodes` can also build a `stack`, `grid`, or `steps` container.
 
 ## Blocks
 
-All blocks have `id` and `type`. Inline fields (`text`, `caption`, `cite`, list items, table cells) use the [inline subset](#inline-text). `code` does not.
+All blocks have `id` and `type`. Inline fields (`text`, `caption`, `cite`, `value`, `label`, `detail`, list items, table cells) use the [inline subset](#inline-text). `code` and a math block's `tex` are plain text, not inline markup.
 
-| Type        | Fields                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------ |
-| `heading`   | `level` 1, 2, or 3. `text`.                                                                                  |
-| `paragraph` | `text`. Optional `align`: `left`, `center`, `right`.                                                         |
-| `list`      | `style`: `bullet` (default), `number`, or `check`. `items`.                                                  |
-| `image`     | `assetId`. Optional `fit` `cover` or `contain`, `caption`, `width` `auto` or `full`.                         |
-| `table`     | `rows`: array of arrays of strings, at least one row, every row the same length. `header` defaults to false. |
-| `callout`   | `tone`: `info` (default), `success`, `warning`, `danger`, `note`. `text`.                                    |
-| `quote`     | `text`. Optional `cite`.                                                                                     |
-| `divider`   | No other fields.                                                                                             |
-| `code`      | `code` is plain text. Optional `language`, at most 32 characters.                                            |
+| Type        | Fields                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `heading`   | `level` 1, 2, or 3. `text`.                                                                                                     |
+| `paragraph` | `text`. Optional `align`: `left`, `center`, `right`.                                                                            |
+| `list`      | `style`: `bullet` (default), `number`, or `check`. `items`.                                                                     |
+| `image`     | `assetId`. Optional `fit` `cover` or `contain`, `caption`, `width` `auto` or `full`, `focalPoint` `{ "x", "y" }` from 0 to 100. |
+| `table`     | `rows`: array of arrays of strings, at least one row, every row the same length. `header` defaults to false.                    |
+| `callout`   | `tone`: `info` (default), `success`, `warning`, `danger`, `note`. `text`.                                                       |
+| `quote`     | `text`. Optional `cite`.                                                                                                        |
+| `divider`   | No other fields.                                                                                                                |
+| `code`      | `code` is plain text. Optional `language`, at most 32 characters.                                                               |
+| `stat`      | `value` and `label` default to `""`. Optional `detail`. Optional `tone`: `info`, `success`, `warning`, `danger`, `note`.        |
+| `math`      | `tex` is a LaTeX formula and defaults to `""`. Optional `caption`.                                                              |
 
 A list item is a string or `{ "text", "checked"?, "children"? }`. `checked` is meaningful for `check` lists. `children` uses the same item shape. Lists nest at most 3 levels.
 
@@ -117,7 +120,7 @@ Node locations, used by `insertNode` and `moveNode`:
 
 - `{ "before": "<nodeId>" }` or `{ "after": "<nodeId>" }` — a sibling. The id must be a node, not a card.
 - `{ "parent": "<cardOrContainerId>" }` — append. Add `"index"` (from 0) to choose the position.
-- `{ "parent": "<columnsId>", "slot": 0, "index": 1 }` — one column. `slot` is required when the parent is `columns`, and forbidden on a card, stack, or grid.
+- `{ "parent": "<columnsId>", "slot": 0, "index": 1 }` — one column. `slot` is required when the parent is `columns`, and forbidden on a card, stack, grid, or steps.
 
 Card locations, used by `insertCard` and `moveCard`:
 

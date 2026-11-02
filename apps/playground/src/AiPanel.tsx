@@ -332,6 +332,50 @@ function buildPresets(document: LoomaDocument): {
       ),
     },
     {
+      id: 'rich',
+      label: (messages) => messages.presetRich,
+      value: JSON.stringify(
+        {
+          commands: [
+            {
+              op: 'insertNode',
+              node: {
+                type: 'math',
+                tex: '\\frac{6CO_2}{6H_2O}',
+                caption: 'Photosynthesis',
+              },
+              at: { parent, index: 0 },
+            },
+            {
+              op: 'insertNode',
+              node: {
+                type: 'stat',
+                value: '98%',
+                label: 'Completion rate',
+                detail: '+12% this week',
+                tone: 'info',
+              },
+              at: { parent, index: 0 },
+            },
+            {
+              op: 'insertNode',
+              node: {
+                type: 'steps',
+                direction: 'vertical',
+                children: [
+                  { type: 'paragraph', text: 'Capture light' },
+                  { type: 'paragraph', text: 'Build sugar' },
+                ],
+              },
+              at: { parent, index: 0 },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    },
+    {
       id: 'theme',
       label: (messages) => messages.presetTheme,
       value: JSON.stringify(

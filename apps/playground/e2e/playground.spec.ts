@@ -166,4 +166,36 @@ test.describe('playground', () => {
     await expect(code.locator('[data-lm-token="plain"]')).toHaveCount(1);
     await expect(code.getByRole('button', { name: 'Copy code' })).toBeVisible();
   });
+
+  test('inserts steps, a stat, and math, then sets an image focal point', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('View').selectOption('editor');
+    await page.getByRole('button', { name: 'AI Console' }).click();
+    await page.getByRole('button', { name: 'Insert steps, a metric, and a formula' }).click();
+    await page.getByRole('button', { name: 'Apply as AI' }).click();
+    await expect(page.getByTestId('ai-result')).toContainText('"ok": true');
+    await page.getByTestId('ai-panel').getByRole('button', { name: 'Close' }).click();
+
+    const canvas = page.locator('[data-lm-editor-canvas]');
+    await expect(canvas.locator('[data-lm-steps="vertical"]')).toBeVisible();
+    await expect(canvas.locator('[data-lm-step="1"]')).toContainText('1');
+    await expect(canvas.locator('[data-lm-step="2"]')).toContainText('Build sugar');
+    await expect(canvas.locator('[data-lm-slot="stat:value"]')).toContainText('98%');
+    await expect(canvas.locator('[data-lm-slot="stat:label"]')).toContainText('Completion rate');
+    await expect(canvas.locator('[data-lm-math="frac"] [data-lm-math="num"]')).toContainText('6CO');
+    await expect(canvas.locator('[data-lm-math="frac"] [data-lm-math="den"]')).toContainText('6H');
+
+    const sidebar = page.getByRole('complementary', { name: 'Cards' });
+    await sidebar.locator('[data-lm-sidebar-card]').nth(1).click();
+    await page.locator('[data-lm-editor-node="b_leaf"]').click({ force: true });
+    const image = page.locator('[data-lm-editor-node="b_leaf"] img');
+    await page.getByLabel('Horizontal X (%)').fill('30');
+    await expect(image).toHaveAttribute('data-focal', '30,50');
+    await page.getByLabel('Vertical Y (%)').fill('70');
+    await expect(image).toHaveAttribute('data-focal', '30,70');
+    await page.getByRole('button', { name: 'Center focal point' }).click();
+    await expect(page.locator('[data-lm-editor-node="b_leaf"] img')).not.toHaveAttribute(
+      'data-focal',
+    );
+  });
 });

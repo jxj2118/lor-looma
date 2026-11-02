@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Add a `steps` container, `stat` and `math` blocks, and an optional `focalPoint` on image blocks and card accents.
+- Document the new nodes in the model guide. Existing v1 documents stay valid.
+
 ## 0.2.0
 
 - Add `splitCard` to move the tail of a card onto a new card without copying node ids.

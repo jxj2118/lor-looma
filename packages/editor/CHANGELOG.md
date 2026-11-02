@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Insert `steps`, `stat`, and `math` from the slash menu, and wrap a selection in steps.
+- Edit a metric's three text slots, a formula's LaTeX source, and image or accent focal points from the inspector.
+
 ## 0.2.0
 
 - Split a card from the block menu or the inspector.
