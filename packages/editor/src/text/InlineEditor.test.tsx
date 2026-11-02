@@ -273,10 +273,17 @@ describe('InlineEditor', () => {
     );
     await user.dblClick(screen.getByText('A'));
     await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
+    expect(screen.getByText('Row 1, Column 1')).toBeInTheDocument();
     fireEvent.keyDown(editable(), { key: 'Tab' });
     await waitFor(() =>
       expect(document.querySelector('[contenteditable="true"]')?.textContent).toContain('B'),
     );
+    expect(screen.getByText('Row 1, Column 2')).toBeInTheDocument();
+    fireEvent.keyDown(editable(), { key: 'Tab', shiftKey: true });
+    await waitFor(() =>
+      expect(document.querySelector('[contenteditable="true"]')?.textContent).toContain('A'),
+    );
+    expect(screen.getByText('Row 1, Column 1')).toBeInTheDocument();
     fireEvent.keyDown(editable(), { key: 'Enter' });
     await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).toBeNull());
   });

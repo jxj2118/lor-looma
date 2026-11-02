@@ -31,6 +31,12 @@ export interface DragState {
   nodeId: string;
 }
 
+export interface ActiveCell {
+  nodeId: string;
+  row: number;
+  col: number;
+}
+
 export interface ViewState {
   selection: EditorSelection;
   hoverId: string | null;
@@ -39,6 +45,7 @@ export interface ViewState {
   notice: { id: number; message: string } | null;
   slash: SlashState | null;
   dragState: DragState | null;
+  activeCell: ActiveCell | null;
 }
 
 export interface ViewStateStore {
@@ -55,6 +62,7 @@ const VIEW_KEYS: (keyof ViewState)[] = [
   'notice',
   'slash',
   'dragState',
+  'activeCell',
 ];
 
 function createInitial(initial?: Partial<ViewState>): ViewState {
@@ -66,6 +74,7 @@ function createInitial(initial?: Partial<ViewState>): ViewState {
     notice: initial?.notice ?? null,
     slash: initial?.slash ?? null,
     dragState: initial?.dragState ?? null,
+    activeCell: initial?.activeCell ?? null,
   };
 }
 

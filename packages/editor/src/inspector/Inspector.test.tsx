@@ -1,6 +1,6 @@
 import { parseDocument } from '@lor-looma/core';
 import type { LoomaDocument } from '@lor-looma/core';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -157,9 +157,10 @@ describe('Inspector blocks', () => {
     );
 
     act(() => ref.current?.select(['b_table']));
+    expect(within(panel()).getByText('Row 1, Column 2')).toBeInTheDocument();
     await user.click(within(panel()).getByRole('checkbox', { name: 'Header row' }));
-    await user.click(within(panel()).getByRole('button', { name: 'Add row' }));
-    await user.click(within(panel()).getByRole('button', { name: 'Add column' }));
+    await user.click(within(panel()).getByRole('button', { name: 'Insert row below' }));
+    await user.click(within(panel()).getByRole('button', { name: 'Insert column right' }));
     expect(body(ref)[1]).toMatchObject({
       header: true,
       rows: [
@@ -167,16 +168,63 @@ describe('Inspector blocks', () => {
         ['', '', ''],
       ],
     });
-    await user.click(within(panel()).getByRole('button', { name: 'Remove row' }));
-    await user.click(within(panel()).getByRole('button', { name: 'Remove column' }));
-    await user.click(within(panel()).getByRole('button', { name: 'Remove column' }));
-    expect(within(panel()).getByRole('button', { name: 'Remove row' })).toBeDisabled();
-    expect(within(panel()).getByRole('button', { name: 'Remove column' })).toBeDisabled();
+    expect(within(panel()).getByText('Row 2, Column 3')).toBeInTheDocument();
+    await user.click(within(panel()).getByRole('button', { name: 'Delete row' }));
+    await user.click(within(panel()).getByRole('button', { name: 'Delete column' }));
+    await user.click(within(panel()).getByRole('button', { name: 'Delete column' }));
+    expect(within(panel()).getByRole('button', { name: 'Delete row' })).toBeDisabled();
+    expect(within(panel()).getByRole('button', { name: 'Delete column' })).toBeDisabled();
     expect(body(ref)[1]).toMatchObject({ rows: [['A']] });
 
     act(() => ref.current?.select(['b_div']));
     expect(within(panel()).getByText('Divider')).toBeInTheDocument();
     expect(within(panel()).queryByRole('combobox')).toBeNull();
+  });
+
+  it('inserts a row above and a column left of the clicked cell', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={documentWith([
+          {
+            id: 'c_1',
+            body: [
+              {
+                id: 'b_table',
+                type: 'table',
+                header: false,
+                rows: [
+                  ['A', 'B'],
+                  ['C', 'D'],
+                ],
+              },
+            ],
+          },
+        ])}
+      />,
+    );
+    act(() => ref.current?.select(['b_table']));
+    await user.click(screen.getByText('C'));
+    expect(within(panel()).getByText('Row 2, Column 1')).toBeInTheDocument();
+    await user.click(within(panel()).getByRole('button', { name: 'Insert row above' }));
+    await user.click(within(panel()).getByRole('button', { name: 'Insert column left' }));
+    expect(body(ref)[0]).toMatchObject({
+      rows: [
+        ['', 'A', 'B'],
+        ['', '', ''],
+        ['', 'C', 'D'],
+      ],
+    });
+    await user.click(within(panel()).getByRole('button', { name: 'Delete row' }));
+    expect(within(panel()).getByText('Row 2, Column 1')).toBeInTheDocument();
+    expect(body(ref)[0]).toMatchObject({
+      rows: [
+        ['', 'A', 'B'],
+        ['', 'C', 'D'],
+      ],
+    });
   });
 
   it('moves, duplicates, deletes, and jumps to the parent container', async () => {

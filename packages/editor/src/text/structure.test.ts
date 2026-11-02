@@ -2,8 +2,12 @@ import { createLoomaStore, findNode, parseDocument } from '@lor-looma/core';
 import type { LoomaDocument } from '@lor-looma/core';
 import { describe, expect, it } from 'vitest';
 import {
+  deleteTableColumn,
+  deleteTableRow,
   exitList,
   indentListItem,
+  insertTableColumn,
+  insertTableRow,
   moveCell,
   outdentListItem,
   removeEmptyBlock,
@@ -103,6 +107,41 @@ describe('structure commands', () => {
     expect(next.cards[0]?.body.map((node) => node.id)).toEqual(['b_h']);
     expect(result?.next).toEqual({ nodeId: 'b_h', slot: 'text', caret: 'end' });
     expect(removeEmptyBlock(doc, 'b_h')).toBeNull();
+  });
+
+  it('inserts and deletes a table row or column around a cell', () => {
+    const rows = [
+      ['A', 'B'],
+      ['C', 'D'],
+    ] as const;
+    expect(insertTableRow(rows, 1, 'above')).toEqual([
+      ['A', 'B'],
+      ['', ''],
+      ['C', 'D'],
+    ]);
+    expect(insertTableRow(rows, 0, 'below')).toEqual([
+      ['A', 'B'],
+      ['', ''],
+      ['C', 'D'],
+    ]);
+    expect(insertTableColumn(rows, 0, 'left')).toEqual([
+      ['', 'A', 'B'],
+      ['', 'C', 'D'],
+    ]);
+    expect(insertTableColumn(rows, 1, 'right')).toEqual([
+      ['A', 'B', ''],
+      ['C', 'D', ''],
+    ]);
+    expect(deleteTableRow(rows, 0)).toEqual([['C', 'D']]);
+    expect(deleteTableRow([['A']], 0)).toBeNull();
+    expect(deleteTableRow(rows, 4)).toBeNull();
+    expect(deleteTableColumn(rows, 1)).toEqual([['A'], ['C']]);
+    expect(deleteTableColumn([['A']], 0)).toBeNull();
+    expect(deleteTableColumn(rows, -1)).toBeNull();
+    expect(rows).toEqual([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
   });
 
   it('does not move past the last table cell', () => {

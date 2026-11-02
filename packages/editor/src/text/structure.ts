@@ -281,6 +281,53 @@ export function toggleChecked(items: readonly ListItem[], path: number[]): ListI
   return writeChildList(items, path.slice(0, -1), located.list);
 }
 
+export function insertTableRow(
+  rows: readonly (readonly string[])[],
+  atRow: number,
+  where: 'above' | 'below',
+): string[][] {
+  const width = Math.max(1, ...rows.map((row) => row.length));
+  const blank = Array.from({ length: width }, () => '');
+  const next = rows.map((row) => [...row]);
+  const index = where === 'above' ? atRow : atRow + 1;
+  next.splice(Math.max(0, Math.min(index, next.length)), 0, blank);
+  return next;
+}
+
+export function deleteTableRow(
+  rows: readonly (readonly string[])[],
+  targetRow: number,
+): string[][] | null {
+  if (rows.length <= 1) return null;
+  if (targetRow < 0 || targetRow >= rows.length) return null;
+  return rows.filter((_, index) => index !== targetRow).map((row) => [...row]);
+}
+
+export function insertTableColumn(
+  rows: readonly (readonly string[])[],
+  atCol: number,
+  where: 'left' | 'right',
+): string[][] {
+  const width = Math.max(0, ...rows.map((row) => row.length));
+  const index = where === 'left' ? atCol : atCol + 1;
+  const clamped = Math.max(0, Math.min(index, width));
+  return rows.map((row) => {
+    const next = [...row];
+    next.splice(clamped, 0, '');
+    return next;
+  });
+}
+
+export function deleteTableColumn(
+  rows: readonly (readonly string[])[],
+  targetCol: number,
+): string[][] | null {
+  const width = Math.max(0, ...rows.map((row) => row.length));
+  if (width <= 1) return null;
+  if (targetCol < 0 || targetCol >= width) return null;
+  return rows.map((row) => row.filter((_, index) => index !== targetCol));
+}
+
 export function moveCell(
   doc: LoomaDocument,
   nodeId: string,

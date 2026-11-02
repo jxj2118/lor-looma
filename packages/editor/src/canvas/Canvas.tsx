@@ -29,6 +29,21 @@ import { EditableNode } from './EditableNode';
 import { EditableSlot } from './EditableSlot';
 import styles from './Canvas.module.css';
 
+function cellFromTarget(
+  nodeId: string,
+  target: Element,
+): { nodeId: string; row: number; col: number } | null {
+  // Cell slots use display:contents, so a click on an empty cell lands on the td/th.
+  const slot =
+    target.closest('[data-lm-slot^="cell:"]') ??
+    target.closest('td, th')?.querySelector('[data-lm-slot^="cell:"]');
+  const raw = slot?.getAttribute('data-lm-slot');
+  if (!raw) return null;
+  const parsed = parseSlotKey(raw);
+  if (parsed?.kind !== 'cell') return null;
+  return { nodeId, row: parsed.row, col: parsed.col };
+}
+
 const nodeCollision: CollisionDetection = (args) => {
   const hits = pointerWithin(args);
   if (hits.length === 0) return [];
@@ -106,8 +121,10 @@ export function Canvas() {
     }
     const nodeId = target.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
     if (nodeId) {
+      const activeCell = cellFromTarget(nodeId, target);
       viewState.set({
         selection: selectNode(doc, viewState.get().selection, nodeId, event.shiftKey),
+        ...(activeCell ? { activeCell } : {}),
       });
       return;
     }
@@ -197,9 +214,11 @@ export function Canvas() {
       return;
     }
     finishEditing();
+    const activeCell = cellFromTarget(nodeId, target);
     viewState.set({
       selection: { cardId: found.cardId, nodeIds: [nodeId] },
       editing: { nodeId, slot, caret: 'end' },
+      ...(activeCell ? { activeCell } : {}),
     });
   };
 

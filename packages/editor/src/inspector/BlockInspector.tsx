@@ -2,7 +2,14 @@ import { createId } from '@lor-looma/core';
 import type { LoomaBlock } from '@lor-looma/core';
 import { useLoomaDocument } from '@lor-looma/viewer';
 import type { Messages } from '../i18n/en-US';
-import { useEditorContext } from '../state/viewState';
+import { formatMessage } from '../i18n/useMessages';
+import { useEditorContext, useViewState } from '../state/viewState';
+import {
+  deleteTableColumn,
+  deleteTableRow,
+  insertTableColumn,
+  insertTableRow,
+} from '../text/structure';
 import { AssetInput } from './AssetInput';
 import type { PickedAsset } from './AssetInput';
 import { NodeActions } from './NodeActions';
@@ -272,8 +279,22 @@ function TableFields({
   node: Extract<LoomaBlock, { type: 'table' }>;
   patch: (next: Record<string, unknown>) => void;
 }) {
-  const { messages } = useEditorContext();
+  const { messages, viewState } = useEditorContext();
+  const activeCell = useViewState((state) => state.activeCell);
   const columns = node.rows[0]?.length ?? 1;
+  const rowCount = node.rows.length;
+  const stored = activeCell?.nodeId === node.id ? activeCell : null;
+  const row = stored
+    ? Math.min(Math.max(stored.row, 0), Math.max(rowCount - 1, 0))
+    : Math.max(rowCount - 1, 0);
+  const col = stored
+    ? Math.min(Math.max(stored.col, 0), Math.max(columns - 1, 0))
+    : Math.max(columns - 1, 0);
+
+  function remember(nextRow: number, nextCol: number) {
+    viewState.set({ activeCell: { nodeId: node.id, row: nextRow, col: nextCol } });
+  }
+
   return (
     <>
       <label className={styles.check}>
@@ -284,29 +305,57 @@ function TableFields({
         />
         {messages.tableHeader}
       </label>
+      <p className={styles.kind}>
+        {formatMessage(messages.tableActiveCell, { row: row + 1, col: col + 1 })}
+      </p>
       <div className={styles.row}>
         <button
           type="button"
-          onClick={() => patch({ rows: [...node.rows, Array.from({ length: columns }, () => '')] })}
+          onClick={() => patch({ rows: insertTableRow(node.rows, row, 'above') })}
         >
-          {messages.addRow}
+          {messages.insertRowAbove}
+        </button>
+        <button
+          type="button"
+          onClick={() => patch({ rows: insertTableRow(node.rows, row, 'below') })}
+        >
+          {messages.insertRowBelow}
         </button>
         <button
           type="button"
           disabled={node.rows.length <= 1}
-          onClick={() => patch({ rows: node.rows.slice(0, -1) })}
+          onClick={() => {
+            const next = deleteTableRow(node.rows, row);
+            if (!next) return;
+            patch({ rows: next });
+            remember(Math.min(row, next.length - 1), col);
+          }}
         >
-          {messages.removeRow}
+          {messages.deleteRow}
         </button>
-        <button type="button" onClick={() => patch({ rows: node.rows.map((row) => [...row, '']) })}>
-          {messages.addColumn}
+        <button
+          type="button"
+          onClick={() => patch({ rows: insertTableColumn(node.rows, col, 'left') })}
+        >
+          {messages.insertColumnLeft}
+        </button>
+        <button
+          type="button"
+          onClick={() => patch({ rows: insertTableColumn(node.rows, col, 'right') })}
+        >
+          {messages.insertColumnRight}
         </button>
         <button
           type="button"
           disabled={columns <= 1}
-          onClick={() => patch({ rows: node.rows.map((row) => row.slice(0, -1)) })}
+          onClick={() => {
+            const next = deleteTableColumn(node.rows, col);
+            if (!next) return;
+            patch({ rows: next });
+            remember(row, Math.min(col, (next[0]?.length ?? 1) - 1));
+          }}
         >
-          {messages.removeColumn}
+          {messages.deleteTableColumn}
         </button>
       </div>
     </>

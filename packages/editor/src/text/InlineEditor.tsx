@@ -237,9 +237,19 @@ export function InlineEditor({
       }
       const cardId = findNode(store.getDocument(), result.next?.nodeId ?? nodeId)?.cardId ?? null;
       if (result.next && cardId) {
+        const nextSlot = parseSlotKey(result.next.slot);
         viewState.set({
           editing: result.next,
           selection: { cardId, nodeIds: [result.next.nodeId] },
+          ...(nextSlot?.kind === 'cell'
+            ? {
+                activeCell: {
+                  nodeId: result.next.nodeId,
+                  row: nextSlot.row,
+                  col: nextSlot.col,
+                },
+              }
+            : {}),
         });
         return;
       }
