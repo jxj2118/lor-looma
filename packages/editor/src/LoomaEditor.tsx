@@ -17,7 +17,8 @@ import { armFlash, clearFlash } from './canvas/flash';
 import { Notice } from './chrome/Notice';
 import { PlayOverlay } from './chrome/PlayOverlay';
 import { Topbar } from './chrome/Topbar';
-import { useMessages } from './i18n/useMessages';
+import type { LoomaLocale } from './i18n/locale';
+import { messagesFor } from './i18n/useMessages';
 import {
   normalizeSelectIds,
   pruneSelection,
@@ -44,6 +45,7 @@ export interface LoomaEditorProps {
   readOnly?: boolean;
   highlightExternalChanges?: boolean;
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
+  locale?: LoomaLocale;
   className?: string;
   style?: CSSProperties;
 }
@@ -66,6 +68,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     readOnly = false,
     highlightExternalChanges = true,
     resolveAsset,
+    locale = 'en-US',
     className,
     style,
   },
@@ -76,7 +79,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
   if (!store) throw new Error('LoomaEditor needs either a document or a store');
 
   const [viewState] = useState(() => createViewState());
-  const messages = useMessages();
+  const messages = messagesFor(locale);
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
   const [layerElement, setLayerElement] = useState<HTMLDivElement | null>(null);
@@ -213,6 +216,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         viewState,
         store,
         messages,
+        locale,
         readOnly,
         uploadAsset,
         rootRef,

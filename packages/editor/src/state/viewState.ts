@@ -3,6 +3,7 @@ import type { SlotKey } from '@lor-looma/viewer';
 import { createContext, useContext, useSyncExternalStore } from 'react';
 import type { RefObject } from 'react';
 import type { Messages } from '../i18n/en-US';
+import type { LoomaLocale } from '../i18n/locale';
 
 export interface EditorSelection {
   cardId: string | null;
@@ -86,6 +87,7 @@ export interface EditorContextValue {
   viewState: ViewStateStore;
   store?: LoomaStore;
   messages?: Messages;
+  locale?: LoomaLocale;
   readOnly?: boolean;
   uploadAsset?: (file: File) => Promise<{
     src: string;
