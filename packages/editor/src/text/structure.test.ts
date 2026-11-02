@@ -2,6 +2,7 @@ import { createLoomaStore, findNode, parseDocument } from '@lor-looma/core';
 import type { LoomaDocument } from '@lor-looma/core';
 import { describe, expect, it } from 'vitest';
 import {
+  adjacentTextSlot,
   deleteTableColumn,
   deleteTableRow,
   exitList,
@@ -142,6 +143,73 @@ describe('structure commands', () => {
       ['A', 'B'],
       ['C', 'D'],
     ]);
+  });
+
+  it('walks editable slots in one card and stops at the ends', () => {
+    const doc = document([
+      { id: 'b_h', type: 'heading', level: 2, text: 'Title' },
+      {
+        id: 'b_list',
+        type: 'list',
+        style: 'bullet',
+        items: [{ text: 'Parent', children: ['Child'] }, 'Next'],
+      },
+      {
+        id: 'n_cols',
+        type: 'columns',
+        widths: [1, 1],
+        children: [
+          [{ id: 'b_left', type: 'paragraph', text: 'Left' }],
+          [
+            {
+              id: 'b_table',
+              type: 'table',
+              header: false,
+              rows: [
+                ['A', 'B'],
+                ['C', 'D'],
+              ],
+            },
+          ],
+        ],
+      },
+      { id: 'b_code', type: 'code', code: 'print(1)', language: 'py' },
+    ]);
+    expect(adjacentTextSlot(doc, 'b_h', 'text', 'prev')).toBeNull();
+    expect(adjacentTextSlot(doc, 'b_h', 'text', 'next')).toEqual({
+      nodeId: 'b_list',
+      slot: 'item:0',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_list', 'item:0', 'next')).toEqual({
+      nodeId: 'b_list',
+      slot: 'item:0.0',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_list', 'item:0.0', 'next')).toEqual({
+      nodeId: 'b_list',
+      slot: 'item:1',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_list', 'item:1', 'next')).toEqual({
+      nodeId: 'b_left',
+      slot: 'text',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_table', 'cell:0:1', 'next')).toEqual({
+      nodeId: 'b_table',
+      slot: 'cell:1:0',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_table', 'cell:1:1', 'next')).toEqual({
+      nodeId: 'b_code',
+      slot: 'code',
+      caret: 'start',
+    });
+    expect(adjacentTextSlot(doc, 'b_code', 'code', 'prev')?.caret).toBe('end');
+    expect(adjacentTextSlot(doc, 'b_code', 'code', 'next')).toBeNull();
+    expect(adjacentTextSlot(doc, 'missing', 'text', 'next')).toBeNull();
+    expect(adjacentTextSlot(doc, 'b_h', 'code', 'next')).toBeNull();
   });
 
   it('does not move past the last table cell', () => {

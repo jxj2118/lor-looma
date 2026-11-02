@@ -113,6 +113,7 @@ export const zhTW: Record<keyof Messages, string> = {
   gapMedium: '中',
   gapLarge: '大',
   columnWidths: '欄寬比例',
+  resizeColumns: '調整欄寬',
   columnAlign: '欄對齊',
   alignStart: '起始',
   alignEnd: '結尾',

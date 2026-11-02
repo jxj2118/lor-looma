@@ -1,6 +1,7 @@
 import { createId, findCard, findNode, MAX_LIST_DEPTH } from '@lor-looma/core';
 import type { ListItem, LoomaCommand, LoomaDocument, LoomaNode } from '@lor-looma/core';
 import type { SlotKey } from '@lor-looma/viewer';
+import type { EditingState } from '../state/viewState';
 import { defaultSlot, isTextNodeType } from './slots';
 
 export interface StructureResult {
@@ -326,6 +327,83 @@ export function deleteTableColumn(
   if (width <= 1) return null;
   if (targetCol < 0 || targetCol >= width) return null;
   return rows.map((row) => row.filter((_, index) => index !== targetCol));
+}
+
+function appendEditableSlots(
+  slots: { nodeId: string; slot: SlotKey }[],
+  nodes: readonly LoomaNode[],
+): void {
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'heading':
+      case 'paragraph':
+      case 'callout':
+      case 'quote':
+        slots.push({ nodeId: node.id, slot: 'text' });
+        break;
+      case 'code':
+        slots.push({ nodeId: node.id, slot: 'code' });
+        break;
+      case 'list':
+        appendListSlots(slots, node.id, node.items, []);
+        break;
+      case 'table':
+        node.rows.forEach((row, rowIndex) => {
+          row.forEach((_, colIndex) => {
+            slots.push({ nodeId: node.id, slot: `cell:${rowIndex}:${colIndex}` });
+          });
+        });
+        break;
+      case 'stack':
+      case 'grid':
+        appendEditableSlots(slots, node.children);
+        break;
+      case 'columns':
+        for (const column of node.children) appendEditableSlots(slots, column);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+function appendListSlots(
+  slots: { nodeId: string; slot: SlotKey }[],
+  nodeId: string,
+  items: readonly ListItem[],
+  path: number[],
+): void {
+  items.forEach((item, index) => {
+    const next = [...path, index];
+    slots.push({ nodeId, slot: `item:${next.join('.')}` });
+    if (typeof item !== 'string' && item.children) {
+      appendListSlots(slots, nodeId, item.children, next);
+    }
+  });
+}
+
+/** Previous or next editable slot in the same card, in depth-first order. */
+export function adjacentTextSlot(
+  doc: LoomaDocument,
+  nodeId: string,
+  slot: SlotKey,
+  direction: 'prev' | 'next',
+): EditingState | null {
+  const found = findNode(doc, nodeId);
+  if (!found) return null;
+  const card = findCard(doc, found.cardId);
+  if (!card) return null;
+  const slots: { nodeId: string; slot: SlotKey }[] = [];
+  appendEditableSlots(slots, card.card.body);
+  const index = slots.findIndex((entry) => entry.nodeId === nodeId && entry.slot === slot);
+  if (index < 0) return null;
+  const neighbor = slots[direction === 'next' ? index + 1 : index - 1];
+  if (!neighbor) return null;
+  return {
+    nodeId: neighbor.nodeId,
+    slot: neighbor.slot,
+    caret: direction === 'next' ? 'start' : 'end',
+  };
 }
 
 export function moveCell(

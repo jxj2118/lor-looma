@@ -10,6 +10,7 @@ import { docToMarkdown, markdownToDoc } from './markdown';
 import { createExtensions } from './extensions';
 import { commitSlot, readSlot } from './slots';
 import {
+  adjacentTextSlot,
   exitList,
   indentListItem,
   moveCell,
@@ -321,6 +322,44 @@ export function InlineEditor({
       const parsed = parseSlotKey(slot);
       const atStart =
         editor.state.selection.empty && editor.state.selection.$from.parentOffset === 0;
+      const plainArrow =
+        !viewState.get().slash &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        (event.key === 'ArrowUp' || event.key === 'ArrowDown');
+      if (plainArrow) {
+        const selection = editor.state.selection;
+        const leaving =
+          (event.key === 'ArrowUp' && selection.empty && selection.from <= 1) ||
+          (event.key === 'ArrowDown' &&
+            selection.empty &&
+            selection.to >= editor.state.doc.content.size - 1);
+        if (leaving) {
+          const next = adjacentTextSlot(
+            doc,
+            nodeId,
+            slot,
+            event.key === 'ArrowUp' ? 'prev' : 'next',
+          );
+          if (next) {
+            event.preventDefault();
+            const cardId = findNode(doc, next.nodeId)?.cardId ?? null;
+            if (cardId) {
+              const nextSlot = parseSlotKey(next.slot);
+              viewState.set({
+                editing: next,
+                selection: { cardId, nodeIds: [next.nodeId] },
+                ...(nextSlot?.kind === 'cell'
+                  ? { activeCell: { nodeId: next.nodeId, row: nextSlot.row, col: nextSlot.col } }
+                  : {}),
+              });
+            }
+            return true;
+          }
+        }
+      }
       if (event.key === 'Tab') {
         event.preventDefault();
         if (live.type === 'list' && parsed?.kind === 'item') {

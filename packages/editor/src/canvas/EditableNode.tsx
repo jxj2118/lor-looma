@@ -1,7 +1,7 @@
 import { findCard, findNode } from '@lor-looma/core';
 import type { FoundNode, LoomaDocument, LoomaNode } from '@lor-looma/core';
-import { useEffect, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { selectCard, selectionAfterDelete } from '../state/selection';
 import { topLevelSplitTarget } from '../state/splitTarget';
@@ -148,6 +148,11 @@ export function EditableNode({
           +
         </button>
       ) : null}
+      {!readOnly && node.type === 'columns'
+        ? node.widths
+            .slice(0, -1)
+            .map((_, index) => <ColumnResizeHandle key={index} node={node} index={index} />)
+        : null}
       {activeMenu && layerElement
         ? createPortal(
             <NodeContextMenu
@@ -285,6 +290,83 @@ function NodeContextMenu({
         {messages.delete}
       </button>
     </div>
+  );
+}
+
+function ColumnResizeHandle({
+  node,
+  index,
+}: {
+  node: Extract<LoomaNode, { type: 'columns' }>;
+  index: number;
+}) {
+  const { store, messages } = useEditorContext();
+  const stopRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopRef.current?.(), []);
+  const total = node.widths.reduce((sum, width) => sum + width, 0) || 1;
+  const before = node.widths.slice(0, index + 1).reduce((sum, width) => sum + width, 0);
+
+  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    const grid = event.currentTarget
+      .closest('[data-lm-editor-node]')
+      ?.querySelector('[data-lm-columns]');
+    if (!(grid instanceof HTMLElement)) return;
+    stopRef.current?.();
+    const bounds = grid.getBoundingClientRect();
+    const startX = event.clientX;
+    const widths = node.widths.map((width) => width);
+    const leftStart = widths[index] ?? 1;
+    const rightStart = widths[index + 1] ?? 1;
+    const sum = leftStart + rightStart;
+    const weightTotal = widths.reduce((acc, width) => acc + width, 0) || 1;
+    const widthPx = bounds.width > 0 ? bounds.width : 1;
+
+    const move = (moveEvent: PointerEvent) => {
+      let left = leftStart + ((moveEvent.clientX - startX) / widthPx) * weightTotal;
+      const min = 0.2;
+      if (sum >= min * 2) {
+        if (left < min) left = min;
+        if (sum - left < min) left = sum - min;
+      }
+      left = Math.round(left * 100) / 100;
+      let right = Math.round((sum - left) * 100) / 100;
+      if (right < min && sum >= min * 2) {
+        right = min;
+        left = Math.round((sum - right) * 100) / 100;
+      }
+      const next = widths.slice();
+      next[index] = left;
+      next[index + 1] = right;
+      store.apply([{ op: 'updateNode', id: node.id, patch: { widths: next } }], {
+        origin: 'user',
+        label: 'Resize columns',
+        mergeKey: `col-width:${node.id}`,
+      });
+    };
+    const stop = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      stopRef.current = null;
+    };
+    stopRef.current = stop;
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  }
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={messages.resizeColumns}
+      data-lm-column-resizer={index}
+      className={styles.columnResizer}
+      style={{ left: `${(before / total) * 100}%` }}
+      onPointerDown={onPointerDown}
+    />
   );
 }
 

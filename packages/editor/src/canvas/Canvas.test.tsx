@@ -102,6 +102,72 @@ describe('Canvas', () => {
     expect(document.querySelector('[data-lm-node-menu]')).toBeNull();
   });
 
+  it('resizes adjacent columns from the handle and merges the drag into one undo', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument({
+          cards: [
+            {
+              id: 'c_1',
+              body: [
+                {
+                  id: 'n_cols',
+                  type: 'columns',
+                  widths: [1, 1, 1],
+                  children: [
+                    [{ id: 'b_a', type: 'paragraph', text: 'A' }],
+                    [{ id: 'b_b', type: 'paragraph', text: 'B' }],
+                    [{ id: 'b_c', type: 'paragraph', text: 'C' }],
+                  ],
+                },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+    const handles = document.querySelectorAll('[data-lm-column-resizer]');
+    expect(handles).toHaveLength(2);
+    const handle = handles[0];
+    if (!(handle instanceof HTMLElement)) throw new Error('missing resizer');
+    expect(handle).toHaveAttribute('role', 'separator');
+    expect(handle).toHaveAttribute('aria-label', 'Resize columns');
+    const grid = document.querySelector('[data-lm-columns]');
+    if (!(grid instanceof HTMLElement)) throw new Error('missing columns');
+    vi.spyOn(grid, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+      toJSON() {
+        return {};
+      },
+    });
+    fireEvent.pointerDown(handle, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 140, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 190, pointerId: 1 });
+    fireEvent.pointerUp(window, { clientX: 190, pointerId: 1 });
+    const resized = ref.current?.store.getDocument().cards[0]?.body[0];
+    expect(resized).toMatchObject({ type: 'columns' });
+    if (resized?.type !== 'columns') return;
+    expect(resized.widths[0]).toBeGreaterThan(1);
+    expect(resized.widths[1]).toBeLessThan(1);
+    expect(resized.widths[2]).toBe(1);
+    expect((resized.widths[0] ?? 0) + (resized.widths[1] ?? 0)).toBeCloseTo(2, 2);
+    expect(resized.widths.every((width) => width >= 0.2)).toBe(true);
+    expect(ref.current?.store.undo()).toBe(true);
+    expect(ref.current?.store.getDocument().cards[0]?.body[0]).toMatchObject({
+      widths: [1, 1, 1],
+    });
+    expect(ref.current?.store.undo()).toBe(false);
+  });
+
   it('auto-enters inline editing and preserves the selected range when dragging across static text', () => {
     const ref = createRef<LoomaEditorHandle>();
     render(<LoomaEditor ref={ref} document={editorDocument()} />);

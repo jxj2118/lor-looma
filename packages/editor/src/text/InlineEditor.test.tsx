@@ -245,6 +245,35 @@ describe('InlineEditor', () => {
     });
   });
 
+  it('moves between a paragraph and the following list item with arrow keys', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument({
+          cards: [
+            {
+              id: 'c_1',
+              body: [
+                { id: 'b_p', type: 'paragraph', text: 'Intro' },
+                { id: 'b_list', type: 'list', style: 'bullet', items: ['One', 'Two'] },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+    await user.dblClick(screen.getByText('Intro'));
+    await waitFor(() => expect(document.querySelector('[contenteditable="true"]')).not.toBeNull());
+    fireEvent.keyDown(editable(), { key: 'ArrowDown' });
+    await waitFor(() => expect(editable().textContent).toContain('One'));
+    expect(ref.current?.getSelection().nodeIds).toEqual(['b_list']);
+    fireEvent.keyDown(editable(), { key: 'ArrowUp' });
+    await waitFor(() => expect(editable().textContent).toContain('Intro'));
+    expect(ref.current?.getSelection().nodeIds).toEqual(['b_p']);
+  });
+
   it('moves to the next table cell on Tab and exits the cell on Enter', async () => {
     const user = userEvent.setup();
     const ref = createRef<LoomaEditorHandle>();

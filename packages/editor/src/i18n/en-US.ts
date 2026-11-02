@@ -111,6 +111,7 @@ export const enUS = {
   gapMedium: 'Medium',
   gapLarge: 'Large',
   columnWidths: 'Column widths',
+  resizeColumns: 'Resize columns',
   columnAlign: 'Column alignment',
   alignStart: 'Start',
   alignEnd: 'End',

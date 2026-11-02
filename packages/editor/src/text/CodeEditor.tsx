@@ -1,7 +1,10 @@
+import { findNode } from '@lor-looma/core';
 import type { SlotKey } from '@lor-looma/viewer';
+import { parseSlotKey } from '@lor-looma/viewer';
 import { useEffect, useRef, useState } from 'react';
 import { useEditorContext } from '../state/viewState';
 import { commitSlot } from './slots';
+import { adjacentTextSlot } from './structure';
 import styles from './InlineEditor.module.css';
 
 export function CodeEditor({
@@ -84,6 +87,46 @@ export function CodeEditor({
           exit();
           rootRef.current?.focus({ preventScroll: true });
           return;
+        }
+        if (
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          !event.shiftKey &&
+          (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+        ) {
+          const area = event.currentTarget;
+          const atStart =
+            event.key === 'ArrowUp' && area.selectionStart === 0 && area.selectionEnd === 0;
+          const atEnd =
+            event.key === 'ArrowDown' &&
+            area.selectionStart === value.length &&
+            area.selectionEnd === value.length;
+          if (atStart || atEnd) {
+            const next = adjacentTextSlot(
+              store.getDocument(),
+              nodeId,
+              slot,
+              event.key === 'ArrowUp' ? 'prev' : 'next',
+            );
+            if (next) {
+              event.preventDefault();
+              const cardId = findNode(store.getDocument(), next.nodeId)?.cardId ?? null;
+              if (cardId) {
+                const nextSlot = parseSlotKey(next.slot);
+                viewState.set({
+                  editing: next,
+                  selection: { cardId, nodeIds: [next.nodeId] },
+                  ...(nextSlot?.kind === 'cell'
+                    ? {
+                        activeCell: { nodeId: next.nodeId, row: nextSlot.row, col: nextSlot.col },
+                      }
+                    : {}),
+                });
+              }
+              return;
+            }
+          }
         }
         if (event.key !== 'Tab') return;
         event.preventDefault();

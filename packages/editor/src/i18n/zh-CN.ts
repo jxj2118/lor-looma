@@ -113,6 +113,7 @@ export const zhCN: Record<keyof Messages, string> = {
   gapMedium: '中',
   gapLarge: '大',
   columnWidths: '栏宽比例',
+  resizeColumns: '调整栏宽',
   columnAlign: '栏对齐',
   alignStart: '起始',
   alignEnd: '末尾',
