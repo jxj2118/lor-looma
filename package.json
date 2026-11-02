@@ -21,7 +21,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "publish:packages": "bun run build && (cd packages/core && bun publish --access public) && (cd packages/viewer && bun publish --access public) && (cd packages/editor && bun publish --access public)"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
