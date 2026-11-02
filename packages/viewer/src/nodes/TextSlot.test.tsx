@@ -28,12 +28,15 @@ describe('slot keys', () => {
     ['item:2.0.1', { kind: 'item' as const, path: [2, 0, 1] }],
     ['cell:0:3', { kind: 'cell' as const, row: 0, col: 3 }],
     ['code', { kind: 'code' as const }],
+    ['stat:value', { kind: 'stat' as const, field: 'value' as const }],
+    ['stat:label', { kind: 'stat' as const, field: 'label' as const }],
+    ['stat:detail', { kind: 'stat' as const, field: 'detail' as const }],
   ])('round-trips %s', (key, parsed) => {
     expect(slotKey(parsed)).toBe(key);
     expect(parseSlotKey(key)).toEqual(parsed);
   });
 
-  it.each(['item:', 'item:a', 'cell:1', 'x'])('rejects %s', (key) => {
+  it.each(['item:', 'item:a', 'cell:1', 'x', 'stat:', 'stat:foo'])('rejects %s', (key) => {
     expect(parseSlotKey(key)).toBeNull();
   });
 });

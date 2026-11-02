@@ -39,6 +39,17 @@ function document(): LoomaDocument {
           },
           { id: 'n_stack', type: 'stack', gap: 'none', children: [] },
           {
+            id: 'n_steps',
+            type: 'steps',
+            direction: 'horizontal',
+            gap: 'sm',
+            children: [
+              { id: 'b_step1', type: 'paragraph', text: 'Capture' },
+              { id: 'b_step2', type: 'paragraph', text: 'Convert' },
+            ],
+          },
+          { id: 'n_steps_empty', type: 'steps', children: [] },
+          {
             id: 'n_default',
             type: 'stack',
             children: [{ id: 'b_in', type: 'paragraph', text: 'Inside' }],
@@ -88,6 +99,23 @@ describe('containers', () => {
     const defaults = node(container, 'n_default').firstElementChild as HTMLElement;
     expect(defaults.style.gap).toBe('var(--lm-block-gap)');
     expect(defaults.style.alignItems).toBe('');
+
+    const steps = node(container, 'n_steps').firstElementChild as HTMLElement;
+    expect(steps).toHaveAttribute('data-lm-steps', 'horizontal');
+    expect(steps.style.gap).toBe('calc(var(--lm-block-gap) * 0.5)');
+    expect([...steps.querySelectorAll('[data-lm-step]')].map((item) => item.textContent)).toEqual([
+      '1Capture',
+      '2Convert',
+    ]);
+    expect(steps.querySelectorAll('[data-lm-connector]')).toHaveLength(1);
+    expect(node(container, 'b_step1').parentElement?.parentElement).toHaveAttribute(
+      'data-lm-step',
+      '1',
+    );
+
+    const emptySteps = node(container, 'n_steps_empty').firstElementChild as HTMLElement;
+    expect(emptySteps).toHaveAttribute('data-lm-steps', 'vertical');
+    expect(emptySteps.querySelector('[data-lm-empty]')).not.toBeNull();
 
     const emptyColumn = node(container, 'n_empty_col').querySelector('[data-lm-slot="1"]');
     expect(emptyColumn?.querySelector('[data-lm-empty]')).not.toBeNull();

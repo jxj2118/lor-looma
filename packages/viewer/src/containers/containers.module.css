@@ -15,3 +15,85 @@
   min-height: 1.25em;
   background: transparent;
 }
+
+.steps {
+  display: flex;
+  min-width: 0;
+}
+
+.steps[data-lm-steps='vertical'] {
+  flex-direction: column;
+}
+
+.steps[data-lm-steps='horizontal'] {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.stepItem {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.steps[data-lm-steps='vertical'] .stepItem {
+  flex-direction: row;
+  gap: 0.75em;
+}
+
+.steps[data-lm-steps='horizontal'] .stepItem {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45em;
+  text-align: center;
+}
+
+.stepRail {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.steps[data-lm-steps='vertical'] .stepRail {
+  flex-direction: column;
+}
+
+.steps[data-lm-steps='horizontal'] .stepRail {
+  flex-direction: row;
+  width: 100%;
+}
+
+.stepBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lm-color-primary) 16%, transparent);
+  color: var(--lm-color-primary);
+  font-family: var(--lm-font-heading);
+  font-weight: 700;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.stepConnector {
+  flex: 1;
+  background: color-mix(in srgb, var(--lm-color-primary) 35%, transparent);
+}
+
+.steps[data-lm-steps='vertical'] .stepConnector {
+  width: 2px;
+  min-height: 0.75em;
+}
+
+.steps[data-lm-steps='horizontal'] .stepConnector {
+  height: 2px;
+  min-width: 0.75em;
+}
+
+.stepBody {
+  min-width: 0;
+  flex: 1;
+}

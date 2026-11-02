@@ -92,6 +92,8 @@ export function readSlot(node: LoomaNode, slot: SlotKey): string | undefined {
       return node.type === 'list' ? readItem(node.items, parsed.path) : undefined;
     case 'cell':
       return node.type === 'table' ? node.rows[parsed.row]?.[parsed.col] : undefined;
+    case 'stat':
+      return undefined;
     default: {
       const unreachable: never = parsed;
       return unreachable;
@@ -136,6 +138,8 @@ export function slotPatch(
         ),
       };
     }
+    case 'stat':
+      return null;
     default: {
       const unreachable: never = parsed;
       return unreachable;

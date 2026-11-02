@@ -321,6 +321,184 @@
   }
 }
 
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  padding: 0.8em 1em;
+  border-radius: calc(var(--lm-radius, 12px) * 0.6);
+  background: color-mix(in srgb, var(--lm-stat, var(--lm-color-primary)) 12%, transparent);
+  box-shadow: inset 4px 0 0 var(--lm-stat, var(--lm-color-primary));
+}
+
+.stat[data-tone='primary'] {
+  --lm-stat: var(--lm-color-primary);
+}
+
+.stat[data-tone='info'] {
+  --lm-stat: var(--lm-color-info);
+}
+
+.stat[data-tone='success'] {
+  --lm-stat: var(--lm-color-success);
+}
+
+.stat[data-tone='warning'] {
+  --lm-stat: var(--lm-color-warning);
+}
+
+.stat[data-tone='danger'] {
+  --lm-stat: var(--lm-color-danger);
+}
+
+.stat[data-tone='note'] {
+  --lm-stat: var(--lm-color-note);
+}
+
+.statValue {
+  font-family: var(--lm-font-heading);
+  font-size: calc(var(--lm-size-h2, 44px) * var(--lm-font-scale, 1));
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.statLabel {
+  font-weight: 650;
+}
+
+.statDetail {
+  color: var(--lm-color-muted);
+  font-size: calc(var(--lm-size-small, 20px) * var(--lm-font-scale, 1));
+}
+
+.math {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.mathDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow-x: auto;
+  padding: 0.35em 0.2em;
+  font-size: calc(var(--lm-size-body, 26px) * var(--lm-font-scale, 1) * 1.15);
+  font-style: italic;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.mathRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.mathFrac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 0.15em;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.mathNum,
+.mathDen {
+  padding: 0.05em 0.35em;
+}
+
+.mathBar {
+  align-self: stretch;
+  height: 0;
+  border-top: 0.07em solid currentColor;
+}
+
+.mathSqrt {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.08em;
+}
+
+.mathRadical {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.mathRootBody {
+  padding: 0.05em 0.25em 0;
+  border-top: 0.07em solid currentColor;
+}
+
+.mathRootIndex {
+  font-size: 0.7em;
+  line-height: 1;
+  transform: translateY(-0.45em);
+}
+
+.mathSup,
+.mathSub,
+.mathSubsup {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.mathScript,
+.mathScriptCol {
+  font-size: 0.7em;
+  font-style: italic;
+  line-height: 1;
+}
+
+.mathSup .mathScript {
+  transform: translateY(-0.45em);
+}
+
+.mathSub .mathScript {
+  transform: translateY(0.4em);
+}
+
+.mathScriptCol {
+  display: inline-flex;
+  flex-direction: column;
+  margin-left: 0.05em;
+}
+
+.mathOp {
+  margin: 0 0.08em;
+  font-size: 1.35em;
+  font-style: normal;
+  line-height: 1;
+}
+
+.mathText,
+.mathRm,
+.mathBf {
+  font-style: normal;
+}
+
+.mathBf {
+  font-weight: 700;
+}
+
+.mathDelim {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mathFence {
+  font-size: 1.25em;
+  line-height: 1;
+}
+
 .unsupported {
   padding: 0.8em 1em;
   border: 1px dashed var(--lm-border, color-mix(in srgb, currentColor 28%, transparent));

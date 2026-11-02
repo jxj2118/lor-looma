@@ -9,8 +9,10 @@ import { Divider } from './Divider';
 import { Heading } from './Heading';
 import { Image } from './Image';
 import { List } from './List';
+import { MathBlock } from './Math';
 import { Paragraph } from './Paragraph';
 import { Quote } from './Quote';
+import { Stat } from './Stat';
 import { Table } from './Table';
 import { Unsupported } from './Unsupported';
 
@@ -284,6 +286,81 @@ describe('blocks', () => {
     );
     expect(container.querySelector('[data-lm-token="keyword"]')?.textContent).toBe('const');
     expect(container.querySelector('[data-lm-token="number"]')?.textContent).toBe('1');
+  });
+
+  it('renders a stat metric and keeps an empty detail slot editable', () => {
+    const plain = render(
+      <Stat block={{ id: 'b_stat', type: 'stat', value: '**98%**', label: 'Completion' }} />,
+    );
+    expect(plain.container.querySelector('[data-tone="primary"]')).not.toBeNull();
+    expect(plain.container.querySelector('[data-lm-slot="stat:value"] strong')?.textContent).toBe(
+      '98%',
+    );
+    expect(plain.container.querySelector('[data-lm-slot="stat:label"]')?.textContent).toBe(
+      'Completion',
+    );
+    expect(plain.container.querySelector('[data-lm-slot="stat:detail"]')).toBeNull();
+
+    const detailed = render(
+      <Stat
+        block={{
+          id: 'b_stat',
+          type: 'stat',
+          value: '12',
+          label: 'Labs',
+          detail: '+2 this week',
+          tone: 'success',
+        }}
+      />,
+    );
+    expect(detailed.container.querySelector('[data-tone="success"]')).not.toBeNull();
+    expect(detailed.container.querySelector('[data-lm-slot="stat:detail"]')?.textContent).toBe(
+      '+2 this week',
+    );
+
+    const slotted = render(
+      <NodeRenderProvider
+        value={{
+          format: 'presentation',
+          assets: {},
+          renderSlot: (_id, slot, renderDefault) => renderDefault(),
+        }}
+      >
+        <Stat block={{ id: 'b_stat', type: 'stat', value: '1', label: 'One' }} />
+      </NodeRenderProvider>,
+    );
+    expect(slotted.container.querySelector('[data-lm-slot="stat:detail"]')).not.toBeNull();
+  });
+
+  it('renders a math formula through the code slot and an optional caption', () => {
+    const { container } = render(
+      <MathBlock
+        block={{ id: 'b_math', type: 'math', tex: 'E = mc^2', caption: 'Energy **eq**' }}
+      />,
+    );
+    const display = container.querySelector('[data-lm-math=""]');
+    expect(display).toHaveAttribute('data-lm-slot', 'code');
+    expect(display?.querySelector('[data-lm-math="sup"]')?.textContent).toContain('2');
+    expect(container.querySelector('figcaption strong')?.textContent).toBe('eq');
+
+    const seen: string[] = [];
+    const editing = render(
+      <NodeRenderProvider
+        value={{
+          format: 'document',
+          assets: {},
+          renderSlot: (nodeId, slot) => {
+            seen.push(`${nodeId}:${slot}`);
+            return <textarea data-editor="" defaultValue="E = mc^2" />;
+          },
+        }}
+      >
+        <MathBlock block={{ id: 'b_math', type: 'math', tex: 'E = mc^2' }} />
+      </NodeRenderProvider>,
+    );
+    expect(seen).toEqual(['b_math:code']);
+    expect(editing.container.querySelector('[data-editor]')).not.toBeNull();
+    expect(editing.container.querySelector('[data-lm-math=""]')).toBeNull();
   });
 
   it('shows the original type of an unknown block', () => {

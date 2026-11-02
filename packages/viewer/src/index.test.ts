@@ -50,6 +50,9 @@ const PRIVATE = [
   'Stack',
   'Columns',
   'Grid',
+  'Steps',
+  'Stat',
+  'MathBlock',
   'ScrollView',
   'PresentView',
 ] as const;

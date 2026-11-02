@@ -7,13 +7,16 @@ import { Divider } from '../blocks/Divider';
 import { Heading } from '../blocks/Heading';
 import { Image } from '../blocks/Image';
 import { List } from '../blocks/List';
+import { MathBlock } from '../blocks/Math';
 import { Paragraph } from '../blocks/Paragraph';
 import { Quote } from '../blocks/Quote';
+import { Stat } from '../blocks/Stat';
 import { Table } from '../blocks/Table';
 import { Unsupported } from '../blocks/Unsupported';
 import { Columns } from '../containers/Columns';
 import { Grid } from '../containers/Grid';
 import { Stack } from '../containers/Stack';
+import { Steps } from '../containers/Steps';
 import type { RenderNodeInfo } from './context';
 import { useNodeRenderContext } from './context';
 import { NodeErrorBoundary } from './NodeErrorBoundary';
@@ -45,9 +48,9 @@ function renderRegistered(node: LoomaNode, info: RenderNodeInfo): ReactNode {
     case 'code':
       return <Code block={node} />;
     case 'stat':
+      return <Stat block={node} />;
     case 'math':
-    case 'steps':
-      return null;
+      return <MathBlock block={node} />;
     case 'unknown':
       return <Unsupported block={node} />;
     case 'stack':
@@ -56,6 +59,8 @@ function renderRegistered(node: LoomaNode, info: RenderNodeInfo): ReactNode {
       return <Columns block={node} info={info} />;
     case 'grid':
       return <Grid block={node} info={info} />;
+    case 'steps':
+      return <Steps block={node} info={info} />;
     default: {
       const unreachable: never = node;
       return unreachable;

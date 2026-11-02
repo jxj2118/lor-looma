@@ -9,10 +9,12 @@ export type ParsedSlot =
   | { kind: 'text' }
   | { kind: 'item'; path: number[] }
   | { kind: 'cell'; row: number; col: number }
-  | { kind: 'code' };
+  | { kind: 'code' }
+  | { kind: 'stat'; field: 'value' | 'label' | 'detail' };
 
 const ITEM_KEY = /^item:(\d+(?:\.\d+)*)$/;
 const CELL_KEY = /^cell:(\d+):(\d+)$/;
+const STAT_KEY = /^stat:(value|label|detail)$/;
 
 export function slotKey(slot: ParsedSlot): SlotKey {
   switch (slot.kind) {
@@ -24,6 +26,8 @@ export function slotKey(slot: ParsedSlot): SlotKey {
       return `item:${slot.path.join('.')}`;
     case 'cell':
       return `cell:${slot.row}:${slot.col}`;
+    case 'stat':
+      return `stat:${slot.field}`;
     default: {
       const unreachable: never = slot;
       return unreachable;
@@ -43,6 +47,12 @@ export function parseSlotKey(key: SlotKey): ParsedSlot | null {
   const col = cell?.[2];
   if (row !== undefined && col !== undefined) {
     return { kind: 'cell', row: Number(row), col: Number(col) };
+  }
+  if (key.startsWith('stat:')) {
+    const field = STAT_KEY.exec(key)?.[1];
+    if (field === 'value' || field === 'label' || field === 'detail')
+      return { kind: 'stat', field };
+    return null;
   }
   return null;
 }
