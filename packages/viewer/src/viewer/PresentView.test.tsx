@@ -194,6 +194,41 @@ describe('present mode', () => {
     expect(screen.getByText(/First idea/)).toBeInTheDocument();
   });
 
+  it('opens speaker notes with N or the button and keeps clicks inside the panel', async () => {
+    const user = userEvent.setup();
+    const onPageChange = vi.fn();
+    const view = render(
+      <LoomaViewer document={deck()} mode="present" onPageChange={onPageChange} />,
+    );
+    const toggle = view.container.querySelector('[data-lm-present-notes-toggle]');
+    if (!(toggle instanceof HTMLButtonElement)) throw new Error('missing notes toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle.querySelector('[data-lm-present-notes-dot]')).not.toBeNull();
+    expect(screen.queryByText('Speaker note that stays off the slide')).toBeNull();
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Speaker note that stays off the slide')).toBeInTheDocument();
+    expect(onPageChange).not.toHaveBeenCalled();
+
+    const panel = view.container.querySelector('[data-lm-present-notes]');
+    if (!(panel instanceof HTMLElement)) throw new Error('missing notes panel');
+    await user.click(panel);
+    expect(onPageChange).not.toHaveBeenCalled();
+    expect(screen.getByText(/First idea/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Second idea')).toBeInTheDocument();
+    expect(screen.getByText('No speaker notes for this card.')).toBeInTheDocument();
+    expect(view.container.querySelector('[data-lm-present-notes-dot]')).toBeNull();
+
+    await user.keyboard('n');
+    expect(view.container.querySelector('[data-lm-present-notes]')).toBeNull();
+    await user.keyboard('N');
+    expect(screen.getByText('No speaker notes for this card.')).toBeInTheDocument();
+    expect(onPageChange).toHaveBeenCalledTimes(1);
+  });
+
   it('hides the page number when asked', () => {
     render(<LoomaViewer document={deck()} mode="present" showPageNumber={false} />);
     expect(screen.queryByText('1 / 3')).toBeNull();

@@ -28,7 +28,13 @@ export function PlayOverlay({
       {open && container ? (
         <Dialog.Portal container={container}>
           <Dialog.Overlay className={styles.overlay} />
-          <Dialog.Content className={styles.content} aria-describedby={undefined}>
+          <Dialog.Content
+            className={styles.content}
+            aria-describedby={undefined}
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+          >
             <div className={styles.toolbar}>
               <Dialog.Title className={styles.title}>{messages.play}</Dialog.Title>
               <Dialog.Close className={styles.close}>{messages.close}</Dialog.Close>

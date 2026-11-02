@@ -19,15 +19,113 @@
   cursor: pointer;
 }
 
-.pager {
+.chrome {
   position: absolute;
   right: 20px;
   bottom: 16px;
-  z-index: 2;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.notesToggle {
+  position: relative;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--lm-color-muted, currentColor) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lm-color-bg, #111) 72%, transparent);
+  color: var(--lm-color-fg, currentColor);
+  font-family: var(--lm-font-body);
+  font-size: 13px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.notesDot {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--lm-color-accent, #d4a017);
+}
+
+.pager {
   color: var(--lm-color-muted);
   font-family: var(--lm-font-body);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   pointer-events: none;
+}
+
+.notes {
+  position: absolute;
+  right: 20px;
+  bottom: 60px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(440px, calc(100% - 40px));
+  max-height: 42%;
+  overflow: auto;
+  padding: 16px 18px;
+  border-radius: calc(var(--lm-radius, 12px));
+  background: color-mix(in srgb, var(--lm-color-bg, #111) 78%, transparent);
+  color: var(--lm-color-fg, currentColor);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+  font-family: var(--lm-font-body);
+}
+
+.notesHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--lm-color-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.notesNav {
+  display: flex;
+  gap: 8px;
+}
+
+.notesNav button {
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--lm-color-muted, currentColor) 40%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.notesNav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.notesBody {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.notesEmpty {
+  margin: 0;
+  color: var(--lm-color-muted);
+}
+
+@media print {
+  .chrome,
+  .notes {
+    display: none;
+  }
 }
