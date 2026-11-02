@@ -54,6 +54,13 @@ export function nodePreview(node: LoomaNode, doc: LoomaDocument, maxLength = 60)
     }
     case 'code':
       return truncate(`[code] ${node.code.split('\n')[0] ?? ''}`, maxLength);
+    case 'stat':
+      return truncate(
+        `${inlineToPlainText(node.value)} — ${inlineToPlainText(node.label)}`,
+        maxLength,
+      );
+    case 'math':
+      return truncate(node.tex, maxLength);
     case 'divider':
       return '[divider]';
     case 'unknown': {
@@ -67,6 +74,8 @@ export function nodePreview(node: LoomaNode, doc: LoomaDocument, maxLength = 60)
       return `[columns: ${node.children.length}]`;
     case 'grid':
       return `[grid: ${node.columns} columns, ${node.children.length} items]`;
+    case 'steps':
+      return `[steps: ${node.children.length} items]`;
     default: {
       const unreachable: never = node;
       return unreachable;

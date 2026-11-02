@@ -73,7 +73,12 @@ function walkNode(
 ): void {
   claimId(node.id, path, seen, issues);
 
-  if (node.type === 'stack' || node.type === 'columns' || node.type === 'grid') {
+  if (
+    node.type === 'stack' ||
+    node.type === 'columns' ||
+    node.type === 'grid' ||
+    node.type === 'steps'
+  ) {
     if (depth >= MAX_CONTAINER_DEPTH) {
       issues.push({
         path,

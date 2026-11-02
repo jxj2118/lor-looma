@@ -7,6 +7,8 @@ import type {
   GridSchema,
   StackContainer,
   StackSchema,
+  StepsContainer,
+  StepsSchema,
 } from './containers';
 import type { LoomaNode } from './nodes';
 import { LoomaNodeSchema } from './nodes';
@@ -14,6 +16,7 @@ import { LoomaNodeSchema } from './nodes';
 expectTypeOf<z.output<typeof StackSchema>>().toEqualTypeOf<StackContainer>();
 expectTypeOf<z.output<typeof ColumnsSchema>>().toEqualTypeOf<ColumnsContainer>();
 expectTypeOf<z.output<typeof GridSchema>>().toEqualTypeOf<GridContainer>();
+expectTypeOf<z.output<typeof StepsSchema>>().toEqualTypeOf<StepsContainer>();
 expectTypeOf<z.output<typeof LoomaNodeSchema>>().toEqualTypeOf<LoomaNode>();
 
 describe('LoomaNodeSchema', () => {
@@ -96,5 +99,40 @@ describe('LoomaNodeSchema', () => {
       columns: 2,
       children: [],
     });
+    expect(LoomaNodeSchema.parse({ id: 'n_1', type: 'steps' })).toEqual({
+      id: 'n_1',
+      type: 'steps',
+      children: [],
+    });
+  });
+
+  it('parses steps around a stat and a math block', () => {
+    expect(
+      LoomaNodeSchema.parse({
+        id: 'n_steps',
+        type: 'steps',
+        direction: 'horizontal',
+        gap: 'sm',
+        children: [
+          { id: 'b_stat', type: 'stat', value: '6CO2', label: 'Carbon dioxide' },
+          { id: 'b_math', type: 'math', tex: '6CO_2 + 6H_2O' },
+        ],
+      }),
+    ).toEqual({
+      id: 'n_steps',
+      type: 'steps',
+      direction: 'horizontal',
+      gap: 'sm',
+      children: [
+        { id: 'b_stat', type: 'stat', value: '6CO2', label: 'Carbon dioxide' },
+        { id: 'b_math', type: 'math', tex: '6CO_2 + 6H_2O' },
+      ],
+    });
+  });
+
+  it('rejects a steps direction other than vertical or horizontal', () => {
+    expect(
+      LoomaNodeSchema.safeParse({ id: 'n_1', type: 'steps', direction: 'diagonal' }).success,
+    ).toBe(false);
   });
 });

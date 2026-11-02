@@ -44,6 +44,10 @@ function renderRegistered(node: LoomaNode, info: RenderNodeInfo): ReactNode {
       return <Divider block={node} />;
     case 'code':
       return <Code block={node} />;
+    case 'stat':
+    case 'math':
+    case 'steps':
+      return null;
     case 'unknown':
       return <Unsupported block={node} />;
     case 'stack':

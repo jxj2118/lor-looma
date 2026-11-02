@@ -29,7 +29,9 @@ function describeType(type: unknown): string {
 }
 
 function idKind(type: string): IdKind {
-  if (type === 'stack' || type === 'columns' || type === 'grid') return 'container';
+  if (type === 'stack' || type === 'columns' || type === 'grid' || type === 'steps') {
+    return 'container';
+  }
   return 'block';
 }
 
@@ -103,7 +105,7 @@ function assignNodeIds(
     });
     return;
   }
-  if ((type === 'stack' || type === 'grid') && Array.isArray(node.children)) {
+  if ((type === 'stack' || type === 'grid' || type === 'steps') && Array.isArray(node.children)) {
     node.children.forEach((child, index) => {
       assignNodeIds(child, at(path, `children[${index}]`), taken, created, issues);
     });

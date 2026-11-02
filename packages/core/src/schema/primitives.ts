@@ -32,3 +32,11 @@ export const IMAGE_SRC_MESSAGE = 'src must start with https://, http:// or data:
 export function isImageSrc(value: string): boolean {
   return /^https:\/\//i.test(value) || /^http:\/\//i.test(value) || /^data:image\//i.test(value);
 }
+
+/** Crop anchor as percentages of the image box. `(0, 0)` is the top-left and `(100, 100)` is the bottom-right. */
+export const FocalPointSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+});
+
+export type FocalPoint = z.output<typeof FocalPointSchema>;

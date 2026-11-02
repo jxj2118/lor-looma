@@ -12,7 +12,7 @@ function nodeIds(doc: LoomaDocument): string[] {
     ids.push(node.id);
     if (node.type === 'columns') {
       for (const column of node.children) for (const child of column) walk(child);
-    } else if (node.type === 'stack' || node.type === 'grid') {
+    } else if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
       for (const child of node.children) walk(child);
     }
   };

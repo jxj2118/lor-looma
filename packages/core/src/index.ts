@@ -42,11 +42,15 @@ export type { ParseIssue, ParseOptions, ParseResult } from './parse';
 export { getCards, getOutline } from './read';
 export type { CardOutline, DocumentOutline, GetCardsOptions, NodeOutline } from './read';
 export {
+  FocalPointSchema,
   LoomaAssetSchema,
   LoomaCardSchema,
   LoomaDocumentSchema,
   LoomaNodeSchema,
   LoomaThemeSchema,
+  MathBlockSchema,
+  StatBlockSchema,
+  StepsSchema,
   ThemeOverridesSchema,
 } from './schema';
 export type {
@@ -56,6 +60,7 @@ export type {
   CodeBlock,
   ColumnsContainer,
   DividerBlock,
+  FocalPoint,
   GridContainer,
   HeadingBlock,
   ImageAsset,
@@ -70,9 +75,12 @@ export type {
   LoomaDocumentInput,
   LoomaNode,
   LoomaTheme,
+  MathBlock,
   ParagraphBlock,
   QuoteBlock,
   StackContainer,
+  StatBlock,
+  StepsContainer,
   TableBlock,
   ThemeOverrides,
   UnknownBlock,

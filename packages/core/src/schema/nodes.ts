@@ -8,12 +8,14 @@ import {
   ImageBlockSchema,
   ListBlockSchema,
   ParagraphBlockSchema,
+  MathBlockSchema,
   QuoteBlockSchema,
+  StatBlockSchema,
   TableBlockSchema,
   UnknownBlockSchema,
 } from './blocks';
 import type { LoomaContainer } from './containers';
-import { ColumnsSchema, GridSchema, StackSchema } from './containers';
+import { ColumnsSchema, GridSchema, StackSchema, StepsSchema } from './containers';
 
 export type LoomaNode = LoomaBlock | LoomaContainer;
 
@@ -33,9 +35,12 @@ export const LoomaNodeSchema: z.ZodType<LoomaNode> = z.lazy(() =>
     QuoteBlockSchema,
     DividerBlockSchema,
     CodeBlockSchema,
+    StatBlockSchema,
+    MathBlockSchema,
     UnknownBlockSchema,
     StackSchema,
     ColumnsSchema,
     GridSchema,
+    StepsSchema,
   ]),
 );

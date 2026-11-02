@@ -77,6 +77,16 @@ function document(): LoomaDocument {
           { id: 'b_quote', type: 'quote', text: 'A quiet\nfactory', cite: 'Notes' },
           { id: 'b_div', type: 'divider' },
           { id: 'b_code', type: 'code', language: 'ts', code: 'const x = 1' },
+          {
+            id: 'b_stat',
+            type: 'stat',
+            value: '98%',
+            label: 'Completion',
+            detail: '+12%',
+            tone: 'info',
+          },
+          { id: 'b_stat_plain', type: 'stat', value: '3', label: 'Steps' },
+          { id: 'b_math', type: 'math', tex: 'E = mc^2', caption: 'Energy' },
           { id: 'b_unknown', type: 'unknown', raw: { type: 'video' } },
           {
             id: 'n_cols',
@@ -97,6 +107,12 @@ function document(): LoomaDocument {
             type: 'grid',
             columns: 3,
             children: [{ id: 'b_cell', type: 'paragraph', text: 'Cell' }],
+          },
+          {
+            id: 'n_steps',
+            type: 'steps',
+            direction: 'horizontal',
+            children: [{ id: 'b_step', type: 'paragraph', text: 'First' }],
           },
         ],
       },
@@ -171,6 +187,17 @@ describe('cardToMarkdown', () => {
       const x = 1
       \`\`\`
 
+      <!-- id: b_stat -->
+      **98%** — Completion (+12%)
+
+      <!-- id: b_stat_plain -->
+      **3** — Steps
+
+      <!-- id: b_math -->
+      $$
+      E = mc^2
+      $$
+
       <!-- id: b_unknown -->
       <!-- unsupported block: video -->
 
@@ -201,6 +228,13 @@ describe('cardToMarkdown', () => {
       Cell
 
       <!-- end n_grid -->
+
+      <!-- id: n_steps steps -->
+
+      <!-- id: b_step -->
+      First
+
+      <!-- end n_steps -->
 
       <!-- notes -->
       Speaker notes

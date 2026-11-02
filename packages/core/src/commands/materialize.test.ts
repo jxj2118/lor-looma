@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { materializeAsset, materializeCard, materializeNode } from './materialize';
 
 const BLOCK_AND_CONTAINER_TYPES =
-  'heading, paragraph, list, image, table, callout, quote, divider, code, stack, columns, grid';
+  'heading, paragraph, list, image, table, callout, quote, divider, code, stat, math, stack, columns, grid, steps';
 
 describe('materializeNode', () => {
   it('fills ids parent-first for a stack containing columns containing a paragraph', () => {
@@ -70,6 +70,33 @@ describe('materializeNode', () => {
     });
     expect(taken).toEqual(new Set(['b_existing']));
     expect(created).toEqual(['keep']);
+  });
+
+  it('assigns ids inside a steps container and fills stat and math defaults', () => {
+    const taken = new Set<string>();
+    const created: string[] = [];
+    const result = materializeNode(
+      {
+        type: 'steps',
+        direction: 'vertical',
+        children: [{ type: 'stat', value: '98%', label: 'Done' }, { type: 'math' }],
+      },
+      taken,
+      created,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.value.type !== 'steps') throw new Error('expected steps');
+    const stat = result.value.children[0];
+    const math = result.value.children[1];
+    if (!stat || stat.type !== 'stat' || !math || math.type !== 'math') {
+      throw new Error('expected stat and math children');
+    }
+    expect(stat).toEqual({ id: stat.id, type: 'stat', value: '98%', label: 'Done' });
+    expect(math).toEqual({ id: math.id, type: 'math', tex: '' });
+    expect(created).toEqual([result.value.id, stat.id, math.id]);
+    expect(result.value.id).toMatch(/^n_[0-9a-z]{8}$/);
+    expect(stat.id).toMatch(/^b_[0-9a-z]{8}$/);
+    expect(math.id).toMatch(/^b_[0-9a-z]{8}$/);
   });
 
   it('fills list defaults', () => {

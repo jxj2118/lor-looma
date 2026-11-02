@@ -401,4 +401,96 @@ describe('deleteNode', () => {
       errors: [{ commandIndex: 0, path: 'id', message: 'node "missing" does not exist' }],
     });
   });
+
+  it('deletes a steps container together with its children', () => {
+    const result = ok(richDocument(), [{ op: 'deleteNode', id: 'n_steps' }]);
+    expect(result.removedIds).toEqual(['n_steps', 'b_stat']);
+    expect(result.doc.cards[0]?.body.map((node) => node.id)).toEqual(['b_img', 'b_math']);
+  });
+});
+
+function richDocument(): LoomaDocument {
+  const parsed = parseDocument({
+    looma: 1,
+    id: 'doc_1',
+    assets: { img_1: { kind: 'image', src: 'https://example.com/leaf.png', alt: 'Leaf' } },
+    cards: [
+      {
+        id: 'c_1',
+        accent: { position: 'left', assetId: 'img_1' },
+        body: [
+          { id: 'b_img', type: 'image', assetId: 'img_1' },
+          { id: 'b_math', type: 'math', tex: 'E = mc^2' },
+          {
+            id: 'n_steps',
+            type: 'steps',
+            children: [{ id: 'b_stat', type: 'stat', value: '98%', label: 'Done' }],
+          },
+        ],
+      },
+    ],
+  });
+  if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+  return parsed.doc;
+}
+
+describe('stat, math, and focalPoint', () => {
+  it('updates stat, math, image focal point, and accent focal point', () => {
+    const result = ok(richDocument(), [
+      { op: 'updateNode', id: 'b_stat', patch: { detail: '+12%', tone: 'success' } },
+      { op: 'updateNode', id: 'b_math', patch: { tex: '\\frac{1}{2}', caption: 'A half' } },
+      { op: 'updateNode', id: 'b_img', patch: { focalPoint: { x: 80, y: 15 } } },
+      {
+        op: 'updateCard',
+        id: 'c_1',
+        patch: { accent: { position: 'right', assetId: 'img_1', focalPoint: { x: 5, y: 95 } } },
+      },
+    ]);
+    const card = result.doc.cards[0];
+    const steps = card?.body[2];
+    if (!card || steps?.type !== 'steps') throw new Error('expected steps');
+    expect(steps.children[0]).toEqual({
+      id: 'b_stat',
+      type: 'stat',
+      value: '98%',
+      label: 'Done',
+      detail: '+12%',
+      tone: 'success',
+    });
+    expect(card.body[1]).toEqual({
+      id: 'b_math',
+      type: 'math',
+      tex: '\\frac{1}{2}',
+      caption: 'A half',
+    });
+    expect(card.body[0]).toMatchObject({ focalPoint: { x: 80, y: 15 } });
+    expect(card.accent).toEqual({
+      position: 'right',
+      assetId: 'img_1',
+      focalPoint: { x: 5, y: 95 },
+    });
+
+    const cleared = ok(result.doc, [
+      { op: 'updateNode', id: 'b_stat', patch: { detail: null, tone: null } },
+      { op: 'updateNode', id: 'b_img', patch: { focalPoint: null } },
+    ]);
+    const next = cleared.doc.cards[0];
+    const nextSteps = next?.body[2];
+    if (!next || nextSteps?.type !== 'steps') throw new Error('expected steps');
+    expect(nextSteps.children[0]).toEqual({
+      id: 'b_stat',
+      type: 'stat',
+      value: '98%',
+      label: 'Done',
+    });
+    expect(next.body[0]).not.toHaveProperty('focalPoint');
+  });
+
+  it('rejects a focal point outside 0-100', () => {
+    expect(
+      failure(richDocument(), [
+        { op: 'updateNode', id: 'b_img', patch: { focalPoint: { x: 101, y: 0 } } },
+      ]).ok,
+    ).toBe(false);
+  });
 });

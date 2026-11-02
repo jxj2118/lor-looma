@@ -33,6 +33,16 @@ export const GridSchema = z.object({
   },
 });
 
+export const StepsSchema = z.object({
+  id: IdSchema,
+  type: z.literal('steps'),
+  direction: z.enum(['vertical', 'horizontal']).optional(),
+  gap: GapSchema.optional(),
+  get children() {
+    return z.array(LoomaNodeSchema).default([]);
+  },
+});
+
 type Gap = 'none' | 'sm' | 'md' | 'lg';
 
 export type StackContainer = {
@@ -59,4 +69,12 @@ export type GridContainer = {
   children: LoomaNode[];
 };
 
-export type LoomaContainer = StackContainer | ColumnsContainer | GridContainer;
+export type StepsContainer = {
+  id: string;
+  type: 'steps';
+  direction?: 'vertical' | 'horizontal' | undefined;
+  gap?: Gap | undefined;
+  children: LoomaNode[];
+};
+
+export type LoomaContainer = StackContainer | ColumnsContainer | GridContainer | StepsContainer;

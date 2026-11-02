@@ -75,6 +75,10 @@ describe('nodePreview', () => {
     expect(
       preview({ id: 'b_1', type: 'code', language: 'ts', code: 'const a = 1\nconst b = 2' }),
     ).toBe('[code] const a = 1');
+    expect(preview({ id: 'b_1', type: 'stat', value: '**98%**', label: 'Done' })).toBe(
+      '98% — Done',
+    );
+    expect(preview({ id: 'b_1', type: 'math', tex: 'E = mc^2' })).toBe('E = mc^2');
     expect(preview({ id: 'b_1', type: 'divider' })).toBe('[divider]');
     expect(preview({ id: 'b_1', type: 'unknown', raw: { type: 'video' } })).toBe(
       '[unsupported: video]',
@@ -102,6 +106,14 @@ describe('nodePreview', () => {
         children: [child, child, child, child],
       }),
     ).toBe('[grid: 2 columns, 4 items]');
+    expect(
+      preview({
+        id: 'n_1',
+        type: 'steps',
+        direction: 'vertical',
+        children: [child, child],
+      }),
+    ).toBe('[steps: 2 items]');
   });
 
   it('truncates previews longer than the max length', () => {

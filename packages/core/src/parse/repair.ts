@@ -152,7 +152,10 @@ function repairNode(node: unknown, path: string, ctx: RepairContext): unknown {
         repairNode(child, `${path}.children[${columnIndex}][${rowIndex}]`, ctx),
       );
     });
-  } else if ((type === 'stack' || type === 'grid') && Array.isArray(node.children)) {
+  } else if (
+    (type === 'stack' || type === 'grid' || type === 'steps') &&
+    Array.isArray(node.children)
+  ) {
     node.children = node.children.map((child, index) =>
       repairNode(child, `${path}.children[${index}]`, ctx),
     );

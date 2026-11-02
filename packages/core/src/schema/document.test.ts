@@ -18,6 +18,37 @@ describe('LoomaDocumentSchema', () => {
     expect(parsed.cards[1]?.background).toMatchObject({ kind: 'gradient', angle: 135 });
   });
 
+  it('accepts an accent focal point and rejects coordinates outside 0-100', () => {
+    expect(
+      LoomaDocumentSchema.parse({
+        looma: 1,
+        id: 'doc_1',
+        cards: [
+          {
+            id: 'c_1',
+            accent: { position: 'background', assetId: 'img_1', focalPoint: { x: 0, y: 100 } },
+          },
+        ],
+      }).cards[0]?.accent,
+    ).toEqual({
+      position: 'background',
+      assetId: 'img_1',
+      focalPoint: { x: 0, y: 100 },
+    });
+    expect(
+      LoomaDocumentSchema.safeParse({
+        looma: 1,
+        id: 'doc_1',
+        cards: [
+          {
+            id: 'c_1',
+            accent: { position: 'left', assetId: 'img_1', focalPoint: { x: 120, y: 10 } },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
   it('fills defaults for a minimal document', () => {
     expect(LoomaDocumentSchema.parse({ looma: 1, id: 'doc_1' })).toEqual({
       looma: 1,

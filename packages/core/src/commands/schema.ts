@@ -77,7 +77,7 @@ const nodePatchSchema = z
   });
 
 const containerShape = z.looseObject({
-  type: z.enum(['stack', 'columns', 'grid']),
+  type: z.enum(['stack', 'columns', 'grid', 'steps']),
   id: IdSchema.optional(),
 });
 

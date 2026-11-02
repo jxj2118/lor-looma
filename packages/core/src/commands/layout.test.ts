@@ -123,6 +123,46 @@ describe('wrapNodes', () => {
     });
   });
 
+  it('wraps adjacent nodes in steps and unwraps them in order', () => {
+    const doc = document();
+    const wrapped = ok(doc, [
+      {
+        op: 'wrapNodes',
+        ids: ['b_1', 'b_2', 'b_3'],
+        container: { type: 'steps', id: 'n_steps', direction: 'horizontal', gap: 'sm' },
+      },
+    ]);
+    expect(wrapped.doc.cards[0]?.body[0]).toEqual({
+      id: 'n_steps',
+      type: 'steps',
+      direction: 'horizontal',
+      gap: 'sm',
+      children: [
+        { id: 'b_1', type: 'paragraph', text: 'One' },
+        { id: 'b_2', type: 'paragraph', text: 'Two' },
+        { id: 'b_3', type: 'paragraph', text: 'Three' },
+      ],
+    });
+    expect(
+      failure(wrapped.doc, [{ op: 'moveNode', id: 'n_steps', to: { before: 'b_2' } }]),
+    ).toEqual({
+      ok: false,
+      errors: [
+        {
+          commandIndex: 0,
+          path: 'to.before',
+          message: 'cannot move node "n_steps" into itself or its descendants',
+        },
+      ],
+    });
+    const restored = ok(wrapped.doc, [{ op: 'unwrapNode', id: 'n_steps' }]);
+    expect(restored.doc.cards[0]?.body.slice(0, 3)).toEqual([
+      { id: 'b_1', type: 'paragraph', text: 'One' },
+      { id: 'b_2', type: 'paragraph', text: 'Two' },
+      { id: 'b_3', type: 'paragraph', text: 'Three' },
+    ]);
+  });
+
   it('generates a container id when one is omitted', () => {
     const result = ok(document(), [
       { op: 'wrapNodes', ids: ['b_5'], container: { type: 'grid', columns: 3 } },

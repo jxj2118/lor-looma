@@ -13,25 +13,28 @@ Put one intention into a single \`looma_apply\` batch. The batch is atomic: if a
 
 ## Document model
 
-A card has \`body\` (the ordered nodes), and optionally \`accent\`, \`background\`, and \`notes\`. \`notes\` is the speaker script, not text on the slide. \`accent\` is \`{ "position": "left" | "right" | "top" | "background", "assetId" }\`. \`background\` is one of \`{ "kind": "color", "value" }\`, \`{ "kind": "gradient", "from", "to", "angle" }\` (\`angle\` defaults to 135 and must be from 0 to 360), or \`{ "kind": "image", "assetId" }\`. Color fields are CSS colors: \`#rgb\`, \`#rrggbb\`, \`rgb(r, g, b)\`, or \`hsl(h, s%, l%)\`.
+A card has \`body\` (the ordered nodes), and optionally \`accent\`, \`background\`, and \`notes\`. \`notes\` is the speaker script, not text on the slide. \`accent\` is \`{ "position": "left" | "right" | "top" | "background", "assetId" }\` with optional \`focalPoint\` \`{ "x", "y" }\` (each 0 to 100). \`background\` is one of \`{ "kind": "color", "value" }\`, \`{ "kind": "gradient", "from", "to", "angle" }\` (\`angle\` defaults to 135 and must be from 0 to 360), or \`{ "kind": "image", "assetId" }\`. Color fields are CSS colors: \`#rgb\`, \`#rrggbb\`, \`rgb(r, g, b)\`, or \`hsl(h, s%, l%)\`.
 
-The nine blocks:
+The eleven blocks:
 
 - \`heading\`: \`level\` is 1, 2, or 3, plus \`text\`.
 - \`paragraph\`: \`text\`, and optional \`align\` of \`left\`, \`center\`, or \`right\`.
 - \`list\`: \`style\` is \`bullet\` (the default), \`number\`, or \`check\`, plus \`items\`. An item is a string or \`{ "text", "checked"?, "children"? }\`. \`checked\` is for \`check\` lists. \`children\` uses the same item shape. Lists nest at most 3 levels.
-- \`image\`: required \`assetId\`, optional \`fit\` of \`cover\` or \`contain\`, optional \`caption\`, optional \`width\` of \`auto\` or \`full\`.
+- \`image\`: required \`assetId\`, optional \`fit\` of \`cover\` or \`contain\`, optional \`caption\`, optional \`width\` of \`auto\` or \`full\`, optional \`focalPoint\` \`{ "x", "y" }\` (each 0 to 100) so a crop keeps the subject.
 - \`table\`: \`rows\` is an array of arrays of inline strings, at least one row, and every row has the same number of cells. \`header\` is a boolean and defaults to false.
 - \`callout\`: \`tone\` is \`info\` (the default), \`success\`, \`warning\`, \`danger\`, or \`note\`, plus \`text\`.
 - \`quote\`: \`text\`, and optional \`cite\`.
 - \`divider\`: no fields besides \`type\`.
 - \`code\`: \`code\` is literal plain text, not inline markup. Optional \`language\` is at most 32 characters.
+- \`stat\`: inline \`value\` and \`label\` (both default to empty), optional inline \`detail\`, optional \`tone\` of \`info\`, \`success\`, \`warning\`, \`danger\`, or \`note\`.
+- \`math\`: \`tex\` is a LaTeX formula as plain text, not inline markup, and defaults to empty. Optional \`caption\` is inline text.
 
-The three containers:
+The four containers:
 
 - \`stack\`: optional \`gap\` of \`none\`, \`sm\`, \`md\`, or \`lg\`, and \`children\` as a flat list of nodes.
 - \`columns\`: \`widths\` is 2 to 4 positive numbers, and \`children\` is one array of nodes per column. \`widths\` and \`children\` must have the same length. Optional \`gap\` uses the same names as stack. Optional \`align\` is \`start\`, \`center\`, \`end\`, or \`stretch\`.
 - \`grid\`: \`columns\` is 2, 3, or 4 and defaults to 2. Optional \`gap\`. \`children\` is a flat list of nodes.
+- \`steps\`: optional \`direction\` of \`vertical\` (the default) or \`horizontal\`, optional \`gap\`, and \`children\` as a flat list of nodes in order.
 
 A card body is depth 0. Containers may appear at depth 0 and depth 1 only, so the nesting limit is 2 container levels. The third level holds blocks only. A \`columns\` container inside a \`stack\` is already the second level; its cells must hold blocks, not another container.
 
@@ -48,7 +51,7 @@ A node location is exactly one of these:
 - \`{ "before": "b_lead" }\` inserts as the previous sibling of that node.
 - \`{ "after": "b_lead" }\` inserts as the next sibling.
 - \`{ "parent": "c_title" }\` appends to that card's body. Add \`"index"\` to choose the position, starting at 0.
-- \`{ "parent": "n_process_columns", "slot": 0, "index": 1 }\` targets one column. \`slot\` is required when the parent is \`columns\`, and forbidden on a card, stack, or grid.
+- \`{ "parent": "n_process_columns", "slot": 0, "index": 1 }\` targets one column. \`slot\` is required when the parent is \`columns\`, and forbidden on a card, stack, grid, or steps.
 
 \`before\` and \`after\` must name a node, never a card. To place a node at the top level of a card, use \`{ "parent": "<cardId>" }\`.
 
@@ -56,7 +59,7 @@ A card location is \`{ "before": "c_process" }\`, \`{ "after": "c_title" }\`, or
 
 ## Inline text
 
-Inline fields (\`text\`, \`caption\`, \`cite\`, list items, and table cells) accept a small markup, and nothing else:
+Inline fields (\`text\`, \`caption\`, \`cite\`, \`value\`, \`label\`, \`detail\`, list items, and table cells) accept a small markup, and nothing else:
 
 - \`**bold**\`, \`*italic*\`, and \`~~strike~~\`.
 - Inline code: a span wrapped in single backticks.
@@ -70,9 +73,9 @@ Do not use HTML. Do not use image markup. Do not use block Markdown: no \`#\` he
 
 ## Writing good slides
 
-In \`presentation\`, give each card one main idea. A title plus about six bullets, or two or three short paragraphs, is enough. If there is more to say, add another card. The viewer reports cards that overflow the 1280×720 frame, and the host may pass those ids back to you. Split an overflowing card with \`splitCard\` instead of shrinking the copy. \`atNodeId\` must be a direct child of that card's body after the first node.
+In \`presentation\`, give each card one main idea. If there is more to say, add another card. The viewer reports cards that overflow the 1280×720 frame. Split an overflowing card with \`splitCard\` instead of shrinking the copy. \`atNodeId\` must be a direct child of that card's body after the first node.
 
-Use \`columns\` for a comparison, \`grid\` for three to six peer ideas, and \`callout\` for the sentence the room should remember. Put the spoken script in \`notes\`, not in the body. Do not give every card the same layout.
+Use \`columns\` for a comparison, \`grid\` for peer ideas, \`steps\` for a sequence, \`stat\` for one key number, \`math\` for a formula, and \`callout\` for the sentence the room should remember. Put the spoken script in \`notes\`, not in the body. Do not give every card the same layout.
 
 ## Writing good documents
 
@@ -98,7 +101,7 @@ Each line is the op, the fields a successful call must include, and what it does
 - \`replaceNode\` — required: \`id\`, \`node\`. Replace a node with a different one (may change its type). Keeps the old id unless the new node sets one.
 - \`moveNode\` — required: \`id\`, \`to\`. Move a node to another location, possibly in another card.
 - \`deleteNode\` — required: \`id\`. Delete a block or container (and its children).
-- \`wrapNodes\` — required: \`ids\` (one or more adjacent siblings), \`container\`. Wrap adjacent sibling nodes in a new stack, columns, or grid container. For columns, each node becomes one column. \`container.widths\` is optional and defaults to equal widths; if given, it needs one number per wrapped node.
+- \`wrapNodes\` — required: \`ids\` (one or more adjacent siblings), \`container\`. Wrap adjacent sibling nodes in a new stack, columns, grid, or steps container. For columns, each node becomes one column. \`container.widths\` is optional and defaults to equal widths; if given, it needs one number per wrapped node.
 - \`unwrapNode\` — required: \`id\`. Remove a container and put its children in its place.
 - \`insertColumn\` — required: \`id\` of a \`columns\` container; optional \`index\` and \`width\`. Add an empty column to a columns container (max 4).
 - \`deleteColumn\` — required: \`id\`, \`index\`; optional \`moveNodesTo\`. Remove a column from a columns container (min 2). Its nodes are deleted unless \`moveNodesTo\` is given. If only two columns remain, use \`unwrapNode\` instead.

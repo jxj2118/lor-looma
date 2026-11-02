@@ -40,7 +40,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   moveNode: 'Move a node to another location, possibly in another card.',
   deleteNode: 'Delete a block or container (and its children).',
   wrapNodes:
-    'Wrap adjacent sibling nodes in a new stack, columns or grid container. For columns, each node becomes one column.',
+    'Wrap adjacent sibling nodes in a new stack, columns, grid or steps container. For columns, each node becomes one column.',
   unwrapNode: 'Remove a container and put its children in its place.',
   insertColumn: 'Add an empty column to a columns container (max 4).',
   deleteColumn:

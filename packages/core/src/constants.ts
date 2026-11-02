@@ -8,10 +8,12 @@ export const BLOCK_TYPES = [
   'quote',
   'divider',
   'code',
+  'stat',
+  'math',
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
-export const CONTAINER_TYPES = ['stack', 'columns', 'grid'] as const;
+export const CONTAINER_TYPES = ['stack', 'columns', 'grid', 'steps'] as const;
 export type ContainerType = (typeof CONTAINER_TYPES)[number];
 
 export const THEME_PRESETS = ['clean', 'dark', 'warm', 'serif'] as const;

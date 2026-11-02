@@ -18,7 +18,7 @@ function imagePaths(node: LoomaNode, path: string, assetId: string, paths: strin
     });
     return;
   }
-  if (node.type === 'stack' || node.type === 'grid') {
+  if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
     node.children.forEach((child, index) => {
       imagePaths(child, `${path}.children[${index}]`, assetId, paths);
     });

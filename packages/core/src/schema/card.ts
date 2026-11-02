@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { LoomaNodeSchema } from './nodes';
-import { ColorSchema, IdSchema } from './primitives';
+import { ColorSchema, FocalPointSchema, IdSchema } from './primitives';
 
 export const CardAccentSchema = z.object({
   position: z.enum(['left', 'right', 'top', 'background']),
   assetId: IdSchema,
+  focalPoint: FocalPointSchema.optional(),
 });
 
 export const CardBackgroundSchema = z.discriminatedUnion('kind', [

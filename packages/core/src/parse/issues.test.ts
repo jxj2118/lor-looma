@@ -77,7 +77,7 @@ describe('zodIssuesToParseIssues', () => {
       {
         path: 'cards[0].body[0].type',
         message:
-          'unknown type "video"; expected one of heading, paragraph, list, image, table, callout, quote, divider, code, unknown, stack, columns, grid',
+          'unknown type "video"; expected one of heading, paragraph, list, image, table, callout, quote, divider, code, stat, math, unknown, stack, columns, grid, steps',
       },
     ]);
   });

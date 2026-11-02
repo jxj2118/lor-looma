@@ -14,6 +14,7 @@ function idComment(node: LoomaNode): string {
     return `<!-- id: ${node.id} columns widths=${node.widths.join(',')} -->`;
   if (node.type === 'stack') return `<!-- id: ${node.id} stack -->`;
   if (node.type === 'grid') return `<!-- id: ${node.id} grid columns=${node.columns} -->`;
+  if (node.type === 'steps') return `<!-- id: ${node.id} steps -->`;
   return `<!-- id: ${node.id} -->`;
 }
 
@@ -92,6 +93,10 @@ function nodeBody(node: LoomaNode, doc: LoomaDocument): string {
       return '---';
     case 'code':
       return `\`\`\`${node.language ?? ''}\n${node.code}\n\`\`\``;
+    case 'stat':
+      return `**${node.value}** — ${node.label}${node.detail ? ` (${node.detail})` : ''}`;
+    case 'math':
+      return `$$\n${node.tex}\n$$`;
     case 'unknown': {
       const rawType = node.raw.type;
       const name = typeof rawType === 'string' ? rawType : 'unknown';
@@ -99,6 +104,7 @@ function nodeBody(node: LoomaNode, doc: LoomaDocument): string {
     }
     case 'stack':
     case 'grid':
+    case 'steps':
       return [
         idComment(node),
         ...node.children.map((child) => renderNode(child, doc)),
@@ -121,8 +127,14 @@ function nodeBody(node: LoomaNode, doc: LoomaDocument): string {
 }
 
 function renderNode(node: LoomaNode, doc: LoomaDocument): string {
-  if (node.type === 'stack' || node.type === 'grid' || node.type === 'columns')
+  if (
+    node.type === 'stack' ||
+    node.type === 'grid' ||
+    node.type === 'columns' ||
+    node.type === 'steps'
+  ) {
     return nodeBody(node, doc);
+  }
   const body = nodeBody(node, doc);
   return body.length > 0 ? `${idComment(node)}\n${body}` : idComment(node);
 }

@@ -195,7 +195,7 @@ describe('childArrayOf', () => {
 });
 
 describe('isContainer', () => {
-  it('accepts stack, columns, and grid only', () => {
+  it('accepts stack, columns, grid, and steps', () => {
     const doc = document();
     const heading = findNode(doc, 'b_title');
     const stack = findNode(doc, 'n_process_stack');
@@ -206,5 +206,6 @@ describe('isContainer', () => {
     expect(isContainer(stack.node)).toBe(true);
     expect(isContainer(columns.node)).toBe(true);
     expect(isContainer(grid.node)).toBe(true);
+    expect(isContainer({ id: 'n_steps', type: 'steps', children: [] })).toBe(true);
   });
 });

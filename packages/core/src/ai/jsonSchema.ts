@@ -59,7 +59,7 @@ const COMMAND_DESCRIPTIONS: Record<CommandOp, string> = {
   moveNode: 'Move a node to another location, possibly in another card.',
   deleteNode: 'Delete a block or container (and its children).',
   wrapNodes:
-    'Wrap adjacent sibling nodes in a new stack, columns or grid container. For columns, each node becomes one column.',
+    'Wrap adjacent sibling nodes in a new stack, columns, grid or steps container. For columns, each node becomes one column.',
   unwrapNode: 'Remove a container and put its children in its place.',
   insertColumn: 'Add an empty column to a columns container (max 4).',
   deleteColumn:
@@ -225,7 +225,7 @@ function containerShells(node: JsonSchema): JsonSchema[] {
   for (const branch of node.anyOf) {
     if (!isSchema(branch)) continue;
     const type = typeConst(branch);
-    if (type !== 'stack' && type !== 'columns' && type !== 'grid') continue;
+    if (type !== 'stack' && type !== 'columns' && type !== 'grid' && type !== 'steps') continue;
     const shell = cloneSchema(branch);
     const properties = shell.properties;
     if (isSchema(properties)) delete properties.children;

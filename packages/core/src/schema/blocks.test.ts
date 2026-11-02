@@ -6,8 +6,10 @@ import {
   HeadingBlockSchema,
   ImageBlockSchema,
   ListBlockSchema,
+  MathBlockSchema,
   ParagraphBlockSchema,
   QuoteBlockSchema,
+  StatBlockSchema,
   TableBlockSchema,
 } from './blocks';
 
@@ -61,6 +63,88 @@ describe('block schemas', () => {
       type: 'code',
       code: '',
     });
+    expect(StatBlockSchema.parse({ id: 'b_1', type: 'stat' })).toEqual({
+      id: 'b_1',
+      type: 'stat',
+      value: '',
+      label: '',
+    });
+    expect(MathBlockSchema.parse({ id: 'b_1', type: 'math' })).toEqual({
+      id: 'b_1',
+      type: 'math',
+      tex: '',
+    });
+  });
+
+  it('accepts a stat tone and an optional detail', () => {
+    expect(
+      StatBlockSchema.parse({
+        id: 'b_1',
+        type: 'stat',
+        value: '**98%**',
+        label: 'Completion',
+        detail: '+12% this week',
+        tone: 'info',
+      }),
+    ).toEqual({
+      id: 'b_1',
+      type: 'stat',
+      value: '**98%**',
+      label: 'Completion',
+      detail: '+12% this week',
+      tone: 'info',
+    });
+    expect(StatBlockSchema.safeParse({ id: 'b_1', type: 'stat', tone: 'primary' }).success).toBe(
+      false,
+    );
+  });
+
+  it('keeps math tex verbatim and accepts a caption', () => {
+    expect(
+      MathBlockSchema.parse({
+        id: 'b_1',
+        type: 'math',
+        tex: 'E = mc^2',
+        caption: 'Mass-energy',
+      }),
+    ).toEqual({
+      id: 'b_1',
+      type: 'math',
+      tex: 'E = mc^2',
+      caption: 'Mass-energy',
+    });
+  });
+
+  it('accepts an image focal point inside 0-100 and rejects one outside', () => {
+    expect(
+      ImageBlockSchema.parse({
+        id: 'b_1',
+        type: 'image',
+        assetId: 'img_1',
+        focalPoint: { x: 0, y: 100 },
+      }),
+    ).toEqual({
+      id: 'b_1',
+      type: 'image',
+      assetId: 'img_1',
+      focalPoint: { x: 0, y: 100 },
+    });
+    expect(
+      ImageBlockSchema.safeParse({
+        id: 'b_1',
+        type: 'image',
+        assetId: 'img_1',
+        focalPoint: { x: -1, y: 50 },
+      }).success,
+    ).toBe(false);
+    expect(
+      ImageBlockSchema.safeParse({
+        id: 'b_1',
+        type: 'image',
+        assetId: 'img_1',
+        focalPoint: { x: 50, y: 101 },
+      }).success,
+    ).toBe(false);
   });
 
   it('requires a heading level of 1, 2, or 3', () => {

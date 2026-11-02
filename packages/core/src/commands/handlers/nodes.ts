@@ -16,7 +16,7 @@ function subtreeIds(node: LoomaNode): string[] {
     for (const column of node.children) {
       for (const child of column) ids.push(...subtreeIds(child));
     }
-  } else if (node.type === 'stack' || node.type === 'grid') {
+  } else if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
     for (const child of node.children) ids.push(...subtreeIds(child));
   }
   return ids;
@@ -28,7 +28,7 @@ function hasDescendant(node: LoomaNode, id: string): boolean {
       column.some((child) => child.id === id || hasDescendant(child, id)),
     );
   }
-  if (node.type === 'stack' || node.type === 'grid') {
+  if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
     return node.children.some((child) => child.id === id || hasDescendant(child, id));
   }
   return false;

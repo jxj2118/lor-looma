@@ -22,7 +22,12 @@ export interface FoundCard {
 }
 
 export function isContainer(node: LoomaNode): node is LoomaContainer {
-  return node.type === 'stack' || node.type === 'columns' || node.type === 'grid';
+  return (
+    node.type === 'stack' ||
+    node.type === 'columns' ||
+    node.type === 'grid' ||
+    node.type === 'steps'
+  );
 }
 
 function isCard(parent: LoomaCard | LoomaContainer): parent is LoomaCard {

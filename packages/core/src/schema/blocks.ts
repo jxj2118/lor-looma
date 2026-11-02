@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CALLOUT_TONES } from '../constants';
-import { IdSchema, InlineTextSchema } from './primitives';
+import { FocalPointSchema, IdSchema, InlineTextSchema } from './primitives';
 
 export const ListItemSchema = z.union([
   z.string(),
@@ -41,6 +41,7 @@ export const ImageBlockSchema = z.object({
   fit: z.enum(['cover', 'contain']).optional(),
   caption: InlineTextSchema.optional(),
   width: z.enum(['auto', 'full']).optional(),
+  focalPoint: FocalPointSchema.optional(),
 });
 
 export const TableBlockSchema = z.object({
@@ -79,6 +80,22 @@ export const CodeBlockSchema = z.object({
   code: z.string().default(''),
 });
 
+export const StatBlockSchema = z.object({
+  id: IdSchema,
+  type: z.literal('stat'),
+  value: InlineTextSchema.default(''),
+  label: InlineTextSchema.default(''),
+  detail: InlineTextSchema.optional(),
+  tone: z.enum(CALLOUT_TONES).optional(),
+});
+
+export const MathBlockSchema = z.object({
+  id: IdSchema,
+  type: z.literal('math'),
+  tex: z.string().default(''),
+  caption: InlineTextSchema.optional(),
+});
+
 export const UnknownBlockSchema = z.object({
   id: IdSchema,
   type: z.literal('unknown'),
@@ -95,6 +112,8 @@ export type CalloutBlock = z.output<typeof CalloutBlockSchema>;
 export type QuoteBlock = z.output<typeof QuoteBlockSchema>;
 export type DividerBlock = z.output<typeof DividerBlockSchema>;
 export type CodeBlock = z.output<typeof CodeBlockSchema>;
+export type StatBlock = z.output<typeof StatBlockSchema>;
+export type MathBlock = z.output<typeof MathBlockSchema>;
 export type UnknownBlock = z.output<typeof UnknownBlockSchema>;
 
 export type LoomaBlock =
@@ -107,4 +126,6 @@ export type LoomaBlock =
   | QuoteBlock
   | DividerBlock
   | CodeBlock
+  | StatBlock
+  | MathBlock
   | UnknownBlock;

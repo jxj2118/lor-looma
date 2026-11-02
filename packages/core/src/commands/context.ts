@@ -74,7 +74,7 @@ export class CommandContext {
       }
       return;
     }
-    if (node.type === 'stack' || node.type === 'grid') {
+    if (node.type === 'stack' || node.type === 'grid' || node.type === 'steps') {
       for (const child of node.children) this.dropSubtree(child);
     }
   }

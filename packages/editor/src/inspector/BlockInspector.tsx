@@ -41,6 +41,10 @@ function blockLabel(node: LoomaBlock, messages: Messages): string {
       return messages.table;
     case 'divider':
       return messages.divider;
+    case 'stat':
+      return node.type;
+    case 'math':
+      return node.type;
     case 'unknown':
       return messages.unsupported;
     default: {
@@ -262,6 +266,8 @@ function BlockFields({
       );
     case 'table':
       return <TableFields node={node} patch={patch} />;
+    case 'stat':
+    case 'math':
     case 'divider':
     case 'unknown':
       return null;
