@@ -329,7 +329,8 @@ function Playground({ initial }: { initial: ReadySample }) {
             className={styles.file}
             type="file"
             accept=".looma,.json,application/json"
-            aria-label={messages.importLooma}
+            tabIndex={-1}
+            aria-hidden="true"
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = '';
@@ -352,7 +353,11 @@ function Playground({ initial }: { initial: ReadySample }) {
         </div>
       </header>
       {banner ? (
-        <p className={banner.tone === 'error' ? styles.bannerError : styles.banner} role="status">
+        <p
+          className={banner.tone === 'error' ? styles.bannerError : styles.banner}
+          role="status"
+          data-testid="playground-status"
+        >
           {banner.text}
         </p>
       ) : null}

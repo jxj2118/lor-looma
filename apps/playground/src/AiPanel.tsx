@@ -77,13 +77,15 @@ function ExecuteTab({ store, messages }: { store: LoomaStore; messages: Playgrou
   const [tone, setTone] = useState<'ok' | 'error' | 'idle'>('idle');
 
   function apply() {
-    const commands = readCommands(draft, messages);
-    if ('error' in commands) {
+    const parsed = readCommands(draft, messages);
+    if ('error' in parsed) {
       setTone('error');
-      setOutput(commands.error);
+      setOutput(parsed.error);
       return;
     }
-    const result = createToolHandler(store, { origin: 'ai' })('looma_apply', { commands });
+    const result = createToolHandler(store, { origin: 'ai' })('looma_apply', {
+      commands: parsed.commands,
+    });
     setTone(result.ok ? 'ok' : 'error');
     setOutput(formatResult(result));
   }

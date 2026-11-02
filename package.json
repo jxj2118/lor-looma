@@ -15,6 +15,7 @@
     "build": "bun run --filter './packages/*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "vitest run",
+    "test:e2e": "playwright test -c apps/playground/playwright.config.ts",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "lint": "eslint .",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.13.0",

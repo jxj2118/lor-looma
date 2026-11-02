@@ -24,11 +24,16 @@ export default defineConfig(
   },
   {
     files: ['apps/playground/**/*.{ts,tsx}'],
+    ignores: ['apps/playground/playwright.config.ts', 'apps/playground/e2e/**'],
     plugins: { 'react-refresh': reactRefresh },
     rules: { 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }] },
   },
   {
-    files: ['*.{js,ts}', '**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['*.{js,ts}', '**/vite.config.ts', '**/vitest.config.ts', '**/playwright.config.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['apps/playground/e2e/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
 );
