@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Canvas } from './canvas/Canvas';
+import { Inspector } from './inspector/Inspector';
 import { CardSidebar } from './sidebar/CardSidebar';
 import { SlashMenu } from './insert/SlashMenu';
 import { armFlash, clearFlash } from './canvas/flash';
@@ -247,6 +248,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         <div className={styles.workspace}>
           {readOnly ? null : <CardSidebar />}
           <Canvas />
+          {readOnly ? null : <Inspector />}
         </div>
         <div ref={setLayer} className={styles.layer}>
           <Notice />

@@ -80,6 +80,7 @@ export const zhCN: Record<keyof Messages, string> = {
   addColumn: '添加列',
   removeColumn: '删除末列',
   deleteColumn: '删除栏',
+  deleteColumnLabel: '删除第 {n} 栏',
   tone: '色调',
   toneInfo: '信息',
   toneSuccess: '成功',

@@ -177,7 +177,7 @@ describe('LoomaEditor', () => {
     fireEvent.click(screen.getByText('Three'), { shiftKey: true });
     expect(selectedNodes()).toEqual(['b_1', 'b_2', 'b_3']);
     fireEvent.click(screen.getByText('Left'));
-    fireEvent.click(screen.getByText('Right'), { shiftKey: true });
+    fireEvent.click(within(canvas()).getByText('Right'), { shiftKey: true });
     expect(selectedNodes()).toEqual(['b_right']);
   });
 

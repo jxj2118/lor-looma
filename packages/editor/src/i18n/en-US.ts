@@ -78,6 +78,7 @@ export const enUS = {
   addColumn: 'Add column',
   removeColumn: 'Remove column',
   deleteColumn: 'Delete column',
+  deleteColumnLabel: 'Delete column {n}',
   tone: 'Tone',
   toneInfo: 'Info',
   toneSuccess: 'Success',

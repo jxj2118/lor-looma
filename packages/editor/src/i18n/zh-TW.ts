@@ -80,6 +80,7 @@ export const zhTW: Record<keyof Messages, string> = {
   addColumn: '新增欄',
   removeColumn: '刪除末欄',
   deleteColumn: '刪除欄',
+  deleteColumnLabel: '刪除第 {n} 欄',
   tone: '色調',
   toneInfo: '資訊',
   toneSuccess: '成功',
