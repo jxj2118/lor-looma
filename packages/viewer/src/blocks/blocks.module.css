@@ -92,6 +92,53 @@
   margin-inline: auto;
 }
 
+.figure img[data-lm-zoom] {
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  padding: 3em 1.5em 1.5em;
+  background: color-mix(in srgb, #000 78%, transparent);
+  cursor: zoom-out;
+}
+
+.lightboxImage {
+  max-width: min(100%, 1200px);
+  max-height: calc(100vh - 8em);
+  object-fit: contain;
+  cursor: default;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 0.7em;
+  right: 0.7em;
+  width: 2em;
+  height: 2em;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 16%, transparent);
+  color: #fff;
+  font-size: 1.4em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightboxCaption {
+  max-width: 40em;
+  color: #fff;
+  font-style: normal;
+  text-align: center;
+}
+
 .caption {
   font-size: calc(var(--lm-size-small, 20px) * var(--lm-font-scale, 1));
   color: var(--lm-color-muted);

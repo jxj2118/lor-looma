@@ -1,6 +1,6 @@
 import { parseDocument } from '@lor-looma/core';
 import type { LoomaDocument } from '@lor-looma/core';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef, useState } from 'react';
 import type { RefObject } from 'react';
@@ -81,6 +81,49 @@ describe('present mode', () => {
     vi.unstubAllGlobals();
     Reflect.deleteProperty(document, 'fullscreenElement');
     Reflect.deleteProperty(document, 'exitFullscreen');
+  });
+
+  it('opens an image lightbox without turning the page', async () => {
+    const user = userEvent.setup();
+    const parsed = parseDocument({
+      looma: 1,
+      id: 'doc_present',
+      title: 'Present',
+      assets: {
+        img_leaf: { kind: 'image', src: 'https://example.com/leaf.png', alt: 'A green leaf' },
+      },
+      cards: [
+        {
+          id: 'c_1',
+          body: [
+            {
+              id: 'b_img',
+              type: 'image',
+              assetId: 'img_leaf',
+              caption: 'Leaf',
+              focalPoint: { x: 30, y: 40 },
+            },
+          ],
+        },
+        { id: 'c_2', body: [{ id: 'b_2', type: 'paragraph', text: 'Second idea' }] },
+      ],
+    });
+    if (!parsed.ok) throw new Error('fixture failed to parse');
+    const onPageChange = vi.fn();
+    const view = render(
+      <LoomaViewer document={parsed.doc} mode="present" onPageChange={onPageChange} />,
+    );
+    const img = view.container.querySelector('img');
+    if (!(img instanceof HTMLElement)) throw new Error('missing image');
+    expect(img).toHaveAttribute('data-focal', '30,40');
+    fireEvent.click(img);
+    expect(onPageChange).not.toHaveBeenCalled();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    expect(screen.queryByText('Second idea')).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'A green leaf' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 
   it('pages with the keyboard, including the ends of the deck', async () => {

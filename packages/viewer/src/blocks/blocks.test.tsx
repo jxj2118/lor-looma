@@ -174,6 +174,68 @@ describe('blocks', () => {
     expect(resolved.container.querySelector('img')).toBeNull();
   });
 
+  it('crops to a focal point and opens a lightbox that does not bubble the click', () => {
+    const onParent = vi.fn();
+    const view = render(
+      <div onClick={onParent}>
+        <NodeRenderProvider value={{ format: 'presentation', assets: { img_leaf: leaf } }}>
+          <Image
+            block={{
+              id: 'b_img',
+              type: 'image',
+              assetId: 'img_leaf',
+              focalPoint: { x: 20, y: 80 },
+              caption: 'A leaf',
+            }}
+          />
+        </NodeRenderProvider>
+      </div>,
+    );
+    const img = view.container.querySelector('img');
+    expect(img).toHaveAttribute('data-focal', '20,80');
+    expect(img).toHaveStyle({ objectPosition: '20% 80%' });
+    expect(img).toHaveAttribute('data-lm-zoom', '');
+    if (!(img instanceof HTMLElement)) throw new Error('missing image');
+
+    fireEvent.click(img);
+    expect(onParent).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog', { name: 'A green leaf' });
+    expect(dialog).toHaveAttribute('data-lm-lightbox', '');
+    expect(dialog.querySelector('figcaption')?.textContent).toBe('A leaf');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(img);
+    fireEvent.click(screen.getByRole('dialog', { name: 'A green leaf' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(img);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    view.unmount();
+
+    const editorClicks = vi.fn();
+    const editor = render(
+      <div onClick={editorClicks}>
+        <NodeRenderProvider
+          value={{
+            format: 'presentation',
+            assets: { img_leaf: leaf },
+            renderNode: () => null,
+          }}
+        >
+          <Image block={{ id: 'b_img', type: 'image', assetId: 'img_leaf' }} />
+        </NodeRenderProvider>
+      </div>,
+    );
+    const editorImg = editor.container.querySelector('img');
+    expect(editorImg).not.toHaveAttribute('data-lm-zoom');
+    if (editorImg) fireEvent.click(editorImg);
+    expect(editorClicks).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('renders a table with and without a header row', () => {
     const { container, rerender } = render(
       <Table

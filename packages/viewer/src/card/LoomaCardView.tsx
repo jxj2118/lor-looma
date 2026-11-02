@@ -76,7 +76,14 @@ export const LoomaCardView = memo(function LoomaCardView({
 
   const accentSrc = card.accent ? assetSrc(assets, card.accent.assetId, resolveAsset) : undefined;
   const accentPosition = card.accent && accentSrc ? card.accent.position : undefined;
-  const paint = backgroundPaint(card, assets, resolveAsset, accentPosition, accentSrc);
+  const paint = backgroundPaint(
+    card,
+    assets,
+    resolveAsset,
+    accentPosition,
+    accentSrc,
+    card.accent?.focalPoint,
+  );
   const surface = surfaceVariables(document.theme, card.background);
 
   const style = {
@@ -101,7 +108,17 @@ export const LoomaCardView = memo(function LoomaCardView({
           accentPosition === 'top' ? { height: format === 'document' ? '240px' : '36%' } : undefined
         }
       >
-        <img src={accentSrc} alt={assets[card.accent?.assetId ?? '']?.alt ?? ''} />
+        <img
+          src={accentSrc}
+          alt={assets[card.accent?.assetId ?? '']?.alt ?? ''}
+          style={
+            card.accent?.focalPoint
+              ? {
+                  objectPosition: `${card.accent.focalPoint.x}% ${card.accent.focalPoint.y}%`,
+                }
+              : undefined
+          }
+        />
       </div>
     ) : null;
 
@@ -142,6 +159,7 @@ function backgroundPaint(
   resolveAsset: LoomaCardViewProps['resolveAsset'],
   accentPosition: 'left' | 'right' | 'top' | 'background' | undefined,
   accentSrc: string | undefined,
+  focalPoint: { x: number; y: number } | undefined,
 ): { style: CSSProperties; overlay: boolean } {
   if (accentPosition === 'background' && accentSrc) {
     return {
@@ -149,7 +167,7 @@ function backgroundPaint(
       style: {
         backgroundImage: `url("${accentSrc}")`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: focalPoint ? `${focalPoint.x}% ${focalPoint.y}%` : 'center',
       },
     };
   }

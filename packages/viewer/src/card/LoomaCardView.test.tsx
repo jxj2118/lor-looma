@@ -182,6 +182,33 @@ describe('LoomaCardView', () => {
     );
   });
 
+  it('anchors accent images and background accents to a focal point', () => {
+    const doc = document([
+      {
+        id: 'c_focal',
+        accent: { position: 'left', assetId: 'img_leaf', focalPoint: { x: 15, y: 70 } },
+        body: [{ id: 'b_body', type: 'paragraph', text: 'Body' }],
+      },
+    ]);
+    const side = render(<LoomaCardView card={doc.cards[0]!} document={doc} />);
+    expect(side.container.querySelector('[data-lm-accent-media="left"] img')).toHaveStyle({
+      objectPosition: '15% 70%',
+    });
+    side.unmount();
+
+    const backgroundDoc = document([
+      {
+        id: 'c_focal',
+        accent: { position: 'background', assetId: 'img_leaf', focalPoint: { x: 80, y: 10 } },
+        body: [{ id: 'b_body', type: 'paragraph', text: 'Body' }],
+      },
+    ]);
+    const background = render(
+      <LoomaCardView card={backgroundDoc.cards[0]!} document={backgroundDoc} />,
+    );
+    expect(background.container.querySelector('section')?.style.backgroundPosition).toBe('80% 10%');
+  });
+
   it('paints color, gradient, and image backgrounds', () => {
     const colorDoc = document([
       {
