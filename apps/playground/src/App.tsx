@@ -3,6 +3,7 @@ import {
   createLoomaStore,
   findNode,
   formatIssue,
+  importPptx,
   parseDocument,
 } from '@lor-looma/core';
 import type { LoomaDocument, LoomaNode } from '@lor-looma/core';
@@ -172,9 +173,34 @@ function Playground({ initial }: { initial: ReadySample }) {
   }
 
   async function importFile(file: File) {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const pptx =
+      file.name.toLowerCase().endsWith('.pptx') ||
+      (bytes.length >= 4 &&
+        bytes[0] === 0x50 &&
+        bytes[1] === 0x4b &&
+        bytes[2] === 0x03 &&
+        bytes[3] === 0x04);
+    if (pptx) {
+      const result = await importPptx(buffer, { title: file.name.replace(/\.pptx$/i, '') });
+      if (!result.ok) {
+        setBanner({ tone: 'error', text: `${messages.pptxImportFailed} ${result.error}` });
+        return;
+      }
+      store.load(result.doc);
+      setSampleId('');
+      setPage(0);
+      setOverflowIds([]);
+      setBanner({
+        tone: result.warnings.length > 0 ? 'warning' : 'info',
+        text: [messages.importedPptx, ...result.warnings].join('\n'),
+      });
+      return;
+    }
     let input: unknown;
     try {
-      input = JSON.parse(await file.text()) as unknown;
+      input = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       setBanner({ tone: 'error', text: `${messages.invalidJson} ${detail}` });
@@ -337,7 +363,7 @@ function Playground({ initial }: { initial: ReadySample }) {
             ref={fileRef}
             className={styles.file}
             type="file"
-            accept=".looma,.json,application/json"
+            accept=".looma,.json,.pptx,application/json,application/vnd.openxmlformats-officedocument.presentationml.presentation"
             tabIndex={-1}
             aria-hidden="true"
             onChange={(event) => {

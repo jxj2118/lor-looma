@@ -196,12 +196,60 @@ const selection = ref.current?.getSelection();
 
 `select` accepts card ids and node ids. A card id selects the card. Node ids select those nodes and remember the card that contains them.
 
+## Import PowerPoint
+
+`importPptx` turns a `.pptx` file into a `LoomaDocument`. Call it from a file picker, then load `result.doc` into the editor. Pass `uploadAsset` when the host should store slide images in its own bucket instead of embedding them in the document.
+
+```tsx
+import { useState } from 'react';
+import { importPptx } from '@lor-looma/core';
+import { LoomaEditor } from '@lor-looma/editor';
+import type { LoomaDocument } from '@lor-looma/core';
+
+export function Workbench() {
+  const [doc, setDoc] = useState<LoomaDocument | null>(null);
+
+  async function onFile(file: File) {
+    const result = await importPptx(await file.arrayBuffer(), {
+      title: file.name.replace(/\.pptx$/i, ''),
+      uploadAsset: async ({ filename, mimeType, bytes }) => {
+        const uploaded = await uploadToObjectStorage({ filename, mimeType, bytes });
+        return {
+          src: uploaded.url,
+          width: uploaded.width,
+          height: uploaded.height,
+          alt: filename,
+        };
+      },
+    });
+    if (!result.ok) throw new Error(result.error);
+    setDoc(result.doc);
+  }
+
+  if (!doc) {
+    return (
+      <input
+        type="file"
+        accept=".pptx"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void onFile(file);
+        }}
+      />
+    );
+  }
+  return <LoomaEditor document={doc} />;
+}
+```
+
+`src` must still start with `http://`, `https://`, or `data:image/`. Omit `uploadAsset` to keep supported images inline. Each zip path is uploaded once, even when several slides use it. EMF, WMF, video, and audio are skipped. The document title comes from `docProps/core.xml`, then `options.title`, then the first slide heading.
+
 ## Playground import and export
 
 The playground is a host, not a library API, but it is the reference for round-tripping a file:
 
 1. Export calls `editorRef.current?.flush()`, then downloads `JSON.stringify(store.getDocument(), null, 2)` as `<slug>.looma.json`.
-2. Import reads `.looma` or `.json`, runs `parseDocument(value, { repair: true })`, and on success calls `store.load(doc)`.
+2. Import reads `.looma` or `.json`, runs `parseDocument(value, { repair: true })`, and on success calls `store.load(doc)`. A `.pptx` file, or a file whose bytes start with the ZIP signature, is converted with `importPptx` first. The filename without `.pptx` is the title fallback. Warnings are shown above the canvas.
 3. Repair warnings and validation errors are shown above the canvas. `load` itself does not repair; do that before calling it.
 
 Use the same two steps in your own save dialog.

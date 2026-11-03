@@ -23,6 +23,35 @@ if (!parsed.ok) {
 
 A successful result is `{ ok: true, doc, warnings }`. A failure is `{ ok: false, errors }`. Each issue has a `path` and a `message`.
 
+## Import a PowerPoint file
+
+`importPptx` reads a `.pptx` package in the browser or on Node.js 20+ and returns a validated `LoomaDocument`. It does not add a runtime dependency. The same function is available from `@lor-looma/core/pptx`.
+
+```ts
+import { importPptx } from '@lor-looma/core';
+import { LoomaEditor } from '@lor-looma/editor';
+
+const result = await importPptx(await file.arrayBuffer(), {
+  title: file.name.replace(/\.pptx$/i, ''),
+  uploadAsset: async ({ filename, mimeType, bytes }) => {
+    const uploaded = await uploadToObjectStorage({ filename, mimeType, bytes });
+    return {
+      src: uploaded.url,
+      width: uploaded.width,
+      height: uploaded.height,
+      alt: filename,
+    };
+  },
+});
+if (!result.ok) throw new Error(result.error);
+
+export function ImportedDeck() {
+  return <LoomaEditor document={result.doc} />;
+}
+```
+
+Without `uploadAsset`, png, jpeg, gif, webp, and svg files are embedded as `data:image/...;base64,...` URLs. The same image used on several slides becomes one asset. Unsupported media such as EMF, WMF, video, and audio is skipped and listed in `warnings`. The returned `doc` has already passed `parseDocument` with repair, so it can be loaded into `LoomaEditor` or `createLoomaStore`.
+
 ## Store
 
 `createLoomaStore(doc)` checks the document, freezes it, and keeps an undo stack of 200 entries. Consecutive edits that share a `mergeKey` inside a one-second window become one undo step.

@@ -82,7 +82,7 @@ callTool('looma_apply', {
 
 ## Playground
 
-`apps/playground` loads three sample decks and can switch among the viewer, the editor, four theme presets, and the three locales. The toolbar imports and exports `.looma` JSON. Export calls `editor.flush()` first so a title, speaker notes, or inline edit that is still inside its debounce window is included. The AI Console runs the public tool handler against the live store: apply commands, read the outline, read cards as JSON or Markdown, print the tool schemas, and load a full document. One preset inserts a steps container, a stat metric, and a math formula.
+`apps/playground` loads three sample decks and can switch among the viewer, the editor, four theme presets, and the three locales. The toolbar imports `.looma` JSON and `.pptx` files, and exports `.looma` JSON. A PowerPoint file is converted with `importPptx` before it is loaded. Export calls `editor.flush()` first so a title, speaker notes, or inline edit that is still inside its debounce window is included. The AI Console runs the public tool handler against the live store: apply commands, read the outline, read cards as JSON or Markdown, print the tool schemas, and load a full document. One preset inserts a steps container, a stat metric, and a math formula.
 
 ```bash
 bun install

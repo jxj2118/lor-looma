@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- Synchronize the release with `@lor-looma/core` PowerPoint import. Decks produced by `importPptx` render in scroll and present mode without an API change.
+
 ## 0.4.0
 
 - Synchronize release with `@lor-looma/editor` host integration capabilities.

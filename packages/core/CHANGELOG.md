@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- Import a `.pptx` file with `importPptx`. Each slide becomes a card with headings, paragraphs, nested lists, tables, images, columns, backgrounds, accents, and speaker notes.
+- Read and write ZIP archives, and parse Office XML, with no added runtime dependency. Pass `uploadAsset` to store extracted images in the host's own storage.
+
 ## 0.4.0
 
 - Synchronize release with `@lor-looma/editor` host integration capabilities.

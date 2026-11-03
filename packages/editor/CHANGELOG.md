@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- Synchronize the release with `@lor-looma/core` PowerPoint import. Load `importPptx(...).doc` into `LoomaEditor` the same way as any other document.
+
 ## 0.4.0
 
 - Add `chrome={{ topbar, documentSettings }}` on `LoomaEditor` so a host shell can unmount the built-in topbar and global document section in the inspector without CSS workarounds.

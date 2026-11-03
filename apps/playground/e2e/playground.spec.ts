@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { createZip } from '../../../packages/core/src/pptx/zip';
 
 const imported = {
   looma: 1,
@@ -124,7 +125,7 @@ test.describe('playground', () => {
     await locale.selectOption('zh-CN');
     await expect(page.getByRole('button', { name: 'AI 控制台' })).toBeVisible();
     await expect(page.getByRole('button', { name: '导出 `.looma`' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '导入 `.looma`' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '导入 `.looma` / `.pptx`' })).toBeVisible();
 
     await page.getByLabel('视图').selectOption('editor');
     await expect(locale).toBeVisible();
@@ -133,7 +134,7 @@ test.describe('playground', () => {
     await locale.selectOption('zh-TW');
     await expect(page.getByRole('button', { name: 'AI 主控台' })).toBeVisible();
     await expect(page.getByRole('button', { name: '匯出 `.looma`' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '匯入 `.looma`' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '匯入 `.looma` / `.pptx`' })).toBeVisible();
 
     await locale.selectOption('en-US');
     await expect(page.getByRole('button', { name: 'AI Console' })).toBeVisible();
@@ -198,4 +199,100 @@ test.describe('playground', () => {
       'data-focal',
     );
   });
+
+  test('imports a pptx file onto the canvas and into the editor', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'quarterly-review.pptx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      buffer: Buffer.from(await samplePptx()),
+    });
+    await expect(page.getByTestId('playground-status')).toContainText(
+      'Imported the PowerPoint file.',
+    );
+    const viewer = page.locator('[data-looma-root]');
+    await expect(viewer.getByText('Imported from PowerPoint').first()).toBeVisible();
+    await expect(viewer.getByText('First point').first()).toBeVisible();
+    await expect(viewer.getByText('Topic').first()).toBeVisible();
+
+    await page.getByLabel('View').selectOption('editor');
+    const canvas = page.locator('[data-lm-editor-canvas]');
+    await expect(canvas.getByText('Imported from PowerPoint').first()).toBeVisible();
+    await expect(canvas.getByText('Second point').first()).toBeVisible();
+    await expect(canvas.getByText('Ready').first()).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue(
+      'Imported from PowerPoint',
+    );
+    const notes = page.getByRole('textbox', { name: 'Speaker notes' });
+    await expect(notes).toHaveValue('Speak slowly');
+    await notes.fill('Speak slowly, then pause');
+    await notes.blur();
+    await expect(notes).toHaveValue('Speak slowly, then pause');
+  });
 });
+
+const SLIDE_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide';
+const NOTES_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide';
+
+function packageRels(items: { id: string; type: string; target: string }[]): string {
+  const body = items
+    .map((item) => `<Relationship Id="${item.id}" Type="${item.type}" Target="${item.target}"/>`)
+    .join('');
+  return `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${body}</Relationships>`;
+}
+
+async function samplePptx(): Promise<Uint8Array> {
+  const cx = 12_192_000;
+  const cy = 6_858_000;
+  const slide = `<?xml version="1.0"?>
+<p:sld xmlns:a="urn:a" xmlns:p="urn:p" xmlns:r="urn:r"><p:cSld><p:spTree>
+  <p:nvGrpSpPr/>
+  <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/><a:chOff x="0" y="0"/><a:chExt cx="${cx}" cy="${cy}"/></a:xfrm></p:grpSpPr>
+  <p:sp>
+    <p:nvSpPr><p:nvPr><p:ph type="ctrTitle"/></p:nvPr></p:nvSpPr>
+    <p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="11000000" cy="800000"/></a:xfrm></p:spPr>
+    <p:txBody><a:p><a:r><a:t>Imported from PowerPoint</a:t></a:r></a:p></p:txBody>
+  </p:sp>
+  <p:sp>
+    <p:nvSpPr><p:nvPr/></p:nvSpPr>
+    <p:spPr><a:xfrm><a:off x="0" y="1000000"/><a:ext cx="11000000" cy="1200000"/></a:xfrm></p:spPr>
+    <p:txBody>
+      <a:p><a:pPr lvl="0"><a:buChar char="•"/></a:pPr><a:r><a:t>First point</a:t></a:r></a:p>
+      <a:p><a:pPr lvl="0"><a:buChar char="•"/></a:pPr><a:r><a:t>Second point</a:t></a:r></a:p>
+    </p:txBody>
+  </p:sp>
+  <p:graphicFrame>
+    <p:xfrm><a:off x="0" y="2500000"/><a:ext cx="11000000" cy="1500000"/></p:xfrm>
+    <a:graphic><a:graphicData><a:tbl><a:tblPr firstRow="1"/>
+      <a:tr>
+        <a:tc><a:txBody><a:p><a:r><a:t>Topic</a:t></a:r></a:p></a:txBody></a:tc>
+        <a:tc><a:txBody><a:p><a:r><a:t>Status</a:t></a:r></a:p></a:txBody></a:tc>
+      </a:tr>
+      <a:tr>
+        <a:tc><a:txBody><a:p><a:r><a:t>Import</a:t></a:r></a:p></a:txBody></a:tc>
+        <a:tc><a:txBody><a:p><a:r><a:t>Ready</a:t></a:r></a:p></a:txBody></a:tc>
+      </a:tr>
+    </a:tbl></a:graphicData></a:graphic>
+  </p:graphicFrame>
+</p:spTree></p:cSld></p:sld>`;
+  const notes = `<?xml version="1.0"?>
+<p:notes xmlns:a="urn:a" xmlns:p="urn:p"><p:cSld><p:spTree>
+  <p:sp><p:nvSpPr><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr>
+    <p:txBody><a:p><a:r><a:t>Speak slowly</a:t></a:r></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:nvPr><p:ph type="sldNum"/></p:nvPr></p:nvSpPr>
+    <p:txBody><a:p><a:r><a:t>1</a:t></a:r></a:p></p:txBody></p:sp>
+</p:spTree></p:cSld></p:notes>`;
+  return createZip({
+    'docProps/core.xml':
+      '<?xml version="1.0"?><cp:coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Imported from PowerPoint</dc:title></cp:coreProperties>',
+    'ppt/presentation.xml': `<?xml version="1.0"?><p:presentation xmlns:p="urn:p" xmlns:r="urn:r"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst><p:sldSz cx="${cx}" cy="${cy}"/></p:presentation>`,
+    'ppt/_rels/presentation.xml.rels': packageRels([
+      { id: 'rId1', type: SLIDE_REL, target: 'slides/slide1.xml' },
+    ]),
+    'ppt/slides/slide1.xml': slide,
+    'ppt/slides/_rels/slide1.xml.rels': packageRels([
+      { id: 'rIdNotes', type: NOTES_REL, target: '../notesSlides/notesSlide1.xml' },
+    ]),
+    'ppt/notesSlides/notesSlide1.xml': notes,
+  });
+}
