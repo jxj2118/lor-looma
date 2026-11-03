@@ -1,5 +1,5 @@
 import { MAX_LIST_DEPTH } from '../constants';
-import type { ThemePreset } from '../constants';
+import type { CalloutTone, HighlightColor, InlineColor, ThemePreset } from '../constants';
 import { createId } from '../ids';
 import type { IdKind } from '../ids';
 import { inlineToPlainText, isSafeHref, normalizeInline, serializeInline } from '../inline';
@@ -20,6 +20,21 @@ const DEFAULT_SLIDE_CX = 12_192_000;
 const DEFAULT_SLIDE_CY = 6_858_000;
 const FULL_WIDTH_RATIO = 0.72;
 const BACKDROP_AREA = 0.75;
+const SHAPE_BACKDROP_AREA = 0.85;
+const PANEL_MIN_HEIGHT = 0.25;
+const PANEL_MIN_WIDTH = 0.18;
+const PANEL_MAX_WIDTH = 0.6;
+const HEADER_BAND = 0.18;
+const FOOTER_BAND = 0.88;
+const BADGE_X = 0.85;
+const BADGE_Y = 0.15;
+const PILL_MAX_WIDTH = 0.25;
+const PILL_MAX_HEIGHT = 0.12;
+const TINY_WIDTH = 0.06;
+const TINY_HEIGHT = 0.08;
+const ROW_GAP = 0.04;
+const ROW_LINK = 0.08;
+const COLUMN_GAP_BRIDGE = 0.012;
 
 const IMAGE_TYPES: Record<string, string> = {
   png: 'image/png',
@@ -74,19 +89,37 @@ interface Relationship {
   external: boolean;
 }
 
-interface Placed {
+type Fill =
+  { kind: 'color'; value: string } | { kind: 'gradient'; from: string; to: string; angle: number };
+
+interface RawItem {
   box: Box;
+  kind: 'text' | 'image' | 'table' | 'shape';
+  fill?: Fill;
+  paragraphs: RichParagraph[];
   blocks: LoomaNode[];
-  kind: 'text' | 'image' | 'table';
   assetId?: string;
+  placeholder: string | null;
+  highlight?: HighlightColor;
+  callout?: CalloutTone;
 }
 
 interface RichParagraph {
   text: string;
+  plain: string;
   align?: 'center' | 'right';
   list: 'bullet' | 'number' | null;
   level: number;
   size: number | null;
+  bold: boolean;
+  color?: InlineColor;
+}
+
+interface FlowPiece {
+  y: number;
+  step?: number;
+  nodes: LoomaNode[];
+  fallback: LoomaNode[];
 }
 
 interface ImportState {
@@ -97,6 +130,7 @@ interface ImportState {
   ids: (kind: IdKind) => string;
   uploadAsset?: ImportPptxOptions['uploadAsset'];
   slide: Box;
+  themeColors: Map<string, string>;
 }
 
 interface SlideContext extends ImportState {
@@ -127,6 +161,7 @@ export async function importPptx(
     },
     uploadAsset: options?.uploadAsset,
     slide: readSlideSize(archive.files),
+    themeColors: readThemeColors(archive.files),
   };
 
   const parts = slideOrder(archive.files);
@@ -149,12 +184,13 @@ export async function importPptx(
   }
   if (cards.length === 0) return { ok: false, error: 'No slides found in the PowerPoint file.' };
 
+  const theme = deckTheme(cards, options?.themePreset);
   const candidate = {
     looma: 1 as const,
     id: state.ids('document'),
     title: documentTitle(archive.files, cards, options?.title),
     format: 'presentation' as const,
-    theme: { preset: options?.themePreset ?? 'clean' },
+    theme,
     assets: state.assets,
     cards,
   };
@@ -244,21 +280,31 @@ function slideNumber(path: string): number {
 }
 
 async function convertSlide(ctx: SlideContext, xml: XmlElement): Promise<LoomaCard> {
+  let background = await readInheritedBackground(ctx, xml);
+  const placed: RawItem[] = [];
   const surface = child(xml, 'cSld') ?? xml;
-  let background = await readBackground(ctx, child(surface, 'bg'));
   const tree = child(surface, 'spTree');
-  const placed: Placed[] = [];
   if (tree) {
     const root = groupTransform(tree, identityTransform(ctx.slide));
     await walkShapes(ctx, tree, root, placed);
   }
-  const backdrop = promoteBackdrop(placed, ctx.slide, background);
+  const painted = promoteShapeBackground(placed, ctx.slide, background);
+  background = painted.background;
+  const panels = findPanels(painted.items, ctx.slide);
+  applyPills(painted.items, ctx.slide);
+  applyCallouts(painted.items, ctx.slide);
+  const visible = painted.items.filter(
+    (item) =>
+      item.kind !== 'shape' && !isRunningFooter(item, ctx.slide) && !isCornerBadge(item, ctx.slide),
+  );
+  const backdrop = promoteBackdrop(visible, ctx.slide, background);
   background = backdrop.background;
   const accented = promoteAccent(backdrop.items, ctx.slide);
+  const header = takeHeaderRow(accented.items, ctx.slide);
   const notes = readNotes(ctx);
   const card: LoomaCard = {
     id: ctx.ids('card'),
-    body: layoutBody(accented.items, ctx.slide, ctx.ids),
+    body: [...renderItems(ctx, header.header), ...layoutContent(ctx, header.rest, panels)],
   };
   if (background) card.background = background;
   if (accented.accent) card.accent = accented.accent;
@@ -270,15 +316,14 @@ async function walkShapes(
   ctx: SlideContext,
   container: XmlElement,
   parent: Transform,
-  placed: Placed[],
+  placed: RawItem[],
 ): Promise<void> {
   for (const node of container.children) {
     if (typeof node === 'string') continue;
     const tag = localName(node.name);
     if (tag === 'sp') {
-      const blocks = convertTextShape(ctx, node);
-      if (blocks.length === 0) continue;
-      placed.push({ box: readBox(shapeTransform(node), parent), blocks, kind: 'text' });
+      const shape = readTextItem(ctx, node, parent);
+      if (shape) placed.push(shape);
       continue;
     }
     if (tag === 'pic') {
@@ -289,7 +334,13 @@ async function walkShapes(
     if (tag === 'graphicFrame') {
       const table = convertTable(ctx, node);
       if (table) {
-        placed.push({ box: readBox(shapeTransform(node), parent), blocks: [table], kind: 'table' });
+        placed.push({
+          box: readBox(shapeTransform(node), parent),
+          kind: 'table',
+          paragraphs: [],
+          blocks: [table],
+          placeholder: null,
+        });
       } else {
         warn(ctx.warnings, `Skipped unsupported graphic on slide ${ctx.index + 1}.`);
       }
@@ -299,7 +350,7 @@ async function walkShapes(
   }
 }
 
-function convertTextShape(ctx: SlideContext, shape: XmlElement): LoomaNode[] {
+function readTextItem(ctx: SlideContext, shape: XmlElement, parent: Transform): RawItem | null {
   const placeholder = placeholderType(shape);
   if (
     placeholder === 'sldNum' ||
@@ -308,18 +359,24 @@ function convertTextShape(ctx: SlideContext, shape: XmlElement): LoomaNode[] {
     placeholder === 'sldImg' ||
     placeholder === 'hdr'
   ) {
-    return [];
+    return null;
   }
   const body = child(shape, 'txBody');
-  if (!body) return [];
-  const paragraphs = children(body, 'p').map((paragraph) => readParagraph(ctx, paragraph));
-  const role =
-    placeholder === 'title' || placeholder === 'ctrTitle' || placeholder === 'subTitle'
-      ? placeholder
-      : placeholder === null
-        ? 'other'
-        : 'body';
-  return paragraphsToBlocks(ctx, paragraphs, headingFor(role, paragraphs, ctx.index));
+  const paragraphs = body
+    ? children(body, 'p').map((paragraph) => readParagraph(ctx, paragraph))
+    : [];
+  const plain = paragraphs
+    .map((paragraph) => paragraph.plain)
+    .join('')
+    .trim();
+  return {
+    box: readBox(shapeTransform(shape), parent),
+    kind: plain ? 'text' : 'shape',
+    fill: readFill(child(shape, 'spPr'), ctx.themeColors),
+    paragraphs: plain ? paragraphs : [],
+    blocks: [],
+    placeholder,
+  };
 }
 
 function headingFor(
@@ -333,8 +390,13 @@ function headingFor(
   if (role === 'title') return { level: 2, index };
   if (role === 'subTitle') return { level: 3, index };
   const first = paragraphs[index];
-  if (role === 'other' && first && !first.list && (first.size ?? 0) >= 2800)
-    return { level: 2, index };
+  if (!first || first.list || role !== 'other') return null;
+  const size = first.size ?? 0;
+  if (size >= 3600) return { level: 1, index };
+  if (size >= 2400) return { level: 2, index };
+  const plain = first.plain.trim();
+  const onlyLine = paragraphs.filter((paragraph) => paragraph.plain.trim()).length === 1;
+  if (size >= 1850 && first.bold && onlyLine && plain.length <= 80) return { level: 3, index };
   return null;
 }
 
@@ -410,8 +472,12 @@ function nestList(items: readonly { level: number; text: string }[]): ListItem[]
 
 function readParagraph(ctx: SlideContext, paragraph: XmlElement): RichParagraph {
   const props = child(paragraph, 'pPr');
+  const inspected = inspectParagraph(ctx, paragraph);
   return {
-    text: serializeParagraph(ctx, paragraph),
+    text: inspected.text,
+    plain: inspected.plain,
+    bold: inspected.bold,
+    color: inspected.color,
     align: readAlign(props),
     list: readListStyle(props),
     level: readLevel(props),
@@ -419,31 +485,112 @@ function readParagraph(ctx: SlideContext, paragraph: XmlElement): RichParagraph 
   };
 }
 
+interface RunStyle {
+  bold: boolean;
+  italic: boolean;
+  strike: boolean;
+  color?: InlineColor;
+  href?: string;
+}
+
+interface StyledPiece {
+  break: boolean;
+  text: string;
+  style: RunStyle;
+}
+
 function serializeParagraph(ctx: SlideContext, paragraph: XmlElement): string {
-  const nodes: InlineNode[] = [];
+  return inspectParagraph(ctx, paragraph).text;
+}
+
+function inspectParagraph(
+  ctx: SlideContext,
+  paragraph: XmlElement,
+): { text: string; plain: string; bold: boolean; color?: InlineColor } {
+  const pieces: StyledPiece[] = [];
   for (const node of paragraph.children) {
     if (typeof node === 'string') continue;
     const tag = localName(node.name);
-    if (tag === 'br') nodes.push({ type: 'break' });
-    else if (tag === 'r' || tag === 'fld') nodes.push(...runNodes(ctx, node));
+    if (tag === 'br')
+      pieces.push({ break: true, text: '', style: { bold: false, italic: false, strike: false } });
+    else if (tag === 'r' || tag === 'fld') {
+      const piece = readPiece(ctx, node);
+      if (piece) pieces.push(piece);
+    }
   }
-  if (nodes.length === 0) return '';
-  return normalizeInline(serializeInline(nodes));
+  const merged: StyledPiece[] = [];
+  for (const piece of pieces) {
+    const previous = merged[merged.length - 1];
+    if (previous && !previous.break && !piece.break && sameStyle(previous.style, piece.style)) {
+      previous.text += piece.text;
+    } else {
+      merged.push({ break: piece.break, text: piece.text, style: { ...piece.style } });
+    }
+  }
+  const textPieces = merged.filter((piece) => !piece.break && piece.text.length > 0);
+  const bold = textPieces.length > 0 && textPieces.every((piece) => piece.style.bold);
+  const firstColor = textPieces[0]?.style.color;
+  const color =
+    firstColor && textPieces.every((piece) => piece.style.color === firstColor)
+      ? firstColor
+      : undefined;
+  const nodes: InlineNode[] = [];
+  let plain = '';
+  for (const piece of merged) {
+    if (piece.break) {
+      nodes.push({ type: 'break' });
+      plain += '\n';
+      continue;
+    }
+    plain += piece.text;
+    nodes.push(styleNode(piece.text, piece.style));
+  }
+  return {
+    text: nodes.length > 0 ? normalizeInline(serializeInline(nodes)) : '',
+    plain,
+    bold,
+    color,
+  };
 }
 
-function runNodes(ctx: SlideContext, run: XmlElement): InlineNode[] {
+function readPiece(ctx: SlideContext, run: XmlElement): StyledPiece | null {
   const props = child(run, 'rPr');
   const text = children(run, 't')
     .map((node) => textContent(node))
     .join('');
-  if (!text) return [];
+  if (!text) return null;
+  const fill = props ? readSolidColor(child(props, 'solidFill'), ctx.themeColors) : undefined;
+  return {
+    break: false,
+    text,
+    style: {
+      bold: boolAttr(props, 'b'),
+      italic: boolAttr(props, 'i'),
+      strike: strikeOn(props),
+      color: fill ? (semanticTextColor(fill) ?? undefined) : undefined,
+      href: hyperlink(ctx, props),
+    },
+  };
+}
+
+function sameStyle(left: RunStyle, right: RunStyle): boolean {
+  return (
+    left.bold === right.bold &&
+    left.italic === right.italic &&
+    left.strike === right.strike &&
+    left.color === right.color &&
+    left.href === right.href
+  );
+}
+
+function styleNode(text: string, style: RunStyle): InlineNode {
   let node: InlineNode = { type: 'text', value: text };
-  if (strikeOn(props)) node = { type: 'strike', children: [node] };
-  if (boolAttr(props, 'i')) node = { type: 'italic', children: [node] };
-  if (boolAttr(props, 'b')) node = { type: 'bold', children: [node] };
-  const href = hyperlink(ctx, props);
-  if (href) node = { type: 'link', href, children: [node] };
-  return [node];
+  if (style.strike) node = { type: 'strike', children: [node] };
+  if (style.italic) node = { type: 'italic', children: [node] };
+  if (style.bold) node = { type: 'bold', children: [node] };
+  if (style.color) node = { type: 'color', color: style.color, children: [node] };
+  if (style.href) node = { type: 'link', href: style.href, children: [node] };
+  return node;
 }
 
 function hyperlink(ctx: SlideContext, props: XmlElement | undefined): string | undefined {
@@ -524,7 +671,7 @@ async function convertPicture(
   ctx: SlideContext,
   picture: XmlElement,
   parent: Transform,
-): Promise<Placed | null> {
+): Promise<RawItem | null> {
   if (
     descendants(picture, 'videoFile').length > 0 ||
     descendants(picture, 'audioFile').length > 0
@@ -532,8 +679,9 @@ async function convertPicture(
     warn(ctx.warnings, `Skipped video or audio on slide ${ctx.index + 1}.`);
     return null;
   }
-  const blip = descendants(picture, 'blip')[0];
-  const relId = blip ? attr(blip, 'embed') : undefined;
+  const box = readBox(shapeTransform(picture), parent);
+  if (isTinyIcon(box, ctx.slide)) return null;
+  const relId = pictureRelId(picture);
   if (!relId) return null;
   const rel = ctx.rels.find((item) => item.id === relId);
   if (!rel) {
@@ -543,11 +691,58 @@ async function convertPicture(
   const assetId = await assetForRelationship(ctx, rel);
   if (!assetId) return null;
   return {
-    box: readBox(shapeTransform(picture), parent),
+    box,
     blocks: [{ id: ctx.ids('block'), type: 'image', assetId }],
     kind: 'image',
+    paragraphs: [],
     assetId,
+    placeholder: null,
   };
+}
+
+function pictureRelId(picture: XmlElement): string | undefined {
+  const blip = descendants(picture, 'blip')[0];
+  const embed = blip ? attr(blip, 'embed') : undefined;
+  if (embed) return embed;
+  const svg = descendants(picture, 'svgBlip')[0];
+  return svg ? attr(svg, 'embed') : undefined;
+}
+
+async function readInheritedBackground(
+  ctx: SlideContext,
+  xml: XmlElement,
+): Promise<CardBackground | undefined> {
+  const surface = child(xml, 'cSld') ?? xml;
+  const own = await readBackground(ctx, child(surface, 'bg'));
+  if (own) return own;
+  const layout = linkedPart(ctx, 'slideLayout');
+  if (!layout) return undefined;
+  const layoutXml = readXml(ctx.files, layout.part);
+  if (!layoutXml) return undefined;
+  const layoutCtx: SlideContext = { ...ctx, part: layout.part, rels: layout.rels };
+  const layoutSurface = child(layoutXml, 'cSld') ?? layoutXml;
+  const layoutBg = await readBackground(layoutCtx, child(layoutSurface, 'bg'));
+  if (layoutBg) return layoutBg;
+  const master = linkedPart(layoutCtx, 'slideMaster');
+  if (!master) return undefined;
+  const masterXml = readXml(ctx.files, master.part);
+  if (!masterXml) return undefined;
+  const masterCtx: SlideContext = { ...ctx, part: master.part, rels: master.rels };
+  const masterSurface = child(masterXml, 'cSld') ?? masterXml;
+  return readBackground(masterCtx, child(masterSurface, 'bg'));
+}
+
+function linkedPart(
+  ctx: SlideContext,
+  suffix: string,
+): { part: string; rels: Relationship[] } | undefined {
+  const rel = ctx.rels.find(
+    (item) => item.type.endsWith(`/${suffix}`) || item.type.endsWith(suffix),
+  );
+  if (!rel || rel.external) return undefined;
+  const part = canonicalPath(ctx.files, resolvePart(ctx.part, rel.target));
+  if (!filesHas(ctx.files, part)) return undefined;
+  return { part, rels: readRelationships(ctx.files, part) };
 }
 
 async function readBackground(
@@ -562,10 +757,7 @@ async function readBackground(
     const assetId = rel ? await assetForRelationship(ctx, rel) : null;
     if (assetId) return { kind: 'image', assetId };
   }
-  const color = descendants(background, 'srgbClr')[0];
-  const value = cssHex(color ? attr(color, 'val') : undefined);
-  if (value) return { kind: 'color', value };
-  return undefined;
+  return fillToBackground(readFill(background, ctx.themeColors));
 }
 
 async function assetForRelationship(ctx: SlideContext, rel: Relationship): Promise<string | null> {
@@ -633,10 +825,10 @@ function rememberAsset(ctx: SlideContext, path: string, asset: ImageAsset): stri
 }
 
 function promoteBackdrop(
-  items: readonly Placed[],
+  items: readonly RawItem[],
   slide: Box,
   background: CardBackground | undefined,
-): { background: CardBackground | undefined; items: Placed[] } {
+): { background: CardBackground | undefined; items: RawItem[] } {
   const pictures = items
     .filter(
       (item) =>
@@ -652,9 +844,9 @@ function promoteBackdrop(
 }
 
 function promoteAccent(
-  items: readonly Placed[],
+  items: readonly RawItem[],
   slide: Box,
-): { accent?: CardAccent; items: Placed[] } {
+): { accent?: CardAccent; items: RawItem[] } {
   const texts = items.filter((item) => item.kind !== 'image');
   const candidates = items.filter(
     (item) => item.kind === 'image' && accentPosition(item.box, slide, texts),
@@ -672,7 +864,7 @@ function promoteAccent(
 function accentPosition(
   box: Box,
   slide: Box,
-  texts: readonly Placed[],
+  texts: readonly RawItem[],
 ): 'left' | 'right' | 'top' | null {
   if (slide.cx <= 0 || slide.cy <= 0) return null;
   const width = box.cx / slide.cx;
@@ -716,77 +908,856 @@ function accentPosition(
   return null;
 }
 
-function layoutBody(
-  items: readonly Placed[],
-  slide: Box,
-  ids: (kind: IdKind) => string,
+interface FlowSegment {
+  y: number;
+  x: number;
+  kind: 'row' | 'items';
+  items: RawItem[];
+}
+
+function layoutContent(
+  ctx: SlideContext,
+  items: readonly RawItem[],
+  panels: readonly RawItem[],
 ): LoomaNode[] {
+  return emitSegments(ctx, buildSegments(items, ctx.slide), panels);
+}
+
+function buildSegments(items: readonly RawItem[], slide: Box): FlowSegment[] {
+  const { rows, rest } = peelFullRows(items, slide);
+  const segments: FlowSegment[] = rows.map((row) => ({
+    y: Math.min(...row.map((item) => item.box.y)),
+    x: Math.min(...row.map((item) => item.box.x)),
+    kind: 'row',
+    items: row,
+  }));
+  const sorted = [...rest].sort(
+    (left, right) => left.box.y - right.box.y || left.box.x - right.box.x,
+  );
+  let band: RawItem[] = [];
+  const flush = () => {
+    if (band.length === 0) return;
+    segments.push({
+      y: Math.min(...band.map((item) => item.box.y)),
+      x: Math.min(...band.map((item) => item.box.x)),
+      kind: 'items',
+      items: band,
+    });
+    band = [];
+  };
+  for (const item of sorted) {
+    if (isSeparator(item, sorted, slide)) {
+      flush();
+      segments.push({ y: item.box.y, x: item.box.x, kind: 'row', items: [item] });
+    } else {
+      band.push(item);
+    }
+  }
+  flush();
+  return segments.sort((left, right) => left.y - right.y || left.x - right.x);
+}
+
+function emitSegments(
+  ctx: SlideContext,
+  segments: readonly FlowSegment[],
+  panels: readonly RawItem[],
+): LoomaNode[] {
+  const out: LoomaNode[] = [];
+  let steps: FlowPiece[] = [];
+  const flush = () => {
+    out.push(...coalesceSteps(ctx, steps));
+    steps = [];
+  };
+  for (const segment of segments) {
+    if (segment.kind === 'row' && segment.items.length >= 2) {
+      const piece = piecesFromRow(ctx, segment.items);
+      if (piece.step) {
+        steps.push(piece);
+        continue;
+      }
+      flush();
+      out.push(...piece.nodes);
+      continue;
+    }
+    flush();
+    if (segment.kind === 'row') {
+      const only = segment.items[0];
+      if (only) out.push(...emitItem(ctx, only));
+    } else {
+      out.push(...layoutBand(ctx, segment.items, panels));
+    }
+  }
+  flush();
+  return out;
+}
+
+function layoutBand(
+  ctx: SlideContext,
+  band: readonly RawItem[],
+  panels: readonly RawItem[],
+): LoomaNode[] {
+  const slide = ctx.slide;
+  const active = panels.filter((panel) => band.some((item) => centerInside(panel.box, item.box)));
+  if (active.length >= 2 && active.length <= 4) {
+    const columns = active.map((panel) => band.filter((item) => centerInside(panel.box, item.box)));
+    const claimed = new Set(columns.flat());
+    const leftovers = band.filter((item) => !claimed.has(item));
+    const panelTop = Math.min(...active.map((panel) => panel.box.y));
+    const panelBottom = Math.max(...active.map((panel) => panel.box.y + panel.box.cy));
+    const above: RawItem[] = [];
+    const below: RawItem[] = [];
+    for (const item of leftovers) {
+      if (item.box.y + item.box.cy <= panelTop + slide.cy * 0.02) above.push(item);
+      else if (item.box.y >= panelBottom - slide.cy * 0.02) below.push(item);
+      else {
+        const center = item.box.x + item.box.cx / 2;
+        let best = 0;
+        let distance = Number.POSITIVE_INFINITY;
+        active.forEach((panel, index) => {
+          const delta = Math.abs(center - (panel.box.x + panel.box.cx / 2));
+          if (delta < distance) {
+            distance = delta;
+            best = index;
+          }
+        });
+        columns[best]?.push(item);
+      }
+    }
+    const paired = active
+      .map((panel, index) => ({ panel, items: columns[index] ?? [] }))
+      .filter((pair) => pair.items.length > 0);
+    if (paired.length >= 2) {
+      return [
+        ...renderItems(ctx, above),
+        columnsNode(
+          ctx,
+          paired.map((pair) => pair.items),
+          paired.map((pair) => pair.panel.box.cx),
+        ),
+        ...renderItems(ctx, below),
+      ];
+    }
+  }
+  const zones = splitByXGaps(band, slide);
+  if (zones) {
+    return [
+      columnsNode(
+        ctx,
+        zones,
+        zones.map((column) => unionBox(column).cx),
+      ),
+    ];
+  }
+  return renderItems(ctx, band);
+}
+
+function columnsNode(ctx: SlideContext, columns: RawItem[][], widths: number[]): LoomaNode {
+  return {
+    id: ctx.ids('container'),
+    type: 'columns',
+    widths: proportionalWidths(widths),
+    children: columns.map((column) => renderItems(ctx, column)),
+  };
+}
+
+function renderItems(ctx: SlideContext, items: readonly RawItem[]): LoomaNode[] {
   const sorted = [...items].sort(
     (left, right) => left.box.y - right.box.y || left.box.x - right.box.x,
   );
-  const used = new Set<Placed>();
-  const body: LoomaNode[] = [];
+  const consumed = new Set<RawItem>();
+  const pieces: FlowPiece[] = [];
   for (const item of sorted) {
-    if (used.has(item)) continue;
-    const columns = columnGroup(item, sorted, used, slide);
-    if (!columns) {
-      used.add(item);
-      body.push(...item.blocks);
+    if (consumed.has(item)) continue;
+    if (!isSimpleText(item) || item.callout) {
+      consumed.add(item);
+      const nodes = emitItem(ctx, item);
+      pieces.push({ y: item.box.y, nodes, fallback: nodes });
       continue;
     }
-    for (const column of columns) for (const member of column) used.add(member);
-    body.push({
-      id: ids('container'),
-      type: 'columns',
-      widths: proportionalWidths(
-        columns.map((column) => Math.max(...column.map((member) => member.box.cx))),
-      ),
-      children: columns.map((column) =>
-        column.sort((left, right) => left.box.y - right.box.y).flatMap((member) => member.blocks),
-      ),
-    });
+    const row = sorted.filter(
+      (other) =>
+        !consumed.has(other) &&
+        isSimpleText(other) &&
+        !other.callout &&
+        sameLine(item.box, other.box, ctx.slide),
+    );
+    if (row.length < 2) {
+      consumed.add(item);
+      const nodes = emitItem(ctx, item);
+      pieces.push({ y: item.box.y, nodes, fallback: nodes });
+      continue;
+    }
+    for (const member of row) consumed.add(member);
+    pieces.push(piecesFromRow(ctx, row));
   }
-  return body;
+  return coalesceSteps(ctx, pieces);
 }
 
-function columnGroup(
-  seed: Placed,
-  all: readonly Placed[],
-  used: ReadonlySet<Placed>,
-  slide: Box,
-): Placed[][] | null {
-  if (used.has(seed) || isFullWidth(seed, slide)) return null;
-  const pool = all.filter((item) => !used.has(item) && !isFullWidth(item, slide));
-  const band: Placed[] = [];
-  const seen = new Set<Placed>([seed]);
-  const queue = [seed];
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) break;
-    band.push(current);
-    for (const other of pool) {
-      if (seen.has(other)) continue;
-      if (yOverlapRatio(current.box, other.box) < 0.45) continue;
-      seen.add(other);
-      queue.push(other);
+function piecesFromRow(ctx: SlideContext, row: readonly RawItem[]): FlowPiece {
+  const sorted = [...row].sort((left, right) => left.box.x - right.box.x);
+  const y = Math.min(...sorted.map((item) => item.box.y));
+  const first = sorted[0];
+  const badge = first ? (first.paragraphs[0]?.plain.trim() ?? '') : '';
+  if (sorted.length >= 2 && /^[1-9]$/.test(badge)) {
+    const text = joined(sorted.slice(1), '   ');
+    const nodes = text ? [paragraphNode(ctx, text)] : [];
+    const fallback = text ? [paragraphNode(ctx, `${badge}   ${text}`)] : [];
+    return { y, step: Number(badge), nodes, fallback };
+  }
+  if (isHeaderStyle(sorted, ctx.slide)) {
+    const nodes = [headingNode(ctx, mergedHeadingLevel(sorted), joined(sorted, ' '))];
+    return { y, nodes, fallback: nodes };
+  }
+  if (sorted.length >= 2) {
+    const nodes = [paragraphNode(ctx, joined(sorted, '   '))];
+    return { y, nodes, fallback: nodes };
+  }
+  const nodes = sorted.flatMap((item) => emitItem(ctx, item));
+  return { y, nodes, fallback: nodes };
+}
+
+function coalesceSteps(ctx: SlideContext, pieces: readonly FlowPiece[]): LoomaNode[] {
+  const out: LoomaNode[] = [];
+  let steps: FlowPiece[] = [];
+  const flush = () => {
+    const ready = steps.length >= 2 && steps.every((piece, index) => piece.step === index + 1);
+    if (ready) {
+      out.push({
+        id: ctx.ids('container'),
+        type: 'steps',
+        direction: 'vertical',
+        children: steps.flatMap((piece) => piece.nodes),
+      });
+    } else {
+      for (const piece of steps) out.push(...piece.fallback);
+    }
+    steps = [];
+  };
+  for (const piece of pieces) {
+    if (piece.step) steps.push(piece);
+    else {
+      flush();
+      out.push(...piece.nodes);
     }
   }
-  if (band.length < 2) return null;
-  const columns: Placed[][] = [];
-  for (const item of [...band].sort(
-    (left, right) => left.box.x - right.box.x || left.box.y - right.box.y,
-  )) {
-    const last = columns[columns.length - 1];
-    if (last && xOverlapRatio(unionBox(last), item.box) >= 0.4) last.push(item);
-    else columns.push([item]);
+  flush();
+  return out;
+}
+
+function emitItem(ctx: SlideContext, item: RawItem): LoomaNode[] {
+  if (item.kind === 'image' || item.kind === 'table') return item.blocks;
+  if (item.kind !== 'text') return [];
+  const paragraphs = decoratedParagraphs(item);
+  if (item.callout) {
+    const text = paragraphs
+      .map((paragraph) => paragraph.text.trim())
+      .filter((paragraph) => paragraph.length > 0)
+      .join('\n');
+    if (!text) return [];
+    return [{ id: ctx.ids('block'), type: 'callout', tone: item.callout, text }];
   }
-  if (columns.length < 2 || columns.length > 4) return null;
+  return paragraphsToBlocks(ctx, paragraphs, headingFor(textRole(item), paragraphs, ctx.index));
+}
+
+function decoratedParagraphs(item: RawItem): RichParagraph[] {
+  if (!item.highlight) return item.paragraphs;
+  const highlight = item.highlight;
+  return item.paragraphs.map((paragraph) => ({
+    ...paragraph,
+    text: paragraph.text.trim()
+      ? normalizeInline(`{highlight:${highlight}}${paragraph.text}{/highlight}`)
+      : paragraph.text,
+  }));
+}
+
+function paragraphNode(ctx: SlideContext, text: string): LoomaNode {
+  return { id: ctx.ids('block'), type: 'paragraph', text: normalizeInline(text) };
+}
+
+function headingNode(ctx: SlideContext, level: 1 | 2 | 3, text: string): LoomaNode {
+  return { id: ctx.ids('block'), type: 'heading', level, text: normalizeInline(text) };
+}
+
+function joined(items: readonly RawItem[], separator: string): string {
+  return items
+    .map((item) => itemInline(item))
+    .filter((text) => text.trim().length > 0)
+    .join(separator);
+}
+
+function itemInline(item: RawItem): string {
+  const paragraph = item.paragraphs[0];
+  if (!paragraph) return '';
+  const text = item.highlight
+    ? `{highlight:${item.highlight}}${paragraph.text}{/highlight}`
+    : paragraph.text;
+  return normalizeInline(text);
+}
+
+function deckTheme(
+  cards: readonly LoomaCard[],
+  preset: ThemePreset | undefined,
+): { preset: ThemePreset; overrides?: { cardBackground: string } } {
+  if (preset) return { preset };
+  const counts = new Map<string, number>();
+  for (const card of cards) {
+    if (card.background?.kind !== 'color') continue;
+    const value = card.background.value.toLowerCase();
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  let best: string | undefined;
+  let bestCount = 0;
+  for (const [color, count] of counts) {
+    if (count > bestCount) {
+      best = color;
+      bestCount = count;
+    }
+  }
+  if (!best || bestCount * 2 <= cards.length) return { preset: 'clean' };
+  if (isWarmCream(best)) return { preset: 'warm' };
+  return { preset: 'clean', overrides: { cardBackground: best } };
+}
+
+function readThemeColors(files: Map<string, Uint8Array>): Map<string, string> {
+  const colors = new Map<string, string>();
+  const paths = [...files.keys()]
+    .filter((path) => /^ppt\/theme\/theme\d+\.xml$/i.test(path))
+    .sort();
+  for (const path of paths) {
+    const xml = readXml(files, path);
+    const scheme = xml ? descendants(xml, 'clrScheme')[0] : undefined;
+    if (!scheme) continue;
+    for (const node of scheme.children) {
+      if (typeof node === 'string') continue;
+      const name = localName(node.name);
+      if (colors.has(name)) continue;
+      const srgb = child(node, 'srgbClr');
+      const sys = child(node, 'sysClr');
+      const value = cssHex(srgb ? attr(srgb, 'val') : sys ? attr(sys, 'lastClr') : undefined);
+      if (value) colors.set(name, value);
+    }
+  }
+  return colors;
+}
+
+function promoteShapeBackground(
+  items: readonly RawItem[],
+  slide: Box,
+  background: CardBackground | undefined,
+): { background: CardBackground | undefined; items: RawItem[] } {
+  const shapes = items.filter(
+    (item) =>
+      item.kind === 'shape' &&
+      item.fill &&
+      areaRatio(item.box, slide) >= SHAPE_BACKDROP_AREA &&
+      insideRatio(item.box, slide) >= 0.85,
+  );
+  const winner = shapes[shapes.length - 1];
+  if (!winner) return { background, items: [...items] };
+  return {
+    background: fillToBackground(winner.fill) ?? background,
+    items: items.filter((item) => item !== winner),
+  };
+}
+
+function findPanels(items: readonly RawItem[], slide: Box): RawItem[] {
+  const candidates = items.filter((item) => {
+    if (item.kind !== 'shape' || !item.fill) return false;
+    if (slide.cy <= 0 || item.box.cy < slide.cy * PANEL_MIN_HEIGHT) return false;
+    const width = slide.cx > 0 ? item.box.cx / slide.cx : 0;
+    if (width < PANEL_MIN_WIDTH || width > PANEL_MAX_WIDTH) return false;
+    return insideRatio(item.box, slide) >= 0.85;
+  });
+  let best: RawItem[] = [];
+  for (const seed of candidates) {
+    const group = [seed];
+    for (const other of candidates) {
+      if (other === seed || group.length >= 4) continue;
+      const aligned = group.every((member) => yOverlapRatio(member.box, other.box) >= 0.55);
+      const separated = group.every((member) => xOverlapRatio(member.box, other.box) <= 0.1);
+      if (aligned && separated) group.push(other);
+    }
+    if (group.length >= 2 && group.length > best.length) best = group;
+  }
+  return best.sort((left, right) => left.box.x - right.box.x);
+}
+
+function applyPills(items: readonly RawItem[], slide: Box): void {
+  const pills = items.filter(
+    (item) =>
+      item.kind === 'shape' &&
+      item.fill?.kind === 'color' &&
+      slide.cx > 0 &&
+      slide.cy > 0 &&
+      item.box.cx < slide.cx * PILL_MAX_WIDTH &&
+      item.box.cy < slide.cy * PILL_MAX_HEIGHT,
+  );
+  const slack = Math.min(slide.cx, slide.cy) * 0.01;
+  for (const text of items) {
+    if (text.kind !== 'text') continue;
+    const matches = pills.filter((pill) => containsBox(pill.box, text.box, slack));
+    const innermost = matches.sort((left, right) => area(left.box) - area(right.box))[0];
+    if (innermost?.fill?.kind !== 'color') continue;
+    const highlight = highlightFor(innermost.fill.value);
+    if (highlight) text.highlight = highlight;
+  }
+}
+
+function applyCallouts(items: readonly RawItem[], slide: Box): void {
+  const banners = items.filter(
+    (item) =>
+      item.kind === 'shape' &&
+      item.fill?.kind === 'color' &&
+      slide.cx > 0 &&
+      slide.cy > 0 &&
+      item.box.cx >= slide.cx * 0.7 &&
+      item.box.cy <= slide.cy * 0.18 &&
+      bannerTone(item.fill.value),
+  );
+  const slack = Math.min(slide.cx, slide.cy) * 0.015;
+  for (const text of items) {
+    if (text.kind !== 'text') continue;
+    const banner = banners.find((shape) => containsBox(shape.box, text.box, slack));
+    if (banner?.fill?.kind === 'color') {
+      const tone = bannerTone(banner.fill.value);
+      if (tone) {
+        text.callout = tone;
+        continue;
+      }
+    }
+    const keyword = keywordTone(text);
+    if (keyword) text.callout = keyword;
+  }
+}
+
+function takeHeaderRow(
+  items: readonly RawItem[],
+  slide: Box,
+): { header: RawItem[]; rest: RawItem[] } {
+  const candidates = items.filter((item) => {
+    if (!isSimpleText(item) || item.callout) return false;
+    if (slide.cx <= 0 || item.box.cx >= slide.cx * 0.7) return false;
+    const center = item.box.y + item.box.cy / 2;
+    return slide.cy > 0 && center < slide.cy * HEADER_BAND;
+  });
+  if (candidates.length === 0) return { header: [], rest: [...items] };
+  const anchor = candidates.reduce((best, item) => (item.box.y < best.box.y ? item : best));
+  const row = candidates.filter((item) => sameLine(anchor.box, item.box, slide));
+  const titleLike = row.some((item) => {
+    const size = item.paragraphs[0]?.size ?? 0;
+    return size >= 2000 || item.placeholder === 'title' || item.placeholder === 'ctrTitle';
+  });
+  if (!titleLike) return { header: [], rest: [...items] };
+  const chosen = new Set(row);
+  return { header: row, rest: items.filter((item) => !chosen.has(item)) };
+}
+
+function peelFullRows(
+  items: readonly RawItem[],
+  slide: Box,
+): { rows: RawItem[][]; rest: RawItem[] } {
+  const pool = items.filter((item) => isSimpleText(item) && !item.callout);
+  const consumed = new Set<RawItem>();
+  const rows: RawItem[][] = [];
+  const seeds = [...pool].sort(
+    (left, right) => left.box.y - right.box.y || left.box.x - right.box.x,
+  );
+  for (const seed of seeds) {
+    if (consumed.has(seed)) continue;
+    const row = tightRow(
+      seed,
+      pool.filter((item) => !consumed.has(item)),
+      slide,
+    );
+    if (row.length >= 2 && unionBox(row).cx >= slide.cx * FULL_WIDTH_RATIO) {
+      for (const item of row) consumed.add(item);
+      rows.push([...row].sort((left, right) => left.box.x - right.box.x));
+    }
+  }
+  return { rows, rest: items.filter((item) => !consumed.has(item)) };
+}
+
+function tightRow(seed: RawItem, pool: readonly RawItem[], slide: Box): RawItem[] {
+  const row = [seed];
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const other of pool) {
+      if (row.includes(other)) continue;
+      if (!sameLine(seed.box, other.box, slide)) continue;
+      if (xGap(unionBox(row), other.box) > slide.cx * ROW_GAP) continue;
+      row.push(other);
+      grew = true;
+    }
+  }
+  return row;
+}
+
+function isSeparator(item: RawItem, mates: readonly RawItem[], slide: Box): boolean {
+  if (item.kind !== 'text' && item.kind !== 'table') return false;
+  if (!isFullWidth(item, slide)) return false;
+  return !mates.some(
+    (other) =>
+      other !== item &&
+      isSimpleText(other) &&
+      !other.callout &&
+      sameLine(item.box, other.box, slide),
+  );
+}
+
+function splitByXGaps(items: readonly RawItem[], slide: Box): RawItem[][] | null {
+  if (items.length < 2 || slide.cx <= 0) return null;
+  const groups = linkRows(items, slide);
+  const grouped = new Set(groups.flat());
+  const spans: { start: number; end: number; members: RawItem[] }[] = [];
+  for (const group of groups) {
+    const box = unionBox(group);
+    spans.push({ start: box.x, end: box.x + box.cx, members: group });
+  }
+  for (const item of items) {
+    if (grouped.has(item)) continue;
+    spans.push({ start: item.box.x, end: item.box.x + item.box.cx, members: [item] });
+  }
+  spans.sort((left, right) => left.start - right.start || left.end - right.end);
+  const merged: { start: number; end: number; members: RawItem[] }[] = [];
+  for (const span of spans) {
+    const last = merged[merged.length - 1];
+    if (last && span.start <= last.end + slide.cx * COLUMN_GAP_BRIDGE) {
+      last.end = Math.max(last.end, span.end);
+      last.members.push(...span.members);
+    } else {
+      merged.push({ start: span.start, end: span.end, members: [...span.members] });
+    }
+  }
+  if (merged.length < 2 || merged.length > 4) return null;
+  const columns = merged.map((span) => span.members);
   for (let index = 0; index < columns.length - 1; index += 1) {
     const left = columns[index];
     const right = columns[index + 1];
-    if (!left || !right || xOverlapRatio(unionBox(left), unionBox(right)) > 0.15) return null;
+    if (!left || !right || xOverlapRatio(unionBox(left), unionBox(right)) > 0.1) return null;
   }
   return columns;
+}
+
+function linkRows(items: readonly RawItem[], slide: Box): RawItem[][] {
+  const pool = items.filter((item) => isSimpleText(item) && !item.callout);
+  const groups: RawItem[][] = [];
+  const consumed = new Set<RawItem>();
+  for (const seed of pool) {
+    if (consumed.has(seed)) continue;
+    const group = [seed];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const other of pool) {
+        if (consumed.has(other) || group.includes(other)) continue;
+        const near = group.some(
+          (member) =>
+            sameLine(member.box, other.box, slide) &&
+            xGap(member.box, other.box) <= slide.cx * ROW_LINK,
+        );
+        if (!near) continue;
+        group.push(other);
+        grew = true;
+      }
+    }
+    if (group.length < 2 || unionBox(group).cx >= slide.cx * FULL_WIDTH_RATIO) continue;
+    for (const member of group) consumed.add(member);
+    groups.push(group);
+  }
+  return groups;
+}
+
+function isSimpleText(item: RawItem): boolean {
+  const paragraph = item.paragraphs[0];
+  return (
+    item.kind === 'text' &&
+    item.paragraphs.length === 1 &&
+    !paragraph?.list &&
+    (paragraph?.plain.trim().length ?? 0) > 0
+  );
+}
+
+function isHeaderStyle(row: readonly RawItem[], slide: Box): boolean {
+  if (row.length < 2 || slide.cy <= 0) return false;
+  const box = unionBox(row);
+  if (box.y + box.cy / 2 >= slide.cy * HEADER_BAND) return false;
+  const sizes = row.map((item) => item.paragraphs[0]?.size ?? 0);
+  const largest = Math.max(...sizes);
+  return largest >= 2000 && Math.min(...sizes) < largest;
+}
+
+function mergedHeadingLevel(row: readonly RawItem[]): 1 | 2 | 3 {
+  if (row.some((item) => item.placeholder === 'ctrTitle')) return 1;
+  const size = Math.max(...row.map((item) => item.paragraphs[0]?.size ?? 0));
+  if (size >= 3600) return 1;
+  if (row.some((item) => item.placeholder === 'title') || size >= 2400) return 2;
+  return 3;
+}
+
+function textRole(item: RawItem): 'title' | 'ctrTitle' | 'subTitle' | 'other' | 'body' {
+  if (
+    item.placeholder === 'title' ||
+    item.placeholder === 'ctrTitle' ||
+    item.placeholder === 'subTitle'
+  ) {
+    return item.placeholder;
+  }
+  return item.placeholder === null ? 'other' : 'body';
+}
+
+function isRunningFooter(item: RawItem, slide: Box): boolean {
+  if (item.kind !== 'text' || slide.cy <= 0 || item.box.y < slide.cy * FOOTER_BAND) return false;
+  const plain = plainText(item).replace(/\s+/g, ' ').trim();
+  if (/^\d+\s*\/\s*\d+$/.test(plain)) return true;
+  const size = Math.max(0, ...item.paragraphs.map((paragraph) => paragraph.size ?? 0));
+  return size > 0 && size <= 1150;
+}
+
+function isCornerBadge(item: RawItem, slide: Box): boolean {
+  if (item.kind !== 'text' || slide.cx <= 0 || slide.cy <= 0) return false;
+  if (item.box.x < slide.cx * BADGE_X || item.box.y > slide.cy * BADGE_Y) return false;
+  return /^\d{1,2}$/.test(plainText(item).trim());
+}
+
+function isTinyIcon(box: Box, slide: Box): boolean {
+  return (
+    slide.cx > 0 &&
+    slide.cy > 0 &&
+    box.cx < slide.cx * TINY_WIDTH &&
+    box.cy < slide.cy * TINY_HEIGHT
+  );
+}
+
+function plainText(item: RawItem): string {
+  return item.paragraphs
+    .map((paragraph) => paragraph.plain)
+    .join('\n')
+    .trim();
+}
+
+function sameLine(left: Box, right: Box, slide: Box): boolean {
+  if (slide.cy > 0 && (left.cy > slide.cy * 0.22 || right.cy > slide.cy * 0.22)) return false;
+  const leftCenter = left.y + left.cy / 2;
+  const rightCenter = right.y + right.cy / 2;
+  const centerClose = Math.abs(leftCenter - rightCenter) <= 0.6 * Math.max(left.cy, right.cy);
+  return centerClose || yOverlapRatio(left, right) >= 0.55;
+}
+
+function keywordTone(item: RawItem): CalloutTone | null {
+  if (!isSimpleText(item)) return null;
+  const paragraph = item.paragraphs[0];
+  if (!paragraph?.bold) return null;
+  const plain = paragraph.plain.trim();
+  if (plain.startsWith('易錯')) return 'danger';
+  if (plain.startsWith('口訣')) return 'success';
+  if (plain.startsWith('示範答案')) return 'info';
+  if (plain.startsWith('本課重點：') || plain.startsWith('本課重點:')) {
+    return paragraph.color === 'danger' ? 'danger' : 'note';
+  }
+  return null;
+}
+
+function bannerTone(hex: string): CalloutTone | null {
+  const known: Record<string, CalloutTone> = {
+    '#e3f0ff': 'info',
+    '#e8f5ff': 'info',
+    '#fff4d9': 'warning',
+    '#fff0f0': 'danger',
+    '#eafbf4': 'success',
+  };
+  const value = cssHex(hex);
+  if (!value) return null;
+  if (known[value]) return known[value];
+  const rgb = rgbOf(value);
+  if (!rgb) return null;
+  if (luminance(rgb.r, rgb.g, rgb.b) < 0.7) return null;
+  const { h, s } = hsl(rgb.r, rgb.g, rgb.b);
+  if (s < 0.12) return null;
+  if (h < 15 || h >= 345) return 'danger';
+  if (h < 70) return 'warning';
+  if (h < 170) return 'success';
+  if (h < 260) return 'info';
+  return null;
+}
+
+function highlightFor(hex: string): HighlightColor | null {
+  const rgb = rgbOf(hex);
+  if (!rgb) return null;
+  const { r, g, b } = rgb;
+  if (Math.max(r, g, b) - Math.min(r, g, b) < 12) return 'gray';
+  const { h } = hsl(r, g, b);
+  if (h < 15 || h >= 345) return 'red';
+  if (h < 70) return 'yellow';
+  if (h < 170) return 'green';
+  if (h < 260) return 'blue';
+  if (h < 330) return 'purple';
+  return 'red';
+}
+
+function semanticTextColor(hex: string): InlineColor | null {
+  const rgb = rgbOf(hex);
+  if (!rgb) return null;
+  const { r, g, b } = rgb;
+  const lum = luminance(r, g, b);
+  if (lum < 0.08 || lum > 0.92) return null;
+  const { h, s } = hsl(r, g, b);
+  if (s < 0.28) return 'muted';
+  if (h < 15 || h >= 345) return 'danger';
+  if (h < 70) return 'warning';
+  if (h < 170) return 'success';
+  if (h < 260) return 'primary';
+  if (h < 330) return 'accent';
+  return 'danger';
+}
+
+function isWarmCream(hex: string): boolean {
+  const rgb = rgbOf(hex);
+  if (!rgb) return false;
+  const { r, g, b } = rgb;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max < 220 || min < 190) return false;
+  if (r + g + b >= 750) return false;
+  return r + 2 >= g && g + 2 >= b && r - b >= 8;
+}
+
+function rgbOf(hex: string): { r: number; g: number; b: number } | null {
+  const raw = hex.trim().replace(/^#/, '');
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : raw;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+  return {
+    r: Number.parseInt(full.slice(0, 2), 16),
+    g: Number.parseInt(full.slice(2, 4), 16),
+    b: Number.parseInt(full.slice(4, 6), 16),
+  };
+}
+
+function luminance(r: number, g: number, b: number): number {
+  return 0.2126 * linearChannel(r) + 0.7152 * linearChannel(g) + 0.0722 * linearChannel(b);
+}
+
+function linearChannel(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+function hsl(r: number, g: number, b: number): { h: number; s: number } {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  if (delta === 0) return { h: 0, s: 0 };
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  let hue: number;
+  if (max === red) hue = ((green - blue) / delta) % 6;
+  else if (max === green) hue = (blue - red) / delta + 2;
+  else hue = (red - green) / delta + 4;
+  hue *= 60;
+  if (hue < 0) hue += 360;
+  return { h: hue, s: saturation };
+}
+
+function readFill(element: XmlElement | undefined, theme: Map<string, string>): Fill | undefined {
+  if (!element) return undefined;
+  const solid = findFill(element, 'solidFill');
+  if (solid) {
+    const value = readSolidColor(solid, theme);
+    if (value) return { kind: 'color', value };
+  }
+  const gradient = findFill(element, 'gradFill');
+  if (!gradient) return undefined;
+  const stops = descendants(gradient, 'gs')
+    .map((stop) => ({
+      pos: Number(attr(stop, 'pos') ?? '0'),
+      color: readSolidColor(stop, theme),
+    }))
+    .filter((stop): stop is { pos: number; color: string } => Boolean(stop.color))
+    .sort((left, right) => left.pos - right.pos);
+  const from = stops[0]?.color;
+  const to = stops[stops.length - 1]?.color;
+  if (!from || !to) return undefined;
+  const linear = child(gradient, 'lin') ?? descendants(gradient, 'lin')[0];
+  return { kind: 'gradient', from, to, angle: gradientAngle(linear) };
+}
+
+function findFill(element: XmlElement, tag: 'solidFill' | 'gradFill'): XmlElement | undefined {
+  const direct = child(element, tag);
+  if (direct) return direct;
+  for (const node of element.children) {
+    if (typeof node === 'string') continue;
+    const name = localName(node.name);
+    if (name === 'ln' || name === 'effectLst') continue;
+    if (name === tag) return node;
+    const nested = findFill(node, tag);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+function readSolidColor(
+  element: XmlElement | undefined,
+  theme: Map<string, string>,
+): string | undefined {
+  if (!element) return undefined;
+  const srgb = child(element, 'srgbClr');
+  const fromSrgb = cssHex(srgb ? attr(srgb, 'val') : undefined);
+  if (fromSrgb) return fromSrgb;
+  const scheme = child(element, 'schemeClr');
+  const name = scheme ? attr(scheme, 'val') : undefined;
+  return name ? theme.get(name) : undefined;
+}
+
+function fillToBackground(fill: Fill | undefined): CardBackground | undefined {
+  if (!fill) return undefined;
+  if (fill.kind === 'color') return { kind: 'color', value: fill.value };
+  return { kind: 'gradient', from: fill.from, to: fill.to, angle: fill.angle };
+}
+
+function gradientAngle(linear: XmlElement | undefined): number {
+  const raw = Number(linear ? attr(linear, 'ang') : undefined);
+  if (!Number.isFinite(raw)) return 135;
+  const degrees = (((raw / 60000) % 360) + 360) % 360;
+  const angle = Math.round((degrees + 90) % 360);
+  return angle >= 360 ? 0 : angle;
+}
+
+function centerInside(outer: Box, inner: Box): boolean {
+  const x = inner.x + inner.cx / 2;
+  const y = inner.y + inner.cy / 2;
+  return x >= outer.x && x <= outer.x + outer.cx && y >= outer.y && y <= outer.y + outer.cy;
+}
+
+function containsBox(outer: Box, inner: Box, slack: number): boolean {
+  return (
+    inner.x >= outer.x - slack &&
+    inner.y >= outer.y - slack &&
+    inner.x + inner.cx <= outer.x + outer.cx + slack &&
+    inner.y + inner.cy <= outer.y + outer.cy + slack
+  );
+}
+
+function insideRatio(box: Box, slide: Box): number {
+  const width = Math.max(0, Math.min(box.x + box.cx, slide.cx) - Math.max(box.x, slide.x));
+  const height = Math.max(0, Math.min(box.y + box.cy, slide.cy) - Math.max(box.y, slide.y));
+  const shape = area(box);
+  return shape > 0 ? (width * height) / shape : 0;
+}
+
+function xGap(left: Box, right: Box): number {
+  const leftEnd = left.x + left.cx;
+  const rightEnd = right.x + right.cx;
+  if (leftEnd >= right.x && rightEnd >= left.x) return 0;
+  return leftEnd < right.x ? right.x - leftEnd : left.x - rightEnd;
 }
 
 function proportionalWidths(widths: number[]): number[] {
@@ -1080,7 +2051,7 @@ function areaRatio(box: Box, slide: Box): number {
   return slideArea > 0 ? area(box) / slideArea : 0;
 }
 
-function isFullWidth(item: Placed, slide: Box): boolean {
+function isFullWidth(item: RawItem, slide: Box): boolean {
   return slide.cx > 0 && item.box.cx >= slide.cx * FULL_WIDTH_RATIO;
 }
 
@@ -1102,7 +2073,7 @@ function rangesOverlap(a0: number, a1: number, b0: number, b1: number, slack: nu
   return a0 < b1 - slack && b0 < a1 - slack;
 }
 
-function unionBox(items: readonly Placed[]): Box {
+function unionBox(items: readonly RawItem[]): Box {
   const first = items[0]?.box ?? { x: 0, y: 0, cx: 0, cy: 0 };
   let x = first.x;
   let y = first.y;

@@ -18,6 +18,7 @@ const SLIDE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationshi
 const IMAGE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
 const LINK = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink';
 const NOTES = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide';
+const LAYOUT = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout';
 
 async function load(
   entries: Record<string, string | Uint8Array>,
@@ -93,6 +94,41 @@ function textBox(options: {
     <p:spPr><a:xfrm><a:off x="${options.x}" y="${options.y}"/><a:ext cx="${options.cx}" cy="${options.cy}"/></a:xfrm></p:spPr>
     <p:txBody><a:bodyPr/>${options.paragraphs}</p:txBody>
   </p:sp>`;
+}
+
+function filledShape(options: {
+  x: number;
+  y: number;
+  cx: number;
+  cy: number;
+  fill: string;
+}): string {
+  return `<p:sp><p:nvSpPr><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+      <a:xfrm><a:off x="${options.x}" y="${options.y}"/><a:ext cx="${options.cx}" cy="${options.cy}"/></a:xfrm>
+      <a:prstGeom prst="roundRect"/>
+      <a:solidFill><a:srgbClr val="${options.fill}"/></a:solidFill>
+    </p:spPr>
+    <p:txBody><a:bodyPr/><a:p/></p:txBody>
+  </p:sp>`;
+}
+
+function svgPicture(options: {
+  x: number;
+  y: number;
+  cx: number;
+  cy: number;
+  embed: string;
+}): string {
+  return `<p:pic><p:nvPicPr/>
+    <p:blipFill><a:blip><a:extLst><a:ext><asvg:svgBlip r:embed="${options.embed}"/></a:ext></a:extLst></a:blip></p:blipFill>
+    <p:spPr><a:xfrm><a:off x="${options.x}" y="${options.y}"/><a:ext cx="${options.cx}" cy="${options.cy}"/></a:xfrm></p:spPr>
+  </p:pic>`;
+}
+
+function coloredRun(text: string, hex: string, props = ''): string {
+  const extra = props ? ` ${props}` : '';
+  return `<a:r><a:rPr${extra}><a:solidFill><a:srgbClr val="${hex}"/></a:solidFill></a:rPr><a:t>${text}</a:t></a:r>`;
 }
 
 function picture(options: {
@@ -505,17 +541,19 @@ describe('importPptx', () => {
       text: 'Under the banner',
     });
 
-    expect(columns?.body.map((node) => node.type)).toEqual(['heading', 'columns', 'image']);
+    expect(columns?.body.map((node) => node.type)).toEqual(['heading', 'columns']);
     const compare = columns?.body[0];
     const layout = columns?.body[1];
-    const tiny = columns?.body[2];
     expect(compare).toMatchObject({ type: 'heading', level: 2, text: 'Compare' });
     expect(layout).toMatchObject({ type: 'columns', widths: [1, 1.5] });
     if (layout?.type === 'columns') {
       expect(layout.children[0]?.[0]).toMatchObject({ type: 'paragraph', text: 'Left column' });
+      expect(layout.children[0]?.[1]).toMatchObject({
+        type: 'image',
+        assetId: beside?.accent?.assetId,
+      });
       expect(layout.children[1]?.[0]).toMatchObject({ type: 'paragraph', text: 'Right column' });
     }
-    expect(tiny).toMatchObject({ type: 'image', assetId: beside?.accent?.assetId });
     expect(png && beside?.accent?.assetId).toBeTruthy();
     const pngId = Object.entries(doc.assets).find(([, asset]) => asset === png)?.[0];
     expect(beside?.accent?.assetId).toBe(pngId);
@@ -800,6 +838,530 @@ describe('importPptx', () => {
     );
     expect(result.warnings).toEqual(['Skipped unreadable slide "ppt/slides/slide1.xml".']);
     expect(walk(result.doc.cards[0]!.body)[0]).toMatchObject({ text: 'Kept' });
+  });
+
+  it('promotes a full-slide cream shape to the card background and the warm preset', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const slide = (label: string) =>
+      slideXml(
+        [
+          filledShape({ x: 0, y: 0, cx: 10_000, cy: 10_000, fill: 'FFF9EF' }),
+          textBox({
+            x: 500,
+            y: 2_000,
+            cx: 4_000,
+            cy: 800,
+            paragraphs: `<a:p>${run(label, 'b="1" sz="2800"')}</a:p>`,
+          }),
+        ].join(''),
+        size.cx,
+        size.cy,
+      );
+    const result = await loaded({
+      'ppt/presentation.xml': presentation(['rId1', 'rId2'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        { id: 'rId2', type: SLIDE, target: 'slides/slide2.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slide('漢字樂園'),
+      'ppt/slides/slide2.xml': slide('第二頁'),
+    });
+    expect(result.doc.theme).toEqual({ preset: 'warm' });
+    expect(result.doc.cards.map((card) => card.background)).toEqual([
+      { kind: 'color', value: '#fff9ef' },
+      { kind: 'color', value: '#fff9ef' },
+    ]);
+    expect(walk(result.doc.cards[0]!.body)[0]).toMatchObject({
+      type: 'heading',
+      level: 2,
+      text: '**漢字樂園**',
+    });
+  });
+
+  it('keeps an explicit theme preset and stores a shared non-cream background as an override', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const slide = slideXml(
+      [
+        filledShape({ x: 0, y: 0, cx: 10_000, cy: 10_000, fill: '123456' }),
+        textBox({
+          x: 500,
+          y: 2_000,
+          cx: 3_000,
+          cy: 600,
+          paragraphs: `<a:p>${run('Navy')}</a:p>`,
+        }),
+      ].join(''),
+      size.cx,
+      size.cy,
+    );
+    const locked = await loaded(
+      {
+        'ppt/presentation.xml': presentation(['rId1'], size),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        ]),
+        'ppt/slides/slide1.xml': slide,
+      },
+      { themePreset: 'clean' },
+    );
+    expect(locked.doc.theme).toEqual({ preset: 'clean' });
+    expect(locked.doc.cards[0]?.background).toEqual({ kind: 'color', value: '#123456' });
+
+    const shared = await loaded({
+      'ppt/presentation.xml': presentation(['rId1', 'rId2'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        { id: 'rId2', type: SLIDE, target: 'slides/slide2.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slide,
+      'ppt/slides/slide2.xml': slide,
+    });
+    expect(shared.doc.theme).toEqual({
+      preset: 'clean',
+      overrides: { cardBackground: '#123456' },
+    });
+  });
+
+  it('reads gradient fills and a layout background', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const gradient = slideXml(
+      textBox({
+        x: 400,
+        y: 400,
+        cx: 3_000,
+        cy: 600,
+        paragraphs: `<a:p>${run('Fade')}</a:p>`,
+      }),
+      size.cx,
+      size.cy,
+      `<p:bg><p:bgPr><a:gradFill><a:gsLst>
+        <a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs>
+        <a:gs pos="100000"><a:srgbClr val="FBBF24"/></a:gs>
+      </a:gsLst><a:lin ang="2700000"/></a:gradFill></p:bgPr></p:bg>`,
+    );
+    const fromLayout = slideXml(
+      textBox({
+        x: 400,
+        y: 400,
+        cx: 3_000,
+        cy: 600,
+        paragraphs: `<a:p>${run('Layout')}</a:p>`,
+      }),
+      size.cx,
+      size.cy,
+    );
+    const result = await loaded(
+      {
+        'ppt/presentation.xml': presentation(['rId1', 'rId2'], size),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+          { id: 'rId2', type: SLIDE, target: 'slides/slide2.xml' },
+        ]),
+        'ppt/slides/slide1.xml': gradient,
+        'ppt/slides/slide2.xml': fromLayout,
+        'ppt/slides/_rels/slide2.xml.rels': rels([
+          { id: 'rIdLayout', type: LAYOUT, target: '../slideLayouts/slideLayout1.xml' },
+        ]),
+        'ppt/slideLayouts/slideLayout1.xml': `<?xml version="1.0"?>
+<p:sldLayout xmlns:a="urn:a" xmlns:p="urn:p"><p:cSld>
+  <p:bg><p:bgPr><a:solidFill><a:srgbClr val="ABCDEF"/></a:solidFill></p:bgPr></p:bg>
+</p:cSld></p:sldLayout>`,
+      },
+      { themePreset: 'clean' },
+    );
+    expect(result.doc.cards[0]?.background).toEqual({
+      kind: 'gradient',
+      from: '#ffffff',
+      to: '#fbbf24',
+      angle: 135,
+    });
+    expect(result.doc.cards[1]?.background).toEqual({ kind: 'color', value: '#abcdef' });
+    expect(result.doc.theme).toEqual({ preset: 'clean' });
+  });
+
+  it('embeds an svg blip and drops tiny decorative icons', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const result = await loaded({
+      'ppt/presentation.xml': presentation(['rId1'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slideXml(
+        [
+          svgPicture({ x: 500, y: 500, cx: 400, cy: 400, embed: 'rIdTiny' }),
+          svgPicture({ x: 1_000, y: 1_200, cx: 2_000, cy: 2_000, embed: 'rIdMark' }),
+          textBox({
+            x: 4_000,
+            y: 1_500,
+            cx: 3_000,
+            cy: 600,
+            paragraphs: `<a:p>${run('Kept')}</a:p>`,
+          }),
+        ].join(''),
+        size.cx,
+        size.cy,
+      ),
+      'ppt/slides/_rels/slide1.xml.rels': rels([
+        { id: 'rIdTiny', type: IMAGE, target: '../media/tiny.svg' },
+        { id: 'rIdMark', type: IMAGE, target: '../media/mark.svg' },
+      ]),
+      'ppt/media/tiny.svg': SVG,
+      'ppt/media/mark.svg': SVG,
+    });
+    expect(typesOf(result.doc.cards[0]!)).toEqual(['columns', 'image', 'paragraph']);
+    expect(Object.values(result.doc.assets)).toEqual([
+      expect.objectContaining({ kind: 'image', alt: 'mark.svg' }),
+    ]);
+    expect(JSON.stringify(result.doc)).not.toContain('tiny.svg');
+  });
+
+  it('maps run colors, pill highlights, heading sizes, footers, and corner badges', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const result = await loaded({
+      'ppt/presentation.xml': presentation(['rId1'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slideXml(
+        [
+          filledShape({ x: 400, y: 2_800, cx: 1_500, cy: 600, fill: 'E3F0FF' }),
+          textBox({
+            x: 500,
+            y: 2_900,
+            cx: 1_100,
+            cy: 300,
+            paragraphs: `<a:p>${coloredRun('LESSON 01', '1D4ED8', 'b="1" sz="1350"')}</a:p>`,
+          }),
+          filledShape({ x: 1_600, y: 2_800, cx: 1_200, cy: 600, fill: 'FFFFFF' }),
+          textBox({
+            x: 1_680,
+            y: 2_920,
+            cx: 800,
+            cy: 280,
+            paragraphs: `<a:p>${coloredRun('識字寫字', '8A7E6E', 'b="1" sz="1200"')}</a:p>`,
+          }),
+          textBox({
+            x: 400,
+            y: 3_600,
+            cx: 5_000,
+            cy: 700,
+            paragraphs: `<a:p>${coloredRun('漢字樂園', '3D3327', 'b="1" sz="4650"')}</a:p>`,
+          }),
+          textBox({
+            x: 400,
+            y: 4_500,
+            cx: 5_000,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('Fun with Chinese Characters', '1D4ED8', 'b="1" sz="2175"')}</a:p>`,
+          }),
+          textBox({
+            x: 400,
+            y: 5_100,
+            cx: 5_000,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('漢字像積木', '8A7E6E', 'sz="1500"')}</a:p>`,
+          }),
+          textBox({
+            x: 400,
+            y: 5_700,
+            cx: 4_000,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('本課重點：認識獨體字', 'FB6E6E', 'b="1" sz="1425"')}</a:p>`,
+          }),
+          textBox({
+            x: 9_000,
+            y: 400,
+            cx: 500,
+            cy: 300,
+            paragraphs: `<a:p>${coloredRun('01', '1D4ED8', 'b="1" sz="1425"')}</a:p>`,
+          }),
+          textBox({
+            x: 400,
+            y: 9_200,
+            cx: 4_000,
+            cy: 200,
+            paragraphs: `<a:p>${coloredRun('小學三年級中文 · 第01課', '8A7E6E', 'sz="1050"')}</a:p>`,
+          }),
+          textBox({
+            x: 8_200,
+            y: 9_200,
+            cx: 1_200,
+            cy: 200,
+            paragraphs: `<a:p>${run('02 / 10', 'sz="1050"')}</a:p>`,
+          }),
+        ].join(''),
+        size.cx,
+        size.cy,
+      ),
+    });
+    const body = result.doc.cards[0]?.body ?? [];
+    expect(body.map((node) => node.type)).toEqual([
+      'paragraph',
+      'heading',
+      'heading',
+      'paragraph',
+      'callout',
+    ]);
+    expect(body[0]).toMatchObject({
+      type: 'paragraph',
+      text: '{highlight:blue}{color:primary}**LESSON 01**{/color}{/highlight}   {highlight:gray}{color:muted}**識字寫字**{/color}{/highlight}',
+    });
+    expect(body[1]).toMatchObject({ type: 'heading', level: 1, text: '**漢字樂園**' });
+    expect(body[2]).toMatchObject({
+      type: 'heading',
+      level: 3,
+      text: '{color:primary}**Fun with Chinese Characters**{/color}',
+    });
+    expect(body[3]).toMatchObject({ type: 'paragraph', text: '{color:muted}漢字像積木{/color}' });
+    expect(body[4]).toMatchObject({
+      type: 'callout',
+      tone: 'danger',
+      text: '{color:danger}**本課重點：認識獨體字**{/color}',
+    });
+    expect(JSON.stringify(body)).not.toContain('小學三年級');
+    expect(JSON.stringify(body)).not.toContain('02 / 10');
+    expect(JSON.stringify(body)).not.toContain('"01"');
+  });
+
+  it('merges a header with its subtitle and groups side-by-side panels', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const panel = (x: number, title: string, hex: string) =>
+      [
+        filledShape({ x, y: 2_500, cx: 2_800, cy: 4_000, fill: 'FFFFFF' }),
+        textBox({
+          x: x + 200,
+          y: 3_000,
+          cx: 2_000,
+          cy: 400,
+          paragraphs: `<a:p>${coloredRun(title, hex, 'b="1" sz="1575"')}</a:p>`,
+        }),
+        textBox({
+          x: x + 200,
+          y: 3_600,
+          cx: 2_200,
+          cy: 500,
+          paragraphs: `<a:p>${coloredRun(`${title}說明`, '3D3327', 'sz="1350"')}</a:p>`,
+        }),
+      ].join('');
+    const result = await loaded({
+      'ppt/presentation.xml': presentation(['rId1'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slideXml(
+        [
+          textBox({
+            x: 200,
+            y: 400,
+            cx: 1_600,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('學習目標', '3D3327', 'b="1" sz="2550"')}</a:p>`,
+          }),
+          textBox({
+            x: 2_000,
+            y: 480,
+            cx: 1_800,
+            cy: 300,
+            paragraphs: `<a:p>${coloredRun('Learning Objectives', '8A7E6E', 'sz="1275"')}</a:p>`,
+          }),
+          panel(200, '認一認', '2F80ED'),
+          panel(3_400, '拆一拆', '2DD4A7'),
+          panel(6_600, '記一記', 'FBBF24'),
+        ].join(''),
+        size.cx,
+        size.cy,
+      ),
+    });
+    const body = result.doc.cards[0]?.body ?? [];
+    expect(body.map((node) => node.type)).toEqual(['heading', 'columns']);
+    expect(body[0]).toMatchObject({
+      type: 'heading',
+      level: 2,
+      text: '**學習目標** {color:muted}Learning Objectives{/color}',
+    });
+    const columns = body[1];
+    expect(columns).toMatchObject({ type: 'columns', widths: [1, 1, 1] });
+    if (columns?.type === 'columns') {
+      expect(columns.children[0]?.[0]).toMatchObject({
+        text: '{color:primary}**認一認**{/color}',
+      });
+      expect(columns.children[1]?.[0]).toMatchObject({
+        text: '{color:success}**拆一拆**{/color}',
+      });
+      expect(columns.children[2]?.[0]).toMatchObject({
+        text: '{color:warning}**記一記**{/color}',
+      });
+      expect(columns.children).toHaveLength(3);
+    }
+  });
+
+  it('builds zone columns, numbered steps, and banner callouts', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const step = (n: string, y: number, answer?: { text: string; fill: string; hex: string }) => {
+      const parts = [
+        filledShape({ x: 400, y: y - 40, cx: 360, cy: 360, fill: 'E3F0FF' }),
+        textBox({
+          x: 480,
+          y,
+          cx: 200,
+          cy: 280,
+          paragraphs: `<a:p>${coloredRun(n, '1D4ED8', 'b="1" sz="1350"')}</a:p>`,
+        }),
+        textBox({
+          x: 1_000,
+          y: y - 20,
+          cx: 2_600,
+          cy: 320,
+          paragraphs: `<a:p>${coloredRun(`問題${n}`, '3D3327', 'sz="1350"')}</a:p>`,
+        }),
+      ];
+      if (answer) {
+        parts.push(
+          filledShape({ x: 3_650, y: y - 40, cx: 800, cy: 360, fill: answer.fill }),
+          textBox({
+            x: 3_700,
+            y,
+            cx: 600,
+            cy: 280,
+            paragraphs: `<a:p>${coloredRun(answer.text, answer.hex, 'b="1" sz="1200"')}</a:p>`,
+          }),
+        );
+      }
+      return parts.join('');
+    };
+    const result = await loaded({
+      'ppt/presentation.xml': presentation(['rId1', 'rId2'], size),
+      'ppt/_rels/presentation.xml.rels': rels([
+        { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        { id: 'rId2', type: SLIDE, target: 'slides/slide2.xml' },
+      ]),
+      'ppt/slides/slide1.xml': slideXml(
+        [
+          textBox({
+            x: 200,
+            y: 1_800,
+            cx: 4_000,
+            cy: 700,
+            paragraphs: `<a:p>${coloredRun('漢字樂園', '3D3327', 'b="1" sz="4650"')}</a:p>`,
+          }),
+          textBox({
+            x: 200,
+            y: 5_200,
+            cx: 3_600,
+            cy: 500,
+            paragraphs: `<a:p>${run('左欄收尾')}</a:p>`,
+          }),
+          picture({ x: 6_200, y: 1_600, cx: 3_000, cy: 2_500, embed: 'rIdHero' }),
+          filledShape({ x: 6_300, y: 4_550, cx: 1_400, cy: 500, fill: 'E3F0FF' }),
+          textBox({
+            x: 6_400,
+            y: 4_600,
+            cx: 1_200,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('字', '1D4ED8', 'b="1" sz="1800"')}</a:p>`,
+          }),
+          textBox({
+            x: 7_700,
+            y: 4_650,
+            cx: 1_400,
+            cy: 350,
+            paragraphs: `<a:p>${coloredRun('字形結構', '3D3327', 'b="1" sz="1500"')}</a:p>`,
+          }),
+        ].join(''),
+        size.cx,
+        size.cy,
+      ),
+      'ppt/slides/_rels/slide1.xml.rels': rels([
+        { id: 'rIdHero', type: IMAGE, target: '../media/hero.png' },
+      ]),
+      'ppt/slides/slide2.xml': slideXml(
+        [
+          step('1', 2_000),
+          step('2', 2_800),
+          step('3', 3_600, { text: '日＋月', fill: 'EAFBF4', hex: '047857' }),
+          filledShape({ x: 400, y: 7_800, cx: 9_200, cy: 1_400, fill: 'FFF4D9' }),
+          textBox({
+            x: 800,
+            y: 8_100,
+            cx: 8_000,
+            cy: 400,
+            paragraphs: `<a:p>${coloredRun('口訣：一看二拆', '3D3327', 'sz="1350"')}</a:p>`,
+          }),
+        ].join(''),
+        size.cx,
+        size.cy,
+      ),
+      'ppt/media/hero.png': PNG,
+    });
+    const [zoned, stepped] = result.doc.cards;
+    expect(zoned?.body.map((node) => node.type)).toEqual(['columns']);
+    const columns = zoned?.body[0];
+    expect(columns).toMatchObject({ type: 'columns' });
+    if (columns?.type === 'columns') {
+      expect(columns.children[0]?.map((node) => node.type)).toEqual(['heading', 'paragraph']);
+      expect(columns.children[0]?.[0]).toMatchObject({
+        type: 'heading',
+        level: 1,
+        text: '**漢字樂園**',
+      });
+      expect(columns.children[0]?.[1]).toMatchObject({ type: 'paragraph', text: '左欄收尾' });
+      expect(columns.children[1]?.map((node) => node.type)).toEqual(['image', 'paragraph']);
+      expect(columns.children[1]?.[1]).toMatchObject({
+        type: 'paragraph',
+        text: '{highlight:blue}{color:primary}**字**{/color}{/highlight}   **字形結構**',
+      });
+    }
+    expect(stepped?.body.map((node) => node.type)).toEqual(['steps', 'callout']);
+    const steps = stepped?.body[0];
+    expect(steps).toMatchObject({ type: 'steps' });
+    if (steps?.type === 'steps') {
+      expect(steps.children.map((node) => (node.type === 'paragraph' ? node.text : ''))).toEqual([
+        '問題1',
+        '問題2',
+        '問題3   {highlight:green}{color:success}**日＋月**{/color}{/highlight}',
+      ]);
+    }
+    expect(stepped?.body[1]).toMatchObject({
+      type: 'callout',
+      tone: 'warning',
+      text: '口訣：一看二拆',
+    });
+  });
+
+  it('resolves a scheme color used by a full-slide shape', async () => {
+    const size = { cx: 10_000, cy: 10_000 };
+    const result = await loaded(
+      {
+        'ppt/theme/theme1.xml': `<?xml version="1.0"?>
+<a:theme xmlns:a="urn:a"><a:themeElements><a:clrScheme name="Office">
+  <a:accent1><a:srgbClr val="112233"/></a:accent1>
+</a:clrScheme></a:themeElements></a:theme>`,
+        'ppt/presentation.xml': presentation(['rId1'], size),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        ]),
+        'ppt/slides/slide1.xml': slideXml(
+          [
+            `<p:sp><p:nvSpPr><p:nvPr/></p:nvSpPr><p:spPr>
+              <a:xfrm><a:off x="0" y="0"/><a:ext cx="10000" cy="10000"/></a:xfrm>
+              <a:solidFill><a:schemeClr val="accent1"/></a:solidFill>
+            </p:spPr></p:sp>`,
+            textBox({
+              x: 400,
+              y: 400,
+              cx: 2_000,
+              cy: 400,
+              paragraphs: `<a:p>${run('Scheme')}</a:p>`,
+            }),
+          ].join(''),
+          size.cx,
+          size.cy,
+        ),
+      },
+      { themePreset: 'serif' },
+    );
+    expect(result.doc.theme.preset).toBe('serif');
+    expect(result.doc.cards[0]?.background).toEqual({ kind: 'color', value: '#112233' });
   });
 
   it('rejects inputs that are not a deck', async () => {
