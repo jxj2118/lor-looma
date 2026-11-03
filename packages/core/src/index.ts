@@ -89,4 +89,6 @@ export { createLoomaStore } from './store';
 export type { ApplyOptions, LoomaStore, StoreChange, StoreListener, StoreOptions } from './store';
 export { findCard, findNode, walkNodes } from './tree/tree';
 export type { FoundCard, FoundNode } from './tree/tree';
+export { createZip, importPptx, unzipPptx } from './pptx';
+export type { ImportPptxOptions, ImportPptxResult, UnzipResult } from './pptx';
 export { LOOMA_SCHEMA_VERSION } from './version';

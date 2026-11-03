@@ -39,6 +39,11 @@
       "types": "./dist/ai/index.d.ts",
       "import": "./dist/ai.js"
     },
+    "./pptx": {
+      "source": "./src/pptx/index.ts",
+      "types": "./dist/pptx/index.d.ts",
+      "import": "./dist/pptx.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

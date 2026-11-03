@@ -43,6 +43,9 @@ const RUNTIME_EXPORTS = [
   'walkNodes',
   'getOutline',
   'getCards',
+  'importPptx',
+  'createZip',
+  'unzipPptx',
 ] as const;
 
 describe('public API', () => {

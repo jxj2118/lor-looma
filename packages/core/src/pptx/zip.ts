@@ -107,7 +107,8 @@ async function transformRaw(
     }
   })();
   const produce = (async () => {
-    if (input.length > 0) await writer.write(input);
+    // A fresh copy is an ArrayBuffer view, which CompressionStream accepts in the DOM lib.
+    if (input.length > 0) await writer.write(new Uint8Array(input));
     await writer.close();
   })();
   await Promise.all([produce, consume]);
@@ -195,7 +196,7 @@ async function readArchive(data: Uint8Array): Promise<UnzipResult> {
     if (nameEnd + extraLength + commentLength > data.length) {
       return fail('ZIP central directory entry is truncated');
     }
-    const rawName = decoder.decode(data.subarray(nameStart, nameEnd));
+    const rawName = decoder.decode(new Uint8Array(data.subarray(nameStart, nameEnd)));
     const name = normalizeZipPath(rawName);
     cursor = nameEnd + extraLength + commentLength;
 

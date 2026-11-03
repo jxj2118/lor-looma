@@ -17,13 +17,16 @@ declare const performance: LoomaPerformance;
 
 declare function queueMicrotask(callback: () => void): void;
 
+declare function atob(data: string): string;
+declare function btoa(data: string): string;
+
 declare class TextEncoder {
   encode(input?: string): Uint8Array;
 }
 
 declare class TextDecoder {
   constructor(label?: string);
-  decode(input?: Uint8Array): string;
+  decode(input?: Uint8Array<ArrayBuffer> | Uint8Array): string;
 }
 
 interface LoomaByteReader {
@@ -31,7 +34,7 @@ interface LoomaByteReader {
 }
 
 interface LoomaByteWriter {
-  write(chunk: Uint8Array): Promise<void>;
+  write(chunk: Uint8Array<ArrayBuffer>): Promise<void>;
   close(): Promise<void>;
 }
 
