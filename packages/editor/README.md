@@ -62,13 +62,57 @@ function exportDeck() {
 
 ## Handle
 
-| Method           | Effect                                                               |
-| ---------------- | -------------------------------------------------------------------- |
-| `store`          | The store this editor is bound to.                                   |
-| `select(ids)`    | Select those cards or nodes. Mixed ids are normalized.               |
-| `scrollTo(id)`   | Scroll a card or node into the canvas.                               |
-| `getSelection()` | `{ cardId, nodeIds, editingId }`.                                    |
-| `flush()`        | Commit debounced title, notes, and text edits. Returns the document. |
+| Method           | Effect                                                                      |
+| ---------------- | --------------------------------------------------------------------------- |
+| `store`          | The store this editor is bound to.                                          |
+| `select(ids)`    | Select those cards or nodes. Mixed ids are normalized.                      |
+| `scrollTo(id)`   | Scroll a card or node into the canvas.                                      |
+| `getSelection()` | `{ cardId, nodeIds, editingId }`.                                           |
+| `flush()`        | Commit debounced title, notes, and text edits. Returns the document.        |
+| `play(page?)`    | Flush pending edits and open the fullscreen present overlay.                |
+| `closePlay()`    | Close the fullscreen present overlay.                                       |
+| `undo()`         | Flush pending edits and undo the last step on the store.                    |
+| `redo()`         | Flush pending edits and redo the next step on the store.                    |
+| `setTitle(text)` | Flush pending edits and update the document title on the shared undo stack. |
+
+## Embedding in a host shell
+
+When your application already provides a top bar, pass `chrome={{ topbar: false, documentSettings: false }}` so the internal topbar and the global document section in the right inspector are not mounted. Render `<LoomaDocumentSettings />` inside your own popover or dialog and drive title, undo/redo, and playback from `LoomaEditorHandle`:
+
+```tsx
+import { useRef } from 'react';
+import { LoomaDocumentSettings, LoomaEditor } from '@lor-looma/editor';
+import type { LoomaEditorHandle } from '@lor-looma/editor';
+
+export function HostWorkbench({ store }) {
+  const editorRef = useRef<LoomaEditorHandle>(null);
+
+  return (
+    <div className="workbench">
+      <header>
+        <button onClick={() => editorRef.current?.undo()}>Undo</button>
+        <button onClick={() => editorRef.current?.redo()}>Redo</button>
+        <button onClick={() => editorRef.current?.play()}>Present</button>
+        {/* Mount inside your own popover or modal */}
+        <LoomaDocumentSettings
+          store={store}
+          locale="zh-CN"
+          showFormat={false}
+          onBeforeChange={() => {
+            editorRef.current?.flush();
+          }}
+        />
+      </header>
+      <LoomaEditor
+        ref={editorRef}
+        store={store}
+        locale="zh-CN"
+        chrome={{ topbar: false, documentSettings: false }}
+      />
+    </div>
+  );
+}
+```
 
 ## Keyboard
 
@@ -88,16 +132,17 @@ These shortcuts apply when focus is in the editor and not inside a text field.
 
 ## Props
 
-| Prop                       | Default | Meaning                                           |
-| -------------------------- | ------- | ------------------------------------------------- |
-| `document`                 |         | Initial document when you do not pass `store`.    |
-| `store`                    |         | Store to edit. Required if `document` is omitted. |
-| `onChange`                 |         | `(doc, change) => void` after every store change. |
-| `uploadAsset`              |         | Turn a dropped or picked file into an asset.      |
-| `readOnly`                 | `false` | Hide editing chrome. Play still works.            |
-| `highlightExternalChanges` | `true`  | Flash non-user edits.                             |
-| `resolveAsset`             | `src`   | Resolve an asset id to a URL.                     |
-| `locale`                   | `en-US` | `en-US`, `zh-CN`, or `zh-TW`.                     |
+| Prop                       | Default                                    | Meaning                                                                     |
+| -------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| `document`                 |                                            | Initial document when you do not pass `store`.                              |
+| `store`                    |                                            | Store to edit. Required if `document` is omitted.                           |
+| `onChange`                 |                                            | `(doc, change) => void` after every store change.                           |
+| `uploadAsset`              |                                            | Turn a dropped or picked file into an asset.                                |
+| `readOnly`                 | `false`                                    | Hide editing chrome. Play still works.                                      |
+| `highlightExternalChanges` | `true`                                     | Flash non-user edits.                                                       |
+| `resolveAsset`             | `src`                                      | Resolve an asset id to a URL.                                               |
+| `locale`                   | `en-US`                                    | `en-US`, `zh-CN`, or `zh-TW`.                                               |
+| `chrome`                   | `{ topbar: true, documentSettings: true }` | Unmount the built-in topbar or inspector document settings for host shells. |
 
 See [Usage](../../docs/usage.md) for a full page, and [AI integration](../../docs/ai-integration.md) for driving the store from outside the editor.
 

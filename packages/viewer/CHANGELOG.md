@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Synchronize release with `@lor-looma/editor` host integration capabilities.
+
 ## 0.3.0
 
 - Render a `steps` container, a `stat` metric, and LaTeX `math` without an extra runtime dependency.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Add `chrome={{ topbar, documentSettings }}` on `LoomaEditor` so a host shell can unmount the built-in topbar and global document section in the inspector without CSS workarounds.
+- Add `play(page?)`, `closePlay()`, `undo()`, `redo()`, and `setTitle(title)` on `LoomaEditorHandle`, each flushing in-flight edits before acting on the shared history stack.
+- Export standalone `<LoomaDocumentSettings />` (with `showFormat`, `showThemePreset`, `showThemeOverrides`, and `onBeforeChange`) so hosts can mount theme preset and override controls inside their own popovers or dialogs.
+
 ## 0.3.0
 
 - Insert `steps`, `stat`, and `math` from the slash menu, and wrap a selection in steps.

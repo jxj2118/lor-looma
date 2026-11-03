@@ -1,6 +1,6 @@
 {
   "name": "@lor-looma/viewer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "React component for rendering and presenting Looma documents.",
   "license": "MIT",
   "author": "lor-looma contributors",

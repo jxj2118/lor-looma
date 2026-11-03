@@ -40,6 +40,13 @@ export type UploadAsset = (file: File) => Promise<{
   alt?: string;
 }>;
 
+export interface LoomaEditorChrome {
+  /** Whether to mount the built-in topbar. Defaults to `true`. */
+  topbar?: boolean;
+  /** Whether to mount global document and theme settings inside the right inspector. Defaults to `true`. */
+  documentSettings?: boolean;
+}
+
 export interface LoomaEditorProps {
   document?: LoomaDocument;
   store?: LoomaStore;
@@ -49,6 +56,7 @@ export interface LoomaEditorProps {
   highlightExternalChanges?: boolean;
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
   locale?: LoomaLocale;
+  chrome?: LoomaEditorChrome;
   className?: string;
   style?: CSSProperties;
 }
@@ -60,6 +68,16 @@ export interface LoomaEditorHandle {
   getSelection(): EditorSelection & { editingId: string | null };
   /** Commit in-flight debounced edits and return the document. */
   flush(): LoomaDocument;
+  /** Flush pending edits and open the fullscreen presentation overlay. */
+  play(page?: number): void;
+  /** Close the fullscreen presentation overlay. */
+  closePlay(): void;
+  /** Flush pending edits and undo the last step on the store. */
+  undo(): boolean;
+  /** Flush pending edits and redo the next step on the store. */
+  redo(): boolean;
+  /** Flush pending edits and update the document title on the shared undo stack. */
+  setTitle(title: string): void;
 }
 
 export type { EditorSelection };
@@ -74,11 +92,14 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     highlightExternalChanges = true,
     resolveAsset,
     locale = 'en-US',
+    chrome,
     className,
     style,
   },
   ref,
 ) {
+  const showTopbar = chrome?.topbar ?? true;
+  const showDocumentSettings = chrome?.documentSettings ?? true;
   const [ownedStore] = useState(() => (documentProp ? createLoomaStore(documentProp) : null));
   const store = storeProp ?? ownedStore;
   if (!store) throw new Error('LoomaEditor needs either a document or a store');
@@ -206,6 +227,28 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
     if (documentProp !== store.getDocument()) store.load(documentProp);
   }, [documentProp, store, storeProp]);
 
+  const flushAll = useCallback((): LoomaDocument => {
+    finishEditing();
+    for (const flushPending of [...pendingFlushes.current]) flushPending();
+    return store.getDocument();
+  }, [finishEditing, store]);
+
+  const openPlay = useCallback(
+    (page?: number) => {
+      const currentDoc = flushAll();
+      if (typeof page === 'number' && Number.isFinite(page)) {
+        const maxIndex = Math.max(0, currentDoc.cards.length - 1);
+        setPlayPage(Math.max(0, Math.min(maxIndex, Math.trunc(page))));
+      } else {
+        const cardId = viewState.get().selection.cardId;
+        const index = cardId ? (findCard(currentDoc, cardId)?.index ?? 0) : 0;
+        setPlayPage(index);
+      }
+      setPlaying(true);
+    },
+    [flushAll, viewState],
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -227,21 +270,34 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         return { ...state.selection, editingId: state.editing?.nodeId ?? null };
       },
       flush() {
-        finishEditing();
-        for (const flushPending of [...pendingFlushes.current]) flushPending();
-        return store.getDocument();
+        return flushAll();
+      },
+      play(page) {
+        openPlay(page);
+      },
+      closePlay() {
+        setPlaying(false);
+      },
+      undo() {
+        flushAll();
+        return store.undo();
+      },
+      redo() {
+        flushAll();
+        return store.redo();
+      },
+      setTitle(title) {
+        flushAll();
+        if (title === store.getDocument().title) return;
+        store.apply([{ op: 'setTitle', title }], {
+          origin: 'user',
+          mergeKey: 'title',
+          label: 'Edit title',
+        });
       },
     }),
-    [finishEditing, store, viewState],
+    [flushAll, openPlay, store, viewState],
   );
-
-  const openPlay = () => {
-    finishEditing();
-    const cardId = viewState.get().selection.cardId;
-    const index = cardId ? (findCard(store.getDocument(), cardId)?.index ?? 0) : 0;
-    setPlayPage(index);
-    setPlaying(true);
-  };
 
   return (
     <EditorContext.Provider
@@ -264,6 +320,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         suppressCommitRef,
         slashActions,
         resolveAsset,
+        documentSettings: showDocumentSettings,
       }}
     >
       <LoomaRoot
@@ -274,7 +331,7 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         style={style}
         onKeyDown={(event) => onEditorKeyDown(event, { readOnly, store, viewState })}
       >
-        <Topbar onPlay={openPlay} />
+        {showTopbar ? <Topbar onPlay={() => openPlay()} /> : null}
         <div className={styles.workspace}>
           {readOnly ? null : <CardSidebar />}
           <Canvas />
@@ -283,7 +340,9 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
         <div ref={setLayer} className={styles.layer}>
           <Notice />
           <SlashMenu />
-          {playing ? <PlayOverlay open initialPage={playPage} onOpenChange={setPlaying} /> : null}
+          {playing ? (
+            <PlayOverlay key={playPage} open initialPage={playPage} onOpenChange={setPlaying} />
+          ) : null}
         </div>
       </LoomaRoot>
     </EditorContext.Provider>

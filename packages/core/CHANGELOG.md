@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Synchronize release with `@lor-looma/editor` host integration capabilities.
+
 ## 0.3.0
 
 - Add a `steps` container, `stat` and `math` blocks, and an optional `focalPoint` on image blocks and card accents.

@@ -137,7 +137,22 @@ function onSave() {
 
 `flush()` returns the document. It also closes the inline editor or code editor. Call it from export, from a manual save, and before you hand the document to another process. You do not need it for `onChange`: that callback already runs after a commit.
 
-The other handle methods are `select(ids)`, `scrollTo(id)`, and `getSelection()`. `getSelection()` includes `editingId` when a text field is open.
+The other handle methods are `select(ids)`, `scrollTo(id)`, `getSelection()`, `play(page?)`, `closePlay()`, `undo()`, `redo()`, and `setTitle(title)`. `play`, `undo`, `redo`, and `setTitle` all flush pending edits first so a host toolbar never drops in-flight typing.
+
+### Embedding in a custom host shell
+
+If your application already renders its own top bar, pass `chrome={{ topbar: false, documentSettings: false }}` on `LoomaEditor`. The internal top bar is not mounted, and the right inspector keeps card, container, and block properties without duplicating global document settings. Mount `<LoomaDocumentSettings />` inside your own popover or dialog:
+
+```tsx
+<LoomaDocumentSettings
+  store={store}
+  locale="zh-CN"
+  showFormat={false}
+  onBeforeChange={() => {
+    ref.current?.flush();
+  }}
+/>
+```
 
 ### Images
 

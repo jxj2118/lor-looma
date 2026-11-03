@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { act, createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { LoomaEditor } from './index';
+import { LoomaDocumentSettings, LoomaEditor } from './index';
 import type { LoomaEditorHandle } from './index';
 import { editorDocument } from './test/fixture';
 
@@ -545,5 +545,156 @@ describe('LoomaEditor', () => {
     expect(ref.current?.store.getDocument().cards[0]?.body[0]).toMatchObject({
       code: 'const a = 2',
     });
+  });
+
+  it('unmounts the internal topbar and inspector document settings when configured via chrome', () => {
+    const { rerender } = render(
+      <LoomaEditor
+        document={editorDocument()}
+        chrome={{ topbar: false, documentSettings: false }}
+      />,
+    );
+    expect(document.querySelector('[data-lm-topbar]')).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
+    const inspector = document.querySelector('[data-lm-inspector]');
+    if (!(inspector instanceof HTMLElement)) throw new Error('missing inspector');
+    expect(within(inspector).getByRole('combobox', { name: 'Card image' })).toBeInTheDocument();
+    expect(
+      within(inspector).getByRole('combobox', { name: 'Card background' }),
+    ).toBeInTheDocument();
+    expect(within(inspector).getByRole('textbox', { name: 'Speaker notes' })).toBeInTheDocument();
+    expect(within(inspector).queryByRole('combobox', { name: 'Theme preset' })).toBeNull();
+    expect(within(inspector).queryByRole('spinbutton', { name: 'Corner radius' })).toBeNull();
+
+    rerender(<LoomaEditor document={editorDocument()} />);
+    expect(document.querySelector('[data-lm-topbar]')).not.toBeNull();
+    expect(within(inspector).getByRole('combobox', { name: 'Theme preset' })).toBeInTheDocument();
+  });
+
+  it('controls play overlay and flushes in-flight edits via handle.play and handle.closePlay', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument()}
+        chrome={{ topbar: false, documentSettings: false }}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'Speaker notes' }), {
+      target: { value: 'Flushed before play' },
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBeUndefined();
+
+    act(() => {
+      ref.current?.play(1);
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Flushed before play');
+    expect(document.querySelector('[data-lm-present-fit]')).not.toBeNull();
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    act(() => {
+      ref.current?.closePlay();
+    });
+    expect(document.querySelector('[data-lm-present-fit]')).toBeNull();
+  });
+
+  it('flushes pending edits before handle.undo, handle.redo, and merges handle.setTitle on the shared history stack', () => {
+    const ref = createRef<LoomaEditorHandle>();
+    render(
+      <LoomaEditor
+        ref={ref}
+        document={editorDocument()}
+        chrome={{ topbar: false, documentSettings: false }}
+      />,
+    );
+    act(() => {
+      ref.current?.setTitle('Draft 1');
+      ref.current?.setTitle('Draft 2');
+    });
+    expect(ref.current?.store.getDocument().title).toBe('Draft 2');
+    act(() => {
+      ref.current?.undo();
+    });
+    expect(ref.current?.store.getDocument().title).toBe('Field notes');
+    act(() => {
+      ref.current?.redo();
+    });
+    expect(ref.current?.store.getDocument().title).toBe('Draft 2');
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Speaker notes' }), {
+      target: { value: 'Pending note' },
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBeUndefined();
+    act(() => {
+      ref.current?.undo();
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBeUndefined();
+    expect(ref.current?.store.getDocument().title).toBe('Draft 2');
+    act(() => {
+      ref.current?.redo();
+    });
+    expect(ref.current?.store.getDocument().cards[0]?.notes).toBe('Pending note');
+  });
+
+  it('renders standalone LoomaDocumentSettings outside LoomaEditor, calls onBeforeChange, and updates theme overrides', () => {
+    const store = createLoomaStore(editorDocument());
+    const ref = createRef<LoomaEditorHandle>();
+    const onBeforeChange = vi.fn(() => {
+      ref.current?.flush();
+    });
+    render(
+      <div>
+        <div data-testid="host-popover">
+          <LoomaDocumentSettings
+            store={store}
+            locale="zh-CN"
+            showFormat={false}
+            onBeforeChange={onBeforeChange}
+          />
+        </div>
+        <LoomaEditor
+          ref={ref}
+          store={store}
+          locale="zh-CN"
+          chrome={{ topbar: false, documentSettings: false }}
+        />
+      </div>,
+    );
+    const popover = screen.getByTestId('host-popover');
+    expect(within(popover).queryByRole('combobox', { name: '版式' })).toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '演讲者备注' }), {
+      target: { value: '備課備註' },
+    });
+    expect(store.getDocument().cards[0]?.notes).toBeUndefined();
+
+    fireEvent.change(within(popover).getByRole('combobox', { name: '主题预设' }), {
+      target: { value: 'dark' },
+    });
+    expect(onBeforeChange).toHaveBeenCalledTimes(1);
+    expect(store.getDocument().cards[0]?.notes).toBe('備課備註');
+    expect(store.getDocument().theme.preset).toBe('dark');
+
+    fireEvent.change(within(popover).getByLabelText('主色'), {
+      target: { value: '#123456' },
+    });
+    fireEvent.change(within(popover).getByRole('spinbutton', { name: '圆角' }), {
+      target: { value: '20' },
+    });
+    fireEvent.change(within(popover).getByRole('spinbutton', { name: '字号缩放' }), {
+      target: { value: '1.15' },
+    });
+    fireEvent.change(within(popover).getByRole('spinbutton', { name: '间距' }), {
+      target: { value: '1.2' },
+    });
+    expect(store.getDocument().theme.overrides).toMatchObject({
+      colorPrimary: '#123456',
+      radius: 20,
+      fontScale: 1.15,
+      spacing: 1.2,
+    });
+
+    fireEvent.click(within(popover).getByRole('button', { name: '重置覆盖' }));
+    expect(store.getDocument().theme.overrides).toBeUndefined();
   });
 });
