@@ -5,7 +5,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  LOGICAL_SIZE,
+  cardLogicalSize,
   LoomaCardView,
   ScaledFrame,
   useCardOverflow,
@@ -59,8 +59,6 @@ export function CardSidebar() {
     },
     presentation,
   );
-  const logicalWidth = presentation ? LOGICAL_SIZE.presentation.width : LOGICAL_SIZE.document.width;
-  const logicalHeight = presentation ? LOGICAL_SIZE.presentation.height : undefined;
 
   useEffect(() => {
     if (!menu) return;
@@ -183,37 +181,40 @@ export function CardSidebar() {
       >
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           <ul ref={listRef} className={styles.list}>
-            {doc.cards.map((card, index) => (
-              <SidebarCard
-                key={card.id}
-                card={card}
-                doc={doc}
-                index={index}
-                count={doc.cards.length}
-                logicalWidth={logicalWidth}
-                logicalHeight={logicalHeight}
-                overflow={presentation && overflowing.has(card.id)}
-                resolveAsset={resolveAsset}
-                onChoose={choose}
-                onInsert={() => {
-                  insertCard(card.id);
-                  setMenu(null);
-                }}
-                onDuplicate={() => {
-                  duplicate(card.id);
-                  setMenu(null);
-                }}
-                onMove={(direction) => {
-                  move(card.id, direction);
-                  setMenu(null);
-                }}
-                onDelete={() => {
-                  remove(card.id);
-                  setMenu(null);
-                }}
-                onContextMenu={(event) => openMenu(event, card.id)}
-              />
-            ))}
+            {doc.cards.map((card, index) => {
+              const logical = cardLogicalSize(card, doc.format);
+              return (
+                <SidebarCard
+                  key={card.id}
+                  card={card}
+                  doc={doc}
+                  index={index}
+                  count={doc.cards.length}
+                  logicalWidth={logical.width}
+                  logicalHeight={logical.height}
+                  overflow={presentation && !card.scene && overflowing.has(card.id)}
+                  resolveAsset={resolveAsset}
+                  onChoose={choose}
+                  onInsert={() => {
+                    insertCard(card.id);
+                    setMenu(null);
+                  }}
+                  onDuplicate={() => {
+                    duplicate(card.id);
+                    setMenu(null);
+                  }}
+                  onMove={(direction) => {
+                    move(card.id, direction);
+                    setMenu(null);
+                  }}
+                  onDelete={() => {
+                    remove(card.id);
+                    setMenu(null);
+                  }}
+                  onContextMenu={(event) => openMenu(event, card.id)}
+                />
+              );
+            })}
           </ul>
         </SortableContext>
       </DndContext>

@@ -45,6 +45,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   insertColumn: 'Add an empty column to a columns container (max 4).',
   deleteColumn:
     'Remove a column from a columns container (min 2). Its nodes are deleted unless moveNodesTo is given.',
+  updateSceneElement: 'Update paragraphs, assetId, crop, or alt on an element inside a scene card.',
 };
 
 const VALID_COMMANDS: unknown[] = [
@@ -252,6 +253,12 @@ const VALID_COMMANDS: unknown[] = [
   { op: 'unwrapNode', id: 'n_organelles' },
   { op: 'insertColumn', id: 'n_process_columns', index: 2, width: 1.5 },
   { op: 'deleteColumn', id: 'n_process_columns', index: 2, moveNodesTo: 0 },
+  {
+    op: 'updateSceneElement',
+    cardId: 'c_scene',
+    elementId: 'el_scene_text',
+    patch: { paragraphs: [{ runs: [{ text: 'Updated scene text' }] }] },
+  },
 ];
 
 const INVALID_COMMANDS: unknown[] = [
@@ -409,6 +416,26 @@ function documentFor(command: unknown): LoomaDocument {
     if (!found || found.node.type !== 'columns') throw new Error('fixture columns missing');
     found.node.children.push([]);
     found.node.widths.push(1);
+  }
+  if (opOf(command) === 'updateSceneElement') {
+    doc.cards.push({
+      id: 'c_scene',
+      layout: 'scene',
+      scene: {
+        width: 1280,
+        height: 720,
+        elements: [
+          {
+            id: 'el_scene_text',
+            type: 'text',
+            box: { x: 10, y: 10, width: 200, height: 50 },
+            zIndex: 0,
+            paragraphs: [{ runs: [{ text: 'Original' }] }],
+          },
+        ],
+      },
+      body: [],
+    });
   }
   return doc;
 }

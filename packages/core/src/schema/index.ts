@@ -47,5 +47,39 @@ export { LoomaNodeSchema } from './nodes';
 export type { LoomaNode } from './nodes';
 export { ColorSchema, FocalPointSchema, GapSchema, IdSchema, InlineTextSchema } from './primitives';
 export type { FocalPoint } from './primitives';
+export {
+  LoomaSceneElementSchema,
+  LoomaSceneSchema,
+  SceneBoxSchema,
+  SceneBulletSchema,
+  SceneCropRectSchema,
+  SceneFillSchema,
+  SceneImageElementSchema,
+  SceneLineSpacingSchema,
+  SceneParagraphSchema,
+  SceneShapeElementSchema,
+  SceneShapeGeometrySchema,
+  SceneStrokeSchema,
+  SceneTextElementSchema,
+  SceneTextPaddingSchema,
+  SceneTextRunSchema,
+} from './scene';
+export type {
+  LoomaScene,
+  LoomaSceneElement,
+  SceneBox,
+  SceneBullet,
+  SceneCropRect,
+  SceneFill,
+  SceneImageElement,
+  SceneLineSpacing,
+  SceneParagraph,
+  SceneShapeElement,
+  SceneShapeGeometry,
+  SceneStroke,
+  SceneTextElement,
+  SceneTextPadding,
+  SceneTextRun,
+} from './scene';
 export { LoomaThemeSchema, ThemeOverridesSchema } from './theme';
-export type { LoomaTheme, ThemeOverrides } from './theme';
+export type { LoomaTheme, LoomaThemeSchema as LoomaThemeZodSchema, ThemeOverrides } from './theme';

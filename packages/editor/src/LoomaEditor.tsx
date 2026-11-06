@@ -1,4 +1,4 @@
-import { createLoomaStore, findCard, findNode } from '@lor-looma/core';
+import { createLoomaStore, findCard, findNode, findSceneElement } from '@lor-looma/core';
 import type { LoomaAsset, LoomaDocument, LoomaStore, StoreChange } from '@lor-looma/core';
 import { LoomaRoot, useLoomaDocument } from '@lor-looma/viewer';
 import {
@@ -158,15 +158,20 @@ export const LoomaEditor = forwardRef<LoomaEditorHandle, LoomaEditorProps>(funct
           hoverId: null,
           editing: null,
         });
+        suppressCommitRef.current = false;
         return;
       }
       const editing = viewState.get().editing;
       if (editing) {
         const live = findNode(next, editing.nodeId)?.node;
-        const slotGone = !live || readSlot(live, editing.slot) === undefined;
+        const liveScene = !live ? findSceneElement(next, editing.nodeId)?.element : undefined;
+        const slotGone = liveScene
+          ? liveScene.type !== 'text'
+          : !live || readSlot(live, editing.slot) === undefined;
         if (slotGone) {
           suppressCommitRef.current = true;
           viewState.set({ editing: null });
+          suppressCommitRef.current = false;
         } else if (change.origin !== 'user' && change.touchedIds.includes(editing.nodeId)) {
           noticeId.current += 1;
           setEditEpoch((epoch) => epoch + 1);
@@ -443,8 +448,16 @@ function onEditorKeyDown(
     const nodeId = selection.nodeIds[0];
     if (!nodeId) return;
     const found = findNode(store.getDocument(), nodeId);
-    const slot = found ? defaultSlot(found.node) : null;
-    if (!found || !slot) return;
+    if (!found) {
+      const sceneEl = findSceneElement(store.getDocument(), nodeId);
+      if (sceneEl?.element.type === 'text') {
+        event.preventDefault();
+        viewState.set({ editing: { nodeId, slot: 'text', caret: 'end' } });
+      }
+      return;
+    }
+    const slot = defaultSlot(found.node);
+    if (!slot) return;
     event.preventDefault();
     viewState.set({ editing: { nodeId: found.node.id, slot, caret: 'end' } });
   }

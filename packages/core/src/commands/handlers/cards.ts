@@ -22,6 +22,9 @@ function stripIds(value: unknown): void {
   delete value.id;
   if ('children' in value) stripIds(value.children);
   if ('body' in value) stripIds(value.body);
+  if ('scene' in value && isPlainObject(value.scene) && 'elements' in value.scene) {
+    stripIds(value.scene.elements);
+  }
 }
 
 export function insertCard(ctx: CommandContext, command: CommandOf<'insertCard'>): void {
@@ -117,6 +120,9 @@ export function duplicateCard(ctx: CommandContext, command: CommandOf<'duplicate
 export function splitCard(ctx: CommandContext, command: CommandOf<'splitCard'>): void {
   const found = findCard(ctx.draft, command.id);
   if (!found) ctx.fail('id', `card "${command.id}" does not exist`);
+  if (found.card.layout === 'scene' || found.card.scene !== undefined) {
+    ctx.fail('id', `cannot split scene card "${command.id}"`);
+  }
   const index = found.card.body.findIndex((node) => node.id === command.atNodeId);
   if (index < 0) {
     ctx.fail(

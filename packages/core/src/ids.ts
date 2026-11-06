@@ -4,6 +4,7 @@ export const ID_PREFIX = {
   card: 'c_',
   container: 'n_',
   block: 'b_',
+  element: 'el_',
   asset: 'img_',
   document: 'doc_',
 } as const;

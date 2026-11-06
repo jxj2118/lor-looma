@@ -145,7 +145,27 @@ export function cardToMarkdown(card: LoomaCard, doc: LoomaDocument): string {
   if (card.accent)
     header.push(`<!-- accent: ${card.accent.position}, asset ${card.accent.assetId} -->`);
   if (card.background) header.push(backgroundComment(card.background));
-  const blocks = [header.join('\n'), ...card.body.map((node) => renderNode(node, doc))];
+  const sceneLines: string[] = [];
+  if (card.scene) {
+    header.push(`<!-- scene: ${card.scene.width}x${card.scene.height} -->`);
+    for (const element of card.scene.elements) {
+      if (element.type === 'text') {
+        const text = element.paragraphs
+          .map((p) => p.runs.map((r) => r.text).join(''))
+          .filter((line) => line.length > 0)
+          .join('\n');
+        sceneLines.push(`<!-- id: ${element.id} scene-text -->\n${text}`);
+      } else if (element.type === 'image') {
+        const { alt, src } = imageSrc(doc, element.assetId);
+        sceneLines.push(`<!-- id: ${element.id} scene-image -->\n![${element.alt ?? alt}](${src})`);
+      }
+    }
+  }
+  const blocks = [
+    header.join('\n'),
+    ...sceneLines,
+    ...card.body.map((node) => renderNode(node, doc)),
+  ];
   if (card.notes !== undefined) blocks.push(`<!-- notes -->\n${card.notes}`);
   return blocks.join('\n\n');
 }

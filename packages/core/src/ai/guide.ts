@@ -103,8 +103,9 @@ Each line is the op, the fields a successful call must include, and what it does
 - \`deleteNode\` — required: \`id\`. Delete a block or container (and its children).
 - \`wrapNodes\` — required: \`ids\` (one or more adjacent siblings), \`container\`. Wrap adjacent sibling nodes in a new stack, columns, grid, or steps container. For columns, each node becomes one column. \`container.widths\` is optional and defaults to equal widths; if given, it needs one number per wrapped node.
 - \`unwrapNode\` — required: \`id\`. Remove a container and put its children in its place.
-- \`insertColumn\` — required: \`id\` of a \`columns\` container; optional \`index\` and \`width\`. Add an empty column to a columns container (max 4).
-- \`deleteColumn\` — required: \`id\`, \`index\`; optional \`moveNodesTo\`. Remove a column from a columns container (min 2). Its nodes are deleted unless \`moveNodesTo\` is given. If only two columns remain, use \`unwrapNode\` instead.
+- \`insertColumn\` — required: \`id\` of a \`columns\` container; optional \`index\` and \`width\`. Add an empty column (max 4).
+- \`deleteColumn\` — required: \`id\`, \`index\`; optional \`moveNodesTo\`. Remove a column (min 2); if two remain, use \`unwrapNode\`.
+- \`updateSceneElement\` — required: \`cardId\`, \`elementId\`, \`patch\`. Update \`paragraphs\` or \`assetId\` on a \`scene\` element.
 
 ## Examples
 

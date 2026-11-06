@@ -1,6 +1,6 @@
 {
   "name": "@lor-looma/editor",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "React editor component for Looma documents.",
   "license": "MIT",
   "author": "lor-looma contributors",

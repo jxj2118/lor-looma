@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- Fix published `@lor-looma/core` and `@lor-looma/viewer` dependency versions to `0.6.1`.
+
+## 0.6.0
+
+- Add in-place editing for `LoomaScene` text elements (preserving per-run typography, paragraph spacing, and IME composition) and image replacement (preserving bounding box, frame, and `srcRect` crop) with full undo/redo and `flush()` support.
+
 ## 0.5.0
 
 - Synchronize the release with `@lor-looma/core` PowerPoint import. Load `importPptx(...).doc` into `LoomaEditor` the same way as any other document.

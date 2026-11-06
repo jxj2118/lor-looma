@@ -3,6 +3,7 @@ import {
   createLoomaStore,
   findNode,
   formatIssue,
+  importDocx,
   importPptx,
   parseDocument,
 } from '@lor-looma/core';
@@ -175,13 +176,41 @@ function Playground({ initial }: { initial: ReadySample }) {
   async function importFile(file: File) {
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    const pptx =
-      file.name.toLowerCase().endsWith('.pptx') ||
-      (bytes.length >= 4 &&
-        bytes[0] === 0x50 &&
-        bytes[1] === 0x4b &&
-        bytes[2] === 0x03 &&
-        bytes[3] === 0x04);
+    const lowerName = file.name.toLowerCase();
+    const isZip =
+      bytes.length >= 4 &&
+      bytes[0] === 0x50 &&
+      bytes[1] === 0x4b &&
+      bytes[2] === 0x03 &&
+      bytes[3] === 0x04;
+    const isOleDoc =
+      lowerName.endsWith('.doc') ||
+      (bytes.length >= 8 &&
+        bytes[0] === 0xd0 &&
+        bytes[1] === 0xcf &&
+        bytes[2] === 0x11 &&
+        bytes[3] === 0xe0);
+
+    if (lowerName.endsWith('.docx') || isOleDoc) {
+      const result = await importDocx(buffer, {
+        title: file.name.replace(/\.(docx|doc)$/i, ''),
+      });
+      if (!result.ok) {
+        setBanner({ tone: 'error', text: result.error });
+        return;
+      }
+      store.load(result.doc);
+      setSampleId('');
+      setPage(0);
+      setOverflowIds([]);
+      setBanner({
+        tone: result.warnings.length > 0 ? 'warning' : 'info',
+        text: [messages.loaded, ...result.warnings].join('\n'),
+      });
+      return;
+    }
+
+    const pptx = lowerName.endsWith('.pptx') || isZip;
     if (pptx) {
       const result = await importPptx(buffer, { title: file.name.replace(/\.pptx$/i, '') });
       if (!result.ok) {
@@ -363,7 +392,7 @@ function Playground({ initial }: { initial: ReadySample }) {
             ref={fileRef}
             className={styles.file}
             type="file"
-            accept=".looma,.json,.pptx,application/json,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            accept=".looma,.json,.pptx,.docx,application/json,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             tabIndex={-1}
             aria-hidden="true"
             onChange={(event) => {

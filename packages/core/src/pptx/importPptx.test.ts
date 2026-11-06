@@ -26,7 +26,10 @@ async function load(
 ) {
   const { compress, ...importOptions } = options ?? {};
   const zip = await createZip(entries, { compress });
-  const result = await importPptx(new Uint8Array(zip).buffer, importOptions);
+  const result = await importPptx(new Uint8Array(zip).buffer, {
+    mode: 'flow',
+    ...importOptions,
+  });
   return result;
 }
 
@@ -419,7 +422,7 @@ describe('importPptx', () => {
   it('converts a multi-slide deck into cards, assets, and notes', async () => {
     const result = await loaded(mainDeck(), { title: 'From file name', themePreset: 'warm' });
     const { doc, warnings } = result;
-    expect(doc.looma).toBe(1);
+    expect(doc.looma).toBe(2);
     expect(doc.format).toBe('presentation');
     expect(doc.theme.preset).toBe('warm');
     expect(doc.title).toBe('Quarterly Review');
@@ -1373,6 +1376,341 @@ describe('importPptx', () => {
       await createZip({ 'ppt/presentation.xml': '<p:presentation/>' }),
     );
     expect(empty).toEqual({ ok: false, error: 'No slides found in the PowerPoint file.' });
+  });
+
+  describe('default scene mode (original layout preservation)', () => {
+    it('imports slides into scene mode by default while preserving 16:9, 4:3, and custom aspect ratios', async () => {
+      for (const item of [
+        { cx: 12_192_000, cy: 6_858_000, expectedW: 1280, expectedH: 720 },
+        { cx: 9_144_000, cy: 6_858_000, expectedW: 960, expectedH: 720 },
+        { cx: 10_800_000, cy: 10_800_000, expectedW: 1134, expectedH: 1134 },
+      ]) {
+        const zip = await createZip({
+          'ppt/presentation.xml': presentation(['rId1'], { cx: item.cx, cy: item.cy }),
+          'ppt/_rels/presentation.xml.rels': rels([
+            { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+          ]),
+          'ppt/slides/slide1.xml': slideXml(
+            textBox({
+              x: 952_500,
+              y: 952_500,
+              cx: 3_810_000,
+              cy: 952_500,
+              paragraphs: `<a:p><a:r><a:rPr sz="2400" b="1"><a:solidFill><a:srgbClr val="1D4ED8"/></a:solidFill><a:latin typeface="Poppins"/></a:rPr><a:t>Scene Title</a:t></a:r></a:p>`,
+            }),
+            item.cx,
+            item.cy,
+          ),
+        });
+        const res = await importPptx(zip);
+        expect(res.ok).toBe(true);
+        if (!res.ok) continue;
+        expect(res.doc.looma).toBe(2);
+        const card = res.doc.cards[0];
+        expect(card?.layout).toBe('scene');
+        expect(card?.body).toEqual([]);
+        expect(card?.scene?.width).toBe(item.expectedW);
+        expect(card?.scene?.height).toBe(item.expectedH);
+      }
+    });
+
+    it('preserves empty decorative shapes, bleed circles with alpha, separate frame shape, cropped image, tiny SVG icons, and mixed runs', async () => {
+      const cx = 12_192_000;
+      const cy = 6_858_000;
+      const zip = await createZip({
+        'ppt/presentation.xml': presentation(['rId1'], { cx, cy }),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        ]),
+        'ppt/slides/_rels/slide1.xml.rels': rels([
+          { id: 'rIdSvg', type: IMAGE, target: 'media/icon.svg' },
+          { id: 'rIdPng', type: IMAGE, target: 'media/hero.png' },
+        ]),
+        'ppt/slides/media/icon.svg': SVG,
+        'ppt/slides/media/hero.png': PNG,
+        'ppt/slides/slide1.xml': slideXml(
+          [
+            // 0: Full-bleed cream background shape
+            `<p:sp><p:nvSpPr><p:cNvPr id="2" name="bg"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="0" y="0"/><a:ext cx="12192000" cy="6858000"/></a:xfrm>
+                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                <a:solidFill><a:srgbClr val="FFF9EF"/></a:solidFill>
+              </p:spPr>
+              <p:txBody><a:bodyPr/><a:p><a:endParaRPr/></a:p></p:txBody>
+            </p:sp>`,
+            // 1: Bleed pastel circle with alpha 20%
+            `<p:sp><p:nvSpPr><p:cNvPr id="3" name="circle"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="8858250" y="-1428750"/><a:ext cx="4476750" cy="4476750"/></a:xfrm>
+                <a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 50000"/></a:avLst></a:prstGeom>
+                <a:solidFill><a:srgbClr val="FBBF24"><a:alpha val="20000"/></a:srgbClr></a:solidFill>
+              </p:spPr>
+              <p:txBody><a:bodyPr/><a:p><a:endParaRPr/></a:p></p:txBody>
+            </p:sp>`,
+            // 2: Separate white rounded frame with light-blue stroke
+            `<p:sp><p:nvSpPr><p:cNvPr id="4" name="frame"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="7372350" y="1714500"/><a:ext cx="4114800" cy="2819400"/></a:xfrm>
+                <a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 9459"/></a:avLst></a:prstGeom>
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:ln w="63500"><a:solidFill><a:srgbClr val="E3F0FF"/></a:solidFill></a:ln>
+              </p:spPr>
+              <p:txBody><a:bodyPr/><a:p><a:endParaRPr/></a:p></p:txBody>
+            </p:sp>`,
+            // 3: Cropped raster picture inside its own roundRect (must NOT merge with frame)
+            `<p:pic>
+              <p:nvPicPr><p:cNvPr id="5" name="hero"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
+              <p:blipFill>
+                <a:blip r:embed="rIdPng"/>
+                <a:srcRect l="0" t="618" r="0" b="618"/>
+                <a:stretch><a:fillRect/></a:stretch>
+              </p:blipFill>
+              <p:spPr>
+                <a:xfrm><a:off x="7505700" y="1857375"/><a:ext cx="3848100" cy="2533650"/></a:xfrm>
+                <a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 7519"/></a:avLst></a:prstGeom>
+              </p:spPr>
+            </p:pic>`,
+            // 4: Tiny SVG icon (190500x190500 EMU = 20x20 px, < 6% slide width)
+            `<p:pic>
+              <p:nvPicPr><p:cNvPr id="6" name="tiny-svg"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
+              <p:blipFill>
+                <a:blip><a:extLst><a:ext uri="{96DAC541-7B7A-43D3-8B79-37D633B846F1}"><asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="rIdSvg"/></a:ext></a:extLst></a:blip>
+              </p:blipFill>
+              <p:spPr>
+                <a:xfrm><a:off x="666750" y="4876800"/><a:ext cx="190500" cy="190500"/></a:xfrm>
+                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+              </p:spPr>
+            </p:pic>`,
+            // 5: Text box with mixed runs, exact hex colors, line spacing 145%, and zero insets
+            `<p:sp><p:nvSpPr><p:cNvPr id="7" name="mixed-text"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="666750" y="2286000"/><a:ext cx="6438900" cy="838200"/></a:xfrm>
+                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+              </p:spPr>
+              <p:txBody>
+                <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>
+                <a:p>
+                  <a:pPr algn="ctr"><a:lnSpc><a:spcPct val="145000"/></a:lnSpc></a:pPr>
+                  <a:r>
+                    <a:rPr sz="4650" b="1"><a:solidFill><a:srgbClr val="3D3327"/></a:solidFill><a:latin typeface="Poppins"/></a:rPr>
+                    <a:t>漢字樂園</a:t>
+                  </a:r>
+                  <a:r>
+                    <a:rPr sz="1800" i="1"><a:solidFill><a:srgbClr val="8A7E6E"/></a:solidFill><a:latin typeface="Poppins"/></a:rPr>
+                    <a:t> Learning</a:t>
+                  </a:r>
+                </a:p>
+              </p:txBody>
+            </p:sp>`,
+          ].join(''),
+          cx,
+          cy,
+        ),
+      });
+
+      const res = await importPptx(zip);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+
+      const card = res.doc.cards[0]!;
+      expect(card.background).toEqual({ kind: 'color', value: '#fff9ef' });
+      expect(Object.keys(res.doc.assets)).toHaveLength(2);
+
+      const elements = card.scene!.elements;
+      expect(elements).toHaveLength(6);
+
+      // Bleed circle with alpha 0.2
+      const circle = elements[1]!;
+      expect(circle.type).toBe('shape');
+      expect(circle.box.y).toBe(-150);
+      if (circle.type === 'shape') {
+        expect(circle.geometry).toEqual({ preset: 'roundRect', cornerRadiusRatio: 0.5 });
+        expect(circle.fill).toEqual({ kind: 'color', color: '#fbbf24', opacity: 0.2 });
+      }
+
+      // Separate frame shape (elements[2]) vs Cropped image (elements[3])
+      const frame = elements[2]!;
+      const hero = elements[3]!;
+      expect(frame.type).toBe('shape');
+      if (frame.type === 'shape') {
+        expect(frame.fill).toEqual({ kind: 'color', color: '#ffffff' });
+        expect(frame.stroke?.color).toBe('#e3f0ff');
+        expect(frame.stroke?.width).toBeCloseTo(6.67, 1);
+      }
+      expect(hero.type).toBe('image');
+      if (hero.type === 'image') {
+        expect(hero.crop).toEqual({ left: 0, top: 0.00618, right: 0, bottom: 0.00618 });
+        expect(hero.geometry?.preset).toBe('roundRect');
+        expect(hero.geometry?.cornerRadiusRatio).toBeCloseTo(0.07519, 4);
+      }
+
+      // Tiny SVG icon preserved
+      const tiny = elements[4]!;
+      expect(tiny.type).toBe('image');
+      expect(tiny.box).toEqual({ x: 70, y: 512, width: 20, height: 20 });
+
+      // Text element with mixed runs, padding 0, verticalAlign middle, lineSpacing 1.45
+      const textEl = elements[5]!;
+      expect(textEl.type).toBe('text');
+      if (textEl.type === 'text') {
+        expect(textEl.wordWrap).toBe(false);
+        expect(textEl.verticalAlign).toBe('middle');
+        expect(textEl.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+        const p = textEl.paragraphs[0]!;
+        expect(p.align).toBe('center');
+        expect(p.lineSpacing).toEqual({ kind: 'multiple', value: 1.45 });
+        expect(p.runs).toEqual([
+          {
+            text: '漢字樂園',
+            fontFamily: 'Poppins',
+            fontSize: 62,
+            color: '#3d3327',
+            bold: true,
+          },
+          {
+            text: ' Learning',
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            color: '#8a7e6e',
+            italic: true,
+          },
+        ]);
+      }
+    });
+
+    it('reports unsupported graphics, media, and custom geometry in structured diagnostics without silent drops', async () => {
+      const cx = 12_192_000;
+      const cy = 6_858_000;
+      const zip = await createZip({
+        'ppt/presentation.xml': presentation(['rId1'], { cx, cy }),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        ]),
+        'ppt/slides/slide1.xml': slideXml(
+          [
+            `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="10" name="Chart 1"/></p:nvGraphicFramePr><a:graphic/></p:graphicFrame>`,
+            `<p:sp><p:nvSpPr><p:cNvPr id="11" name="Freeform 2"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="95250" y="95250"/><a:ext cx="952500" cy="952500"/></a:xfrm>
+                <a:custGeom><a:pathLst/></a:custGeom>
+                <a:solidFill><a:srgbClr val="2DD4A7"/></a:solidFill>
+              </p:spPr>
+            </p:sp>`,
+          ].join(''),
+          cx,
+          cy,
+        ),
+      });
+
+      const res = await importPptx(zip);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            slideIndex: 0,
+            elementName: 'Chart 1',
+            kind: 'unsupported-graphic',
+          }),
+          expect.objectContaining({
+            slideIndex: 0,
+            elementName: 'Freeform 2',
+            kind: 'custom-geometry-fallback',
+          }),
+        ]),
+      );
+    });
+
+    it('preserves zero-height/zero-width lines, default OOXML bodyPr insets (9.6/4.8px) vs explicit 0, and per-attribute defRPr inheritance/override', async () => {
+      const cx = 12_192_000;
+      const cy = 6_858_000;
+      const zip = await createZip({
+        'ppt/presentation.xml': presentation(['rId1'], { cx, cy }),
+        'ppt/_rels/presentation.xml.rels': rels([
+          { id: 'rId1', type: SLIDE, target: 'slides/slide1.xml' },
+        ]),
+        'ppt/slides/slide1.xml': slideXml(
+          [
+            // 1. Horizontal line with cy="0"
+            `<p:sp><p:nvSpPr><p:cNvPr id="20" name="HorizLine"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="952500" y="1905000"/><a:ext cx="2857500" cy="0"/></a:xfrm>
+                <a:prstGeom prst="line"><a:avLst/></a:prstGeom>
+                <a:ln w="19050"><a:solidFill><a:srgbClr val="FBBF24"/></a:solidFill></a:ln>
+              </p:spPr>
+            </p:sp>`,
+            // 2. TextBox with <a:bodyPr/> (no explicit insets -> defaults to 9.6 / 4.8 px) and defRPr inheritance + override
+            `<p:sp><p:nvSpPr><p:cNvPr id="21" name="DefRPrText"/><p:nvPr/></p:nvSpPr>
+              <p:spPr>
+                <a:xfrm><a:off x="952500" y="2857500"/><a:ext cx="3810000" cy="952500"/></a:xfrm>
+                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+              </p:spPr>
+              <p:txBody>
+                <a:bodyPr/>
+                <a:p>
+                  <a:pPr>
+                    <a:defRPr sz="2400" b="1" u="sng" strike="sngStrike" baseline="30000" spc="150">
+                      <a:solidFill><a:srgbClr val="1D4ED8"/></a:solidFill>
+                      <a:latin typeface="Poppins"/>
+                    </a:defRPr>
+                  </a:pPr>
+                  <a:r>
+                    <a:rPr i="1"/>
+                    <a:t>InheritedBoldAndSize</a:t>
+                  </a:r>
+                  <a:r>
+                    <a:rPr b="0" u="none" strike="noStrike" baseline="0" spc="0"/>
+                    <a:t>ExplicitlyCleared</a:t>
+                  </a:r>
+                </a:p>
+              </p:txBody>
+            </p:sp>`,
+          ].join(''),
+          cx,
+          cy,
+        ),
+      });
+
+      const res = await importPptx(zip);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      const elements = res.doc.cards[0]!.scene!.elements;
+      expect(elements).toHaveLength(2);
+
+      const lineEl = elements[0]!;
+      expect(lineEl.type).toBe('shape');
+      if (lineEl.type === 'shape') {
+        expect(lineEl.geometry.preset).toBe('line');
+        expect(lineEl.box).toEqual({ x: 100, y: 200, width: 300, height: 2 });
+        expect(lineEl.stroke).toEqual({ color: '#fbbf24', width: 2 });
+      }
+
+      const textEl = elements[1]!;
+      expect(textEl.type).toBe('text');
+      if (textEl.type === 'text') {
+        expect(textEl.padding).toEqual({ left: 9.6, top: 4.8, right: 9.6, bottom: 4.8 });
+        const runs = textEl.paragraphs[0]!.runs;
+        expect(runs[0]).toEqual({
+          text: 'InheritedBoldAndSize',
+          fontFamily: 'Poppins',
+          fontSize: 32,
+          color: '#1d4ed8',
+          bold: true,
+          italic: true,
+          underline: true,
+          strike: true,
+          baseline: 'super',
+          letterSpacing: 2,
+        });
+        expect(runs[1]).toEqual({
+          text: 'ExplicitlyCleared',
+          fontFamily: 'Poppins',
+          fontSize: 32,
+          color: '#1d4ed8',
+        });
+      }
+    });
   });
 });
 

@@ -17,6 +17,7 @@ import {
 import { putAsset, removeAsset, setFormat, setTheme, setTitle } from './handlers/document';
 import { deleteColumn, insertColumn, unwrapNode, wrapNodes } from './handlers/layout';
 import { deleteNode, insertNode, moveNode, replaceNode, updateNode } from './handlers/nodes';
+import { updateSceneElement } from './handlers/scene';
 import { LoomaCommandSchema } from './schema';
 import type { ParsedLoomaCommand } from './schema';
 
@@ -98,6 +99,8 @@ function dispatch(ctx: ReturnType<typeof createCommandContext>, command: ParsedL
       return insertColumn(ctx, command);
     case 'deleteColumn':
       return deleteColumn(ctx, command);
+    case 'updateSceneElement':
+      return updateSceneElement(ctx, command);
     default: {
       const unreachable: never = command;
       return unreachable;

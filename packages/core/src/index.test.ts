@@ -44,6 +44,7 @@ const RUNTIME_EXPORTS = [
   'getOutline',
   'getCards',
   'importPptx',
+  'importDocx',
   'createZip',
   'unzipPptx',
 ] as const;

@@ -150,6 +150,22 @@ export function materializeCard(
   const scratchCreated: string[] = [];
   const issues: ParseIssue[] = [];
   assignId(cloned, '', 'card', scratchTaken, scratchCreated, issues);
+  if (cloned.scene !== undefined && cloned.layout === undefined) {
+    cloned.layout = 'scene';
+  }
+  if (isPlainObject(cloned.scene) && Array.isArray(cloned.scene.elements)) {
+    cloned.scene.elements.forEach((element, index) => {
+      if (!isPlainObject(element)) return;
+      assignId(
+        element,
+        `scene.elements[${index}]`,
+        'element',
+        scratchTaken,
+        scratchCreated,
+        issues,
+      );
+    });
+  }
   if (Array.isArray(cloned.body)) {
     cloned.body.forEach((node, index) => {
       assignNodeIds(node, `body[${index}]`, scratchTaken, scratchCreated, issues);

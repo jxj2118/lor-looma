@@ -1,8 +1,8 @@
 import type { LoomaDocument } from '@lor-looma/core';
-import { LOGICAL_SIZE } from '../constants';
 import { LoomaCardView } from '../card/LoomaCardView';
 import type { LoomaCardViewProps } from '../card/LoomaCardView';
 import { ScaledFrame } from '../frame/ScaledFrame';
+import { cardLogicalSize } from '../scene/SceneView';
 import styles from './LoomaViewer.module.css';
 
 export function ScrollView({
@@ -22,22 +22,17 @@ export function ScrollView({
     return <div className={styles.empty}>This document has no cards yet.</div>;
   }
 
-  const logicalWidth =
-    document.format === 'presentation'
-      ? LOGICAL_SIZE.presentation.width
-      : LOGICAL_SIZE.document.width;
-  const logicalHeight =
-    document.format === 'presentation' ? LOGICAL_SIZE.presentation.height : undefined;
-
   return (
     <div className={styles.scroll}>
       {document.cards.map((card) => {
-        const overflow = document.format === 'presentation' && overflowing.has(card.id);
+        const overflow =
+          document.format === 'presentation' && !card.scene && overflowing.has(card.id);
+        const logical = cardLogicalSize(card, document.format);
         return (
           <div key={card.id} className={styles.slide} data-lm-overflow={overflow ? '' : undefined}>
             <ScaledFrame
-              logicalWidth={logicalWidth}
-              logicalHeight={logicalHeight}
+              logicalWidth={logical.width}
+              logicalHeight={logical.height}
               maxScale={maxScale}
             >
               <LoomaCardView

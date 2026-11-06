@@ -1,9 +1,11 @@
 import { LOOMA_SCHEMA_VERSION } from '../version';
 import type { ParseIssue } from './issues';
 
-/** Migrations keyed by the version they upgrade from. v1 is the first version, so this is empty. */
+/** Migrations keyed by the version they upgrade from. */
 export const MIGRATIONS: Record<number, (doc: Record<string, unknown>) => Record<string, unknown>> =
-  {};
+  {
+    1: (doc) => ({ ...doc, looma: 2 }),
+  };
 
 export function runMigrations<T>(
   doc: T,

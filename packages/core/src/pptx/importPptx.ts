@@ -13,7 +13,10 @@ import type { LoomaNode } from '../schema/nodes';
 import { isImageSrc } from '../schema/primitives';
 import { attr, child, children, descendants, localName, parseXml, textContent } from './xml';
 import type { XmlElement } from './xml';
+import { convertSlideToScene, readThemeFonts } from './sceneConvert';
+import type { PptxDiagnostic } from './sceneConvert';
 import { unzipPptx } from './zip';
+export type { PptxDiagnostic } from './sceneConvert';
 
 /** Widescreen 16:9, in English Metric Units. 4:3 decks declare 9144000 x 6858000 instead. */
 const DEFAULT_SLIDE_CX = 12_192_000;
@@ -48,8 +51,12 @@ const IMAGE_TYPES: Record<string, string> = {
 export interface ImportPptxOptions {
   /** Fallback document title (e.g. filename without .pptx) when docProps/core.xml has no title. */
   title?: string;
+  /** Target Looma document format. Defaults to 'presentation'. */
+  format?: 'presentation' | 'document';
   /** Initial theme preset for the imported deck. Defaults to 'clean'. */
   themePreset?: ThemePreset;
+  /** Import layout mode. Defaults to 'scene' to preserve original slide layout. */
+  mode?: 'scene' | 'flow';
   /**
    * Optional async uploader for extracted media files.
    * When omitted, supported images are embedded as `data:image/...;base64,...` URLs.
@@ -62,7 +69,8 @@ export interface ImportPptxOptions {
 }
 
 export type ImportPptxResult =
-  { ok: true; doc: LoomaDocument; warnings: string[] } | { ok: false; error: string };
+  | { ok: true; doc: LoomaDocument; warnings: string[]; diagnostics: PptxDiagnostic[] }
+  | { ok: false; error: string };
 
 interface Box {
   x: number;
@@ -148,6 +156,7 @@ export async function importPptx(
   if (!archive.ok) return archive;
 
   const warnings: string[] = [];
+  const diagnostics: PptxDiagnostic[] = [];
   const taken = new Set<string>();
   const state: ImportState = {
     files: archive.files,
@@ -163,6 +172,8 @@ export async function importPptx(
     slide: readSlideSize(archive.files),
     themeColors: readThemeColors(archive.files),
   };
+  const themeFonts = readThemeFonts(archive.files, readXml);
+  const mode = options?.mode ?? 'scene';
 
   const parts = slideOrder(archive.files);
   if (parts.length === 0) return { ok: false, error: 'No slides found in the PowerPoint file.' };
@@ -175,21 +186,41 @@ export async function importPptx(
       warn(warnings, `Skipped unreadable slide "${part}".`);
       continue;
     }
-    cards.push(
-      await convertSlide(
-        { ...state, part, rels: readRelationships(archive.files, part), index },
-        xml,
-      ),
-    );
+    const rels = readRelationships(archive.files, part);
+    const slideCtx: SlideContext = { ...state, part, rels, index };
+    if (mode === 'scene') {
+      const inheritedBackground = await readInheritedBackground(slideCtx, xml);
+      const notes = readNotes(slideCtx);
+      cards.push(
+        await convertSlideToScene(
+          {
+            index,
+            slide: state.slide,
+            themeColors: state.themeColors,
+            themeFonts,
+            rels,
+            ids: state.ids,
+            warnings,
+            diagnostics,
+            resolveAssetForRel: (rel) => assetForRelationship(slideCtx, rel),
+            inheritedBackground,
+            notes,
+          },
+          xml,
+        ),
+      );
+    } else {
+      cards.push(await convertSlide(slideCtx, xml));
+    }
   }
   if (cards.length === 0) return { ok: false, error: 'No slides found in the PowerPoint file.' };
 
   const theme = deckTheme(cards, options?.themePreset);
   const candidate = {
-    looma: 1 as const,
+    looma: 2 as const,
     id: state.ids('document'),
     title: documentTitle(archive.files, cards, options?.title),
-    format: 'presentation' as const,
+    format: (options?.format ?? 'presentation') as 'presentation' | 'document',
     theme,
     assets: state.assets,
     cards,
@@ -200,7 +231,7 @@ export async function importPptx(
     return { ok: false, error: `PowerPoint import failed validation: ${detail}` };
   }
   for (const issue of parsed.warnings) warn(warnings, issue.message);
-  return { ok: true, doc: parsed.doc, warnings };
+  return { ok: true, doc: parsed.doc, warnings, diagnostics };
 }
 
 function documentTitle(
@@ -238,6 +269,27 @@ function firstHeading(card: LoomaCard | undefined): string | undefined {
         }
       }
     }
+  }
+  if (card.scene) {
+    let bestText = '';
+    let bestSize = -1;
+    for (const element of card.scene.elements) {
+      if (element.type !== 'text') continue;
+      const text = element.paragraphs
+        .map((p) => p.runs.map((r) => r.text).join(''))
+        .join(' ')
+        .trim();
+      if (!text) continue;
+      const maxSize = Math.max(
+        0,
+        ...element.paragraphs.flatMap((p) => p.runs.map((r) => r.fontSize ?? 16)),
+      );
+      if (maxSize > bestSize) {
+        bestSize = maxSize;
+        bestText = text;
+      }
+    }
+    if (bestText) return bestText;
   }
   return undefined;
 }

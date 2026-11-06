@@ -1,0 +1,49 @@
+.scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: text;
+}
+
+.element {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.imageFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  max-width: none;
+  max-height: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.paragraph {
+  margin: 0;
+  padding: 0;
+}
+
+.bullet {
+  display: inline-block;
+  margin-right: 0.35em;
+}

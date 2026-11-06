@@ -5,7 +5,7 @@ import { IdSchema } from './primitives';
 import { LoomaThemeSchema } from './theme';
 
 export const LoomaDocumentSchema = z.object({
-  looma: z.literal(1),
+  looma: z.union([z.literal(1), z.literal(2)]),
   id: IdSchema,
   title: z.string().default(''),
   format: z.enum(['presentation', 'document']).default('presentation'),

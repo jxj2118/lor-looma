@@ -1,11 +1,11 @@
 import type { LoomaDocument } from '@lor-looma/core';
 import { useEffect, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { LOGICAL_SIZE } from '../constants';
 import { LoomaCardView } from '../card/LoomaCardView';
 import type { LoomaCardViewProps } from '../card/LoomaCardView';
 import { ScaledFrame } from '../frame/ScaledFrame';
 import { InlineText } from '../inline/InlineText';
+import { cardLogicalSize } from '../scene/SceneView';
 import styles from './PresentView.module.css';
 import emptyStyles from './LoomaViewer.module.css';
 
@@ -35,7 +35,8 @@ export function PresentView({
   const [notesOpen, setNotesOpen] = useState(false);
   const card = document.cards[page];
   const count = document.cards.length;
-  const fitWidth = document.format === 'document';
+  const fitWidth = document.format === 'document' && !card?.scene;
+  const logical = cardLogicalSize(card, document.format);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -78,8 +79,8 @@ export function PresentView({
           onClick={onClick}
         >
           <ScaledFrame
-            logicalWidth={fitWidth ? LOGICAL_SIZE.document.width : LOGICAL_SIZE.presentation.width}
-            logicalHeight={fitWidth ? undefined : LOGICAL_SIZE.presentation.height}
+            logicalWidth={logical.width}
+            logicalHeight={fitWidth ? undefined : logical.height}
             maxScale={maxScale}
             fit={fitWidth ? 'width' : 'contain'}
           >

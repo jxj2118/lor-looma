@@ -7,9 +7,12 @@ import { NodeRenderProvider } from '../nodes/context';
 import { surfaceVariables } from '../theme/surface';
 import type { RenderNode } from '../nodes/context';
 import type { RenderSlot } from '../nodes/TextSlot';
+import { SceneView } from '../scene/SceneView';
+import type { RenderSceneElement } from '../scene/SceneView';
 import styles from './LoomaCardView.module.css';
 
 export type { RenderNode, RenderNodeInfo } from '../nodes/context';
+export type { RenderSceneElement, RenderSceneElementInfo } from '../scene/SceneView';
 
 export interface LoomaCardViewProps {
   card: LoomaCard;
@@ -17,6 +20,7 @@ export interface LoomaCardViewProps {
   resolveAsset?: (asset: LoomaAsset, id: string) => string;
   renderNode?: RenderNode;
   renderSlot?: RenderSlot;
+  renderSceneElement?: RenderSceneElement;
   className?: string;
 }
 
@@ -55,6 +59,7 @@ function sameCardProps(prev: LoomaCardViewProps, next: LoomaCardViewProps): bool
     prev.resolveAsset === next.resolveAsset &&
     prev.renderNode === next.renderNode &&
     prev.renderSlot === next.renderSlot &&
+    prev.renderSceneElement === next.renderSceneElement &&
     prev.className === next.className
   );
 }
@@ -65,6 +70,7 @@ export const LoomaCardView = memo(function LoomaCardView({
   resolveAsset,
   renderNode,
   renderSlot,
+  renderSceneElement,
   className,
 }: LoomaCardViewProps) {
   const format = document.format;
@@ -90,17 +96,22 @@ export const LoomaCardView = memo(function LoomaCardView({
     ...sizeVariables(format),
     ...surface.vars,
     ...paint.style,
-    ...(format === 'presentation' ? { height: LOGICAL_SIZE.presentation.height } : null),
-    ...(accentPosition === 'left'
+    ...(card.scene
+      ? { width: `${card.scene.width}px`, height: `${card.scene.height}px` }
+      : format === 'presentation'
+        ? { height: LOGICAL_SIZE.presentation.height }
+        : null),
+    ...(!card.scene && accentPosition === 'left'
       ? { display: 'grid', gridTemplateColumns: '40% minmax(0, 1fr)' }
       : null),
-    ...(accentPosition === 'right'
+    ...(!card.scene && accentPosition === 'right'
       ? { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 40%' }
       : null),
   } as CSSProperties;
 
   const media =
-    accentPosition === 'left' || accentPosition === 'right' || accentPosition === 'top' ? (
+    !card.scene &&
+    (accentPosition === 'left' || accentPosition === 'right' || accentPosition === 'top') ? (
       <div
         data-lm-accent-media={accentPosition}
         className={styles.accent}
@@ -122,7 +133,15 @@ export const LoomaCardView = memo(function LoomaCardView({
       </div>
     ) : null;
 
-  const content = (
+  const content = card.scene ? (
+    <SceneView
+      cardId={card.id}
+      scene={card.scene}
+      assets={assets}
+      resolveAsset={resolveAsset}
+      renderSceneElement={renderSceneElement}
+    />
+  ) : (
     <div data-lm-card-content="" className={styles.content}>
       {card.body.map((node, index) => (
         <NodeView

@@ -65,6 +65,12 @@ export function resolveNodeLocation(
   const parentId = at.parent;
   const card = findCard(ctx.draft, parentId);
   if (card) {
+    if (card.card.layout === 'scene' || card.card.scene !== undefined) {
+      ctx.fail(
+        `${path}.parent`,
+        `card "${parentId}" is a scene card and cannot contain flow nodes in body`,
+      );
+    }
     if (at.slot !== undefined) {
       ctx.fail(`${path}.slot`, `"${parentId}" is a card and does not use slot; remove slot`);
     }
@@ -148,7 +154,15 @@ function foundArray(
   path: string,
 ): LoomaNode[] {
   const card = findCard(ctx.draft, parentId);
-  if (card) return card.card.body;
+  if (card) {
+    if (card.card.layout === 'scene' || card.card.scene !== undefined) {
+      ctx.fail(
+        `${path}`,
+        `card "${parentId}" is a scene card and cannot contain flow nodes in body`,
+      );
+    }
+    return card.card.body;
+  }
   const found = findNode(ctx.draft, parentId);
   if (!found || !isContainer(found.node)) {
     ctx.fail(`${path}`, `parent "${parentId}" does not exist`);

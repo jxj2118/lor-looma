@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- Fix published `@lor-looma/core` dependency version to `0.6.1`.
+
+## 0.6.0
+
+- Render `LoomaScene` cards with exact aspect ratios, decorative shapes, SVG lines, cropped images, and multi-run typography across both `presentation` and `document` modes.
+
 ## 0.5.0
 
 - Synchronize the release with `@lor-looma/core` PowerPoint import. Decks produced by `importPptx` render in scroll and present mode without an API change.

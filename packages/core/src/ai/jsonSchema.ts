@@ -64,6 +64,7 @@ const COMMAND_DESCRIPTIONS: Record<CommandOp, string> = {
   insertColumn: 'Add an empty column to a columns container (max 4).',
   deleteColumn:
     'Remove a column from a columns container (min 2). Its nodes are deleted unless moveNodesTo is given.',
+  updateSceneElement: 'Update paragraphs, assetId, crop, or alt on an element inside a scene card.',
 };
 
 const JSON_SCHEMA_OPTIONS = {
@@ -276,6 +277,8 @@ function buildCommandSchema(): JsonSchema {
       properties.patch.minProperties = 1;
       properties.patch.propertyNames = { not: { enum: ['id', 'type', 'children'] } };
     } else if (op === 'updateCard' && isSchema(properties.patch)) {
+      properties.patch.minProperties = 1;
+    } else if (op === 'updateSceneElement' && isSchema(properties.patch)) {
       properties.patch.minProperties = 1;
     } else if (op === 'putAsset') {
       properties.asset = { $ref: '#/$defs/LoomaAsset' };

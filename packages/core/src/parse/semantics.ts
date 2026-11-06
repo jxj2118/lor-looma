@@ -126,6 +126,33 @@ export function validateDocumentSemantics(doc: LoomaDocument): ParseIssue[] {
     if (card.background?.kind === 'image') {
       requireAsset(doc, card.background.assetId, `${cardPath}.background.assetId`, issues);
     }
+    if (card.layout === 'scene' && !card.scene) {
+      issues.push({
+        path: `${cardPath}.scene`,
+        message: 'scene is required when card layout is "scene"',
+      });
+    }
+    if (card.layout === 'flow' && card.scene !== undefined) {
+      issues.push({
+        path: `${cardPath}.scene`,
+        message: 'scene cannot be present when card layout is "flow"',
+      });
+    }
+    if (card.scene !== undefined && card.body.length > 0) {
+      issues.push({
+        path: `${cardPath}.body`,
+        message: 'body must be empty on a scene card',
+      });
+    }
+    if (card.scene) {
+      card.scene.elements.forEach((element, elementIndex) => {
+        const elementPath = `${cardPath}.scene.elements[${elementIndex}]`;
+        claimId(element.id, elementPath, seen, issues);
+        if (element.type === 'image') {
+          requireAsset(doc, element.assetId, `${elementPath}.assetId`, issues);
+        }
+      });
+    }
     card.body.forEach((node, index) => {
       walkNode(node, `${cardPath}.body[${index}]`, 0, doc, seen, issues);
     });

@@ -1,6 +1,19 @@
 export { LOGICAL_SIZE } from './constants';
 export { LoomaCardView } from './card/LoomaCardView';
-export type { LoomaCardViewProps, RenderNode, RenderNodeInfo } from './card/LoomaCardView';
+export type {
+  LoomaCardViewProps,
+  RenderNode,
+  RenderNodeInfo,
+  RenderSceneElement,
+  RenderSceneElementInfo,
+} from './card/LoomaCardView';
+export {
+  cardLogicalSize,
+  fontStackForScene,
+  paragraphStyleForScene,
+  runStyleForScene,
+  textContainerStyleForScene,
+} from './scene/SceneView';
 export { ScaledFrame } from './frame/ScaledFrame';
 export type { ScaledFrameProps } from './frame/ScaledFrame';
 export { useCardOverflow } from './frame/useOverflow';

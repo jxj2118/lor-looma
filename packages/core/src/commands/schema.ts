@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { THEME_PRESETS } from '../constants';
-import { CardAccentSchema, CardBackgroundSchema, IdSchema } from '../schema';
+import {
+  CardAccentSchema,
+  CardBackgroundSchema,
+  IdSchema,
+  SceneCropRectSchema,
+  SceneParagraphSchema,
+} from '../schema';
 
 const nodeShape = z.looseObject({
   type: z.string(),
@@ -9,9 +15,11 @@ const nodeShape = z.looseObject({
 
 const cardShape = z.looseObject({
   id: IdSchema.optional(),
+  layout: z.enum(['flow', 'scene']).optional(),
   accent: z.unknown().optional(),
   background: z.unknown().optional(),
   notes: z.string().optional(),
+  scene: z.unknown().optional(),
   body: z.array(nodeShape).optional(),
 });
 
@@ -184,6 +192,21 @@ export const LoomaCommandSchema = z.discriminatedUnion('op', [
     index: z.number().int().min(0),
     moveNodesTo: z.number().int().min(0).optional(),
   }),
+  z.strictObject({
+    op: z.literal('updateSceneElement'),
+    cardId: IdSchema,
+    elementId: IdSchema,
+    patch: z
+      .strictObject({
+        paragraphs: z.array(SceneParagraphSchema).min(1).optional(),
+        assetId: IdSchema.optional(),
+        crop: SceneCropRectSchema.nullable().optional(),
+        alt: z.string().max(1000).nullable().optional(),
+      })
+      .refine((patch) => Object.keys(patch).length > 0, {
+        message: 'patch must include at least one field',
+      }),
+  }),
 ]);
 
 export type LoomaCommand = z.input<typeof LoomaCommandSchema>;
@@ -211,4 +234,5 @@ export const COMMAND_OPS = [
   'unwrapNode',
   'insertColumn',
   'deleteColumn',
+  'updateSceneElement',
 ] as const;

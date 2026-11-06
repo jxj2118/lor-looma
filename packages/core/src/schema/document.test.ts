@@ -59,10 +59,11 @@ describe('LoomaDocumentSchema', () => {
       assets: {},
       cards: [],
     });
+    expect(LoomaDocumentSchema.parse({ looma: 2, id: 'doc_1' }).looma).toBe(2);
   });
 
   it('rejects a newer schema version', () => {
-    expect(LoomaDocumentSchema.safeParse({ looma: 2, id: 'doc_1' }).success).toBe(false);
+    expect(LoomaDocumentSchema.safeParse({ looma: 3, id: 'doc_1' }).success).toBe(false);
   });
 
   it('re-exports the document schema from the schema barrel', () => {

@@ -47,8 +47,21 @@ export {
   LoomaCardSchema,
   LoomaDocumentSchema,
   LoomaNodeSchema,
+  LoomaSceneElementSchema,
+  LoomaSceneSchema,
   LoomaThemeSchema,
   MathBlockSchema,
+  SceneBoxSchema,
+  SceneCropRectSchema,
+  SceneFillSchema,
+  SceneImageElementSchema,
+  SceneParagraphSchema,
+  SceneShapeElementSchema,
+  SceneShapeGeometrySchema,
+  SceneStrokeSchema,
+  SceneTextElementSchema,
+  SceneTextPaddingSchema,
+  SceneTextRunSchema,
   StatBlockSchema,
   StepsSchema,
   ThemeOverridesSchema,
@@ -74,10 +87,25 @@ export type {
   LoomaDocument,
   LoomaDocumentInput,
   LoomaNode,
+  LoomaScene,
+  LoomaSceneElement,
   LoomaTheme,
   MathBlock,
   ParagraphBlock,
   QuoteBlock,
+  SceneBox,
+  SceneBullet,
+  SceneCropRect,
+  SceneFill,
+  SceneImageElement,
+  SceneLineSpacing,
+  SceneParagraph,
+  SceneShapeElement,
+  SceneShapeGeometry,
+  SceneStroke,
+  SceneTextElement,
+  SceneTextPadding,
+  SceneTextRun,
   StackContainer,
   StatBlock,
   StepsContainer,
@@ -87,8 +115,10 @@ export type {
 } from './schema';
 export { createLoomaStore } from './store';
 export type { ApplyOptions, LoomaStore, StoreChange, StoreListener, StoreOptions } from './store';
-export { findCard, findNode, walkNodes } from './tree/tree';
-export type { FoundCard, FoundNode } from './tree/tree';
+export { findCard, findNode, findSceneElement, walkNodes } from './tree/tree';
+export type { FoundCard, FoundNode, FoundSceneElement } from './tree/tree';
 export { createZip, importPptx, unzipPptx } from './pptx';
-export type { ImportPptxOptions, ImportPptxResult, UnzipResult } from './pptx';
-export { LOOMA_SCHEMA_VERSION } from './version';
+export type { ImportPptxOptions, ImportPptxResult, PptxDiagnostic, UnzipResult } from './pptx';
+export { importDocx } from './docx';
+export type { DocxDiagnostic, ImportDocxOptions, ImportDocxResult } from './docx';
+export { assertSupportedSchemaVersion, LOOMA_SCHEMA_VERSION } from './version';

@@ -1,6 +1,6 @@
 {
   "name": "@lor-looma/core",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "Looma document model, validation, commands and undo/redo. No UI dependencies.",
   "license": "MIT",
   "author": "lor-looma contributors",
@@ -43,6 +43,11 @@
       "source": "./src/pptx/index.ts",
       "types": "./dist/pptx/index.d.ts",
       "import": "./dist/pptx.js"
+    },
+    "./docx": {
+      "source": "./src/docx/index.ts",
+      "types": "./dist/docx/index.d.ts",
+      "import": "./dist/docx.js"
     },
     "./package.json": "./package.json"
   },

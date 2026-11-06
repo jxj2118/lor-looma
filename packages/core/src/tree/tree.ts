@@ -1,4 +1,18 @@
-import type { LoomaCard, LoomaContainer, LoomaDocument, LoomaNode } from '../schema';
+import type {
+  LoomaCard,
+  LoomaContainer,
+  LoomaDocument,
+  LoomaNode,
+  LoomaSceneElement,
+} from '../schema';
+
+export interface FoundSceneElement {
+  element: LoomaSceneElement;
+  cardId: string;
+  cardIndex: number;
+  index: number;
+  path: string;
+}
 
 export interface FoundNode {
   node: LoomaNode;
@@ -151,12 +165,38 @@ export function findCard(doc: LoomaDocument, id: string): FoundCard | null {
   return null;
 }
 
-/** All card and node ids, plus asset keys and the document id. Used to avoid id collisions. */
+export function findSceneElement(doc: LoomaDocument, id: string): FoundSceneElement | null {
+  for (let cardIndex = 0; cardIndex < doc.cards.length; cardIndex += 1) {
+    const card = doc.cards[cardIndex];
+    const elements = card?.scene?.elements;
+    if (!card || !elements) continue;
+    for (let index = 0; index < elements.length; index += 1) {
+      const element = elements[index];
+      if (element?.id === id) {
+        return {
+          element,
+          cardId: card.id,
+          cardIndex,
+          index,
+          path: `cards[${cardIndex}].scene.elements[${index}]`,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/** All card, node, and scene element ids, plus asset keys and the document id. Used to avoid id collisions. */
 export function collectIds(doc: LoomaDocument): Set<string> {
   const ids = new Set<string>();
   ids.add(doc.id);
   for (const key of Object.keys(doc.assets)) ids.add(key);
-  for (const card of doc.cards) ids.add(card.id);
+  for (const card of doc.cards) {
+    ids.add(card.id);
+    if (card.scene) {
+      for (const element of card.scene.elements) ids.add(element.id);
+    }
+  }
   walkNodes(doc, (found) => {
     ids.add(found.node.id);
   });

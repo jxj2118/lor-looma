@@ -1,4 +1,4 @@
-import { findCard, findNode } from '@lor-looma/core';
+import { findCard, findNode, findSceneElement } from '@lor-looma/core';
 import type { LoomaDocument, LoomaNode } from '@lor-looma/core';
 import type { EditorSelection } from './viewState';
 
@@ -29,7 +29,11 @@ export function selectNode(
   extend: boolean,
 ): EditorSelection {
   const found = findNode(doc, nodeId);
-  if (!found) return current;
+  if (!found) {
+    const sceneEl = findSceneElement(doc, nodeId);
+    if (!sceneEl) return current;
+    return { cardId: sceneEl.cardId, nodeIds: [nodeId] };
+  }
   const single: EditorSelection = { cardId: found.cardId, nodeIds: [nodeId] };
   if (!extend) return single;
 
@@ -54,7 +58,9 @@ export function selectCard(cardId: string): EditorSelection {
 
 export function pruneSelection(doc: LoomaDocument, selection: EditorSelection): EditorSelection {
   const cardId = selection.cardId && findCard(doc, selection.cardId) ? selection.cardId : null;
-  const nodeIds = selection.nodeIds.filter((id) => findNode(doc, id) !== null);
+  const nodeIds = selection.nodeIds.filter(
+    (id) => findNode(doc, id) !== null || findSceneElement(doc, id) !== null,
+  );
   if (cardId === selection.cardId && nodeIds.length === selection.nodeIds.length) {
     const sameNodes = nodeIds.every((id, index) => id === selection.nodeIds[index]);
     if (sameNodes) return selection;
@@ -97,9 +103,17 @@ export function normalizeSelectIds(doc: LoomaDocument, ids: string[]): EditorSel
   for (const id of ids) {
     if (findCard(doc, id)) return selectCard(id);
     const node = findNode(doc, id);
-    if (!node) continue;
-    const nodeIds = ids.filter((candidate) => findNode(doc, candidate)?.cardId === node.cardId);
-    return { cardId: node.cardId, nodeIds };
+    if (node) {
+      const nodeIds = ids.filter((candidate) => findNode(doc, candidate)?.cardId === node.cardId);
+      return { cardId: node.cardId, nodeIds };
+    }
+    const sceneEl = findSceneElement(doc, id);
+    if (sceneEl) {
+      const nodeIds = ids.filter(
+        (candidate) => findSceneElement(doc, candidate)?.cardId === sceneEl.cardId,
+      );
+      return { cardId: sceneEl.cardId, nodeIds };
+    }
   }
   return EMPTY;
 }

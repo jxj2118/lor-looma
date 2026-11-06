@@ -1,4 +1,4 @@
-import { findNode } from '@lor-looma/core';
+import { findNode, findSceneElement } from '@lor-looma/core';
 import type { LoomaCard, LoomaDocument } from '@lor-looma/core';
 import {
   DndContext,
@@ -10,16 +10,17 @@ import {
 } from '@dnd-kit/core';
 import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
-  LOGICAL_SIZE,
+  cardLogicalSize,
   LoomaCardView,
   ScaledFrame,
   useCardOverflow,
   useLoomaDocument,
 } from '@lor-looma/viewer';
-import type { RenderNode, RenderSlot } from '@lor-looma/viewer';
+import type { RenderNode, RenderSceneElement, RenderSlot } from '@lor-looma/viewer';
 import { parseSlotKey } from '@lor-looma/viewer';
 import { useCallback, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { EditableSceneElement } from '../scene/EditableSceneElement';
 import { selectCard, selectNode } from '../state/selection';
 import { useEditorContext, useViewState } from '../state/viewState';
 import { defaultSlot, isTextNodeType } from '../text/slots';
@@ -75,6 +76,12 @@ export function Canvas() {
     ),
     [],
   );
+  const renderSceneElement = useCallback<RenderSceneElement>(
+    (element, renderDefault, info) => (
+      <EditableSceneElement element={element} info={info} renderDefault={renderDefault} />
+    ),
+    [],
+  );
   const cardIds = doc.cards.map((card) => card.id);
   const overflowing = useCardOverflow(
     cardIds,
@@ -86,9 +93,6 @@ export function Canvas() {
     },
     doc.format === 'presentation',
   );
-  const presentation = doc.format === 'presentation';
-  const logicalWidth = presentation ? LOGICAL_SIZE.presentation.width : LOGICAL_SIZE.document.width;
-  const logicalHeight = presentation ? LOGICAL_SIZE.presentation.height : undefined;
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (readOnly) return;
@@ -206,7 +210,20 @@ export function Canvas() {
     const nodeId = target.closest('[data-lm-editor-node]')?.getAttribute('data-lm-editor-node');
     if (!nodeId) return;
     const found = findNode(store.getDocument(), nodeId);
-    if (!found || !isTextNodeType(found.node.type)) return;
+    if (!found) {
+      const sceneEl = findSceneElement(store.getDocument(), nodeId);
+      if (!sceneEl || sceneEl.element.type !== 'text') return;
+      if (viewState.get().editing?.nodeId === nodeId && viewState.get().editing?.slot === 'text') {
+        return;
+      }
+      finishEditing();
+      viewState.set({
+        selection: { cardId: sceneEl.cardId, nodeIds: [nodeId] },
+        editing: { nodeId, slot: 'text', caret: 'end' },
+      });
+      return;
+    }
+    if (!isTextNodeType(found.node.type)) return;
     const raw = target.closest('[data-lm-slot]')?.getAttribute('data-lm-slot');
     const slot = raw && parseSlotKey(raw) ? raw : defaultSlot(found.node);
     if (!slot) return;
@@ -274,18 +291,24 @@ export function Canvas() {
           </div>
         ) : (
           <div className={styles.list}>
-            {doc.cards.map((card) => (
-              <EditorCard
-                key={card.id}
-                card={card}
-                doc={doc}
-                overflow={presentation && overflowing.has(card.id)}
-                logicalWidth={logicalWidth}
-                logicalHeight={logicalHeight}
-                renderNode={renderNode}
-                renderSlot={renderSlot}
-              />
-            ))}
+            {doc.cards.map((card) => {
+              const logical = cardLogicalSize(card, doc.format);
+              return (
+                <EditorCard
+                  key={card.id}
+                  card={card}
+                  doc={doc}
+                  overflow={
+                    doc.format === 'presentation' && !card.scene && overflowing.has(card.id)
+                  }
+                  logicalWidth={logical.width}
+                  logicalHeight={logical.height}
+                  renderNode={renderNode}
+                  renderSlot={renderSlot}
+                  renderSceneElement={renderSceneElement}
+                />
+              );
+            })}
             {readOnly ? null : <AddCard />}
           </div>
         )}
@@ -316,6 +339,7 @@ function EditorCard({
   logicalHeight,
   renderNode,
   renderSlot,
+  renderSceneElement,
 }: {
   card: LoomaCard;
   doc: LoomaDocument;
@@ -324,6 +348,7 @@ function EditorCard({
   logicalHeight: number | undefined;
   renderNode: RenderNode;
   renderSlot: RenderSlot;
+  renderSceneElement: RenderSceneElement;
 }) {
   const { messages, resolveAsset, readOnly, viewState } = useEditorContext();
   const selected = useViewState(
@@ -345,10 +370,13 @@ function EditorCard({
           resolveAsset={resolveAsset}
           renderNode={renderNode}
           renderSlot={renderSlot}
+          renderSceneElement={renderSceneElement}
         />
       </ScaledFrame>
-      {!readOnly && card.body.length === 0 ? <EmptyCardDrop cardId={card.id} /> : null}
-      {!readOnly && card.body.length === 0 ? (
+      {!readOnly && !card.scene && card.body.length === 0 ? (
+        <EmptyCardDrop cardId={card.id} />
+      ) : null}
+      {!readOnly && !card.scene && card.body.length === 0 ? (
         <button
           type="button"
           className={styles.add}

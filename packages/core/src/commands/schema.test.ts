@@ -37,6 +37,12 @@ const VALID_COMMANDS = [
   { op: 'unwrapNode', id: 'n_1' },
   { op: 'insertColumn', id: 'n_1', index: 1, width: 1.5 },
   { op: 'deleteColumn', id: 'n_1', index: 2, moveNodesTo: 0 },
+  {
+    op: 'updateSceneElement',
+    cardId: 'c_1',
+    elementId: 'el_1',
+    patch: { paragraphs: [{ runs: [{ text: 'Updated' }] }] },
+  },
 ] as const;
 
 describe('LoomaCommandSchema', () => {
@@ -95,7 +101,7 @@ describe('location schemas', () => {
 });
 
 describe('COMMAND_OPS', () => {
-  it('lists the 20 command ops in order', () => {
+  it('lists the 21 command ops in order', () => {
     expect(COMMAND_OPS).toEqual([
       'setTitle',
       'setFormat',
@@ -117,8 +123,9 @@ describe('COMMAND_OPS', () => {
       'unwrapNode',
       'insertColumn',
       'deleteColumn',
+      'updateSceneElement',
     ]);
-    expect(COMMAND_OPS).toHaveLength(20);
+    expect(COMMAND_OPS).toHaveLength(21);
   });
 
   it('matches CommandOp', () => {
@@ -153,6 +160,7 @@ const TOP_LEVEL_ARGS: Record<(typeof COMMAND_OPS)[number], readonly string[]> = 
   unwrapNode: ['id'],
   insertColumn: ['id', 'index', 'width'],
   deleteColumn: ['id', 'index', 'moveNodesTo'],
+  updateSceneElement: ['cardId', 'elementId', 'patch'],
 };
 
 function commandIssues(command: unknown) {

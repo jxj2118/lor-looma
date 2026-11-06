@@ -102,12 +102,12 @@ describe('parseDocument', () => {
       ok: false,
       errors: [{ path: '$', message: 'document must be a JSON object' }],
     });
-    expect(parseDocument({ looma: 2, id: 'doc_1' })).toEqual({
+    expect(parseDocument({ looma: 3, id: 'doc_1' })).toEqual({
       ok: false,
       errors: [
         {
           path: 'looma',
-          message: 'document uses schema version 2, but this library only supports up to 1',
+          message: 'document uses schema version 3, but this library only supports up to 2',
         },
       ],
     });

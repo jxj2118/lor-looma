@@ -8,7 +8,7 @@ describe('LoomaRoot', () => {
     render(<LoomaRoot>hello</LoomaRoot>);
     const el = screen.getByText('hello');
     expect(el).toHaveAttribute('data-looma-root');
-    expect(el).toHaveAttribute('data-looma-schema', '1');
+    expect(el).toHaveAttribute('data-looma-schema', '2');
     expect(el.className).toContain('root');
   });
 

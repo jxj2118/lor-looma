@@ -9,7 +9,12 @@ const deps = [
 export default defineConfig({
   build: {
     lib: {
-      entry: { index: 'src/index.ts', ai: 'src/ai/index.ts', pptx: 'src/pptx/index.ts' },
+      entry: {
+        index: 'src/index.ts',
+        ai: 'src/ai/index.ts',
+        pptx: 'src/pptx/index.ts',
+        docx: 'src/docx/index.ts',
+      },
       formats: ['es'],
       fileName: (_format, name) => `${name}.js`,
     },

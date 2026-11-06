@@ -63,6 +63,11 @@ function collectDocumentIds(doc: Record<string, unknown>): Set<string> {
   for (const card of doc.cards) {
     if (!isPlainObject(card)) continue;
     if (typeof card.id === 'string') ids.add(card.id);
+    if (isPlainObject(card.scene) && Array.isArray(card.scene.elements)) {
+      for (const element of card.scene.elements) {
+        if (isPlainObject(element) && typeof element.id === 'string') ids.add(element.id);
+      }
+    }
     if (!Array.isArray(card.body)) continue;
     for (const node of card.body) collectNodeIds(node, ids);
   }
@@ -181,6 +186,21 @@ export function preprocessDocument(
     if (!isPlainObject(card)) return card;
     const path = `cards[${index}]`;
     if (repair) card.id = ensureId(card.id, 'card', path, ctx);
+    if (card.scene !== undefined && card.layout === undefined) {
+      card.layout = 'scene';
+    }
+    if (repair && isPlainObject(card.scene) && Array.isArray(card.scene.elements)) {
+      card.scene.elements = card.scene.elements.map((element, elementIndex) => {
+        if (!isPlainObject(element)) return element;
+        element.id = ensureId(
+          element.id,
+          'element',
+          `${path}.scene.elements[${elementIndex}]`,
+          ctx,
+        );
+        return element;
+      });
+    }
     if (Array.isArray(card.body)) {
       card.body = card.body.map((node, nodeIndex) =>
         repairNode(node, `${path}.body[${nodeIndex}]`, ctx),

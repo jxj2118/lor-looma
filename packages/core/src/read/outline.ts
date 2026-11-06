@@ -43,6 +43,29 @@ function cardTitle(doc: LoomaDocument, cardId: string): string {
       paragraph = collapsed(inlineToPlainText(found.node.text));
     }
   });
+  if (heading === undefined && paragraph === undefined) {
+    const card = doc.cards.find((item) => item.id === cardId);
+    if (card?.scene) {
+      let bestText = '';
+      let bestSize = -1;
+      for (const element of card.scene.elements) {
+        if (element.type !== 'text') continue;
+        const text = collapsed(
+          element.paragraphs.map((p) => p.runs.map((r) => r.text).join('')).join(' '),
+        );
+        if (!text) continue;
+        const maxSize = Math.max(
+          0,
+          ...element.paragraphs.flatMap((p) => p.runs.map((r) => r.fontSize ?? 16)),
+        );
+        if (maxSize > bestSize) {
+          bestSize = maxSize;
+          bestText = text;
+        }
+      }
+      if (bestText) return bestText.slice(0, TITLE_LIMIT);
+    }
+  }
   return (heading ?? paragraph ?? '').slice(0, TITLE_LIMIT);
 }
 

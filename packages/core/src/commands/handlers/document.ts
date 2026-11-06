@@ -32,6 +32,11 @@ function assetUsages(doc: LoomaDocument, assetId: string): string[] {
     if (card.background?.kind === 'image' && card.background.assetId === assetId) {
       paths.push(`cards[${cardIndex}].background`);
     }
+    card.scene?.elements.forEach((element, elementIndex) => {
+      if (element.type === 'image' && element.assetId === assetId) {
+        paths.push(`cards[${cardIndex}].scene.elements[${elementIndex}]`);
+      }
+    });
     card.body.forEach((node, index) => {
       imagePaths(node, `cards[${cardIndex}].body[${index}]`, assetId, paths);
     });
